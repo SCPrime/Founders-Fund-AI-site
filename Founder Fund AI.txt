@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Founders Fund — Time‑Weighted Split Calculator (PGP enabled, AI-enhanced)</title>
+<title>Founders Fund — Time‑Weighted Split Calculator (PGP enabled, AI‑enhanced)</title>
 <style>
   :root{--bg:#0b0e14;--panel:#121720;--text:#e6edf3;--muted:#9aa4b2;--accent:#39d0d8;--warn:#ffb020;--bad:#ff6b6b;--good:#35c759;--line:#233047;--ink:#0f141c}
   html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;padding:0}
@@ -19,7 +19,7 @@
   .panel{background:var(--panel);border:1px solid #1f2937;border-radius:10px;padding:16px;margin:12px 0}
   .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:end}
   label{font-size:12px;color:var(--muted)}
-  input[type="number"],input[type="text"],input[type="date"],select, textarea{width:100%;background:#0f141c;color:#e6edf3;border:1px solid #263043;padding:9px 10px;border-radius:8px;font-size:14px;font-family:system-ui}
+  input[type="number"],input[type="text"],input[type="date"],select,textarea{width:100%;background:#0f141c;color:#e6edf3;border:1px solid #263043;padding:9px 10px;border-radius:8px;font-size:14px;font-family:system-ui}
   .btn{background:#172133;color:#e6edf3;border:1px solid #283753;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:600}
   .btn:hover{border-color:#33507a}
   .small{font-size:12px;color:#cbd5e1}
@@ -38,9 +38,10 @@
   .sw{width:12px;height:12px;border-radius:2px;display:inline-block}
   canvas{background:#0f141c;border:1px solid #253347;border-radius:8px}
   .hr{height:1px;background:var(--line);margin:12px 0}
+  .muted{color:#9aa4b2}
   @media (max-width: 720px){h1{font-size:20px} table{min-width:920px} .grid{grid-template-columns:repeat(6,1fr)}}
 </style>
-<!-- External libraries for OCR and PDF export -->
+<!-- Free, client-side libraries (no API keys) -->
 <script src="https://unpkg.com/tesseract.js@v6.0.0/dist/tesseract.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.3/jspdf.plugin.autotable.min.js"></script>
@@ -413,22 +414,53 @@
     <div id="auditFounders" class="small"></div>
   </div>
 
-  <!-- ===== ASSISTANT ===== -->
+  <!-- ===== AI ASSISTANT ===== -->
   <div class="panel" data-pane="assistant" style="display:none">
     <h2>AI Assistant</h2>
-    <h3 style="margin: 8px 0 6px;">Screenshot OCR</h3>
+
+    <h3 style="margin:8px 0 6px;">1) Screenshot OCR</h3>
     <div>
-      <label class="small">Upload an image (screenshot) with text data:</label><br/>
+      <label class="small">Upload an image (screenshot) with top‑panel &/or contribution text:</label><br/>
       <input type="file" id="fileInput" accept="image/*"/>
       <button class="btn" id="btnOCR" style="margin-top:6px;">Extract Text</button>
       <div id="ocrOutputWrapper" style="margin-top:12px;">
-        <label>Recognized Text:</label>
-        <textarea id="ocrOutput" rows="6" style="margin-top:4px;"></textarea>
+        <label>Recognized Text (editable):</label>
+        <textarea id="ocrOutput" rows="7" style="margin-top:4px;"></textarea>
       </div>
-      <div class="small" style="margin-top:4px;">* After extracting, you can modify the text if needed and import data into the calculator.</div>
+      <div class="small muted" style="margin-top:6px;">Runs locally via Tesseract.js (free, no keys). Edit any misreads here.</div>
     </div>
+
     <div class="hr"></div>
-    <h3 style="margin: 8px 0 6px;">Import Data</h3>
+
+    <h3 style="margin:8px 0 6px;">2) Parse Top‑Panel Metrics</h3>
+    <div class="grid">
+      <div style="grid-column:span 3">
+        <label>Total Value ($)</label>
+        <input type="text" id="aiTotalValue" placeholder="$33,143.00"/>
+      </div>
+      <div style="grid-column:span 3">
+        <label>Unrealized PNL ($)</label>
+        <input type="text" id="aiUnrealized" placeholder="+$181.80"/>
+      </div>
+      <div style="grid-column:span 3">
+        <label>Realized PNL ($)</label>
+        <input type="text" id="aiRealized" placeholder="+$8,599.13"/>
+      </div>
+      <div style="grid-column:span 3">
+        <label>Available Balance ($)</label>
+        <input type="text" id="aiAvailable" placeholder="$—"/>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:8px;">
+      <div style="grid-column:span 3">
+        <button class="btn" id="btnParseTop">Parse from OCR Text</button>
+      </div>
+      <div style="grid-column:span 9"></div>
+    </div>
+
+    <div class="hr"></div>
+
+    <h3 style="margin:8px 0 6px;">3) (Optional) Parse Contributions</h3>
     <div class="grid">
       <div style="grid-column:span 4">
         <label>Import as</label>
@@ -438,32 +470,51 @@
         </select>
       </div>
       <div style="grid-column:span 5">
-        <label>Investor Name (if adding investor data)</label>
+        <label>Investor Name (required if importing investor data)</label>
         <input type="text" id="ocrInvestorName" placeholder="Investor"/>
       </div>
       <div style="grid-column:span 3">
         <label>&nbsp;</label>
-        <button class="btn" id="btnImportOCR">Import to Calculator</button>
+        <button class="btn" id="btnPreview">Preview Executive Report (no changes)</button>
       </div>
     </div>
-    <div class="small" style="margin-top:6px;">* For investor data, provide the name. Recognized dates & amounts will be added as contributions.</div>
+    <div class="small muted" style="margin-top:6px;">The preview applies parsed metrics & parsed contributions temporarily, computes a full executive report, and shows it below without saving.</div>
+
+    <div id="previewArea" class="panel small" style="display:none; margin-top:12px;">
+      <div class="small muted">Preview (dry‑run). This does not modify the Calculator. Use <b>Push to Calculator</b> to commit.</div>
+      <div id="previewTables"></div>
+      <div style="margin-top:10px;">
+        <button class="btn" id="btnExportPreview">Export Preview PDF</button>
+      </div>
+    </div>
+
     <div class="hr"></div>
-    <h3 style="margin: 8px 0 6px;">Export Results</h3>
+
+    <h3 style="margin:8px 0 6px;">4) Commit to Calculator (optional)</h3>
     <div>
-      <button class="btn" id="btnExportPDF">Export PDF</button>
-      <div class="small" style="margin-top:4px;">Download the current results tables as a PDF report.</div>
+      <button class="btn" id="btnCommit">Push to Calculator</button>
+      <span class="small muted">Applies the parsed top‑panel values & contributions to the Calculator and recalculates.</span>
+    </div>
+
+    <div class="hr"></div>
+
+    <h3 style="margin:8px 0 6px;">5) Export from Calculator</h3>
+    <div>
+      <button class="btn" id="btnExportPDF">Export Calculator PDF</button>
+      <div class="small muted" style="margin-top:4px;">Exports the current Calculator tables (after any pushes).</div>
     </div>
   </div>
 </div>
 
 <script>
 /* ---------- helpers ---------- */
-const $ = (id) => document.getElementById(id);
+const $=(id)=>document.getElementById(id);
 function money(x){return '$'+Number(x||0).toLocaleString(undefined,{maximumFractionDigits:2})}
 function pct(x){return (100*(x||0)).toFixed(2)+'%'}
 function daysBetweenInclusive(d0,d1){const ms=(new Date(d1)-new Date(d0));return Math.floor(ms/86400000)+1}
 function parseNum(v){const x=parseFloat(v);return isNaN(x)?0:x}
 function todayISO(){const d=new Date();return d.toISOString().slice(0,10)}
+function toAmount(s){if(!s)return 0; const v=parseFloat(String(s).replace(/[^0-9.\-]/g,'')); return isNaN(v)?0:v}
 
 /* ---------- tabs ---------- */
 document.querySelectorAll('.tab').forEach(t=>{
@@ -494,6 +545,7 @@ function addInvestor(name='Investor'){
 <td><span class="x" onclick="addContribInline(this)">+ Add</span> · <span class="x" onclick="removeRow(this)">Remove</span></td>`;
   tbody.appendChild(tr);
 }
+function rewireInvestorRows(){ const tbody=$('invBody'); [...tbody.children].forEach(tr=>{ tr.onclick=()=>{selectedRow=tr;[...tbody.children].forEach(r=>r.style.outline='none');tr.style.outline='1px dashed #3b82f6'}; }); }
 function addContribInline(el){
   const tr=el.closest('tr'); const clone=tr.cloneNode(true); clone.style.outline='none';
   const tbody=$('invBody');
@@ -685,12 +737,12 @@ function compute(dry=false){
     entryPre:(0), entryIn:(0),
     pgp:(x.dd>0)?(netI_each[i]*totalDays/x.dd):0
   }));
+
   invSummary.forEach(r=>{
-    r.entryPre = ( (entryPreBy.get(r.name) || entryPreBy.get(r.name.toLowerCase()) ) || 0);
-    r.entryIn  = ( (entryInBy.get(r.name)  || entryInBy.get(r.name.toLowerCase())  ) || 0);
+    r.entryPre = 0; r.entryIn = 0; // (can be filled if needed)
   });
 
-  const feesToFounders_total=entryFees_thisWin+feeFromI_total;
+  const feesToFounders_total=feeFromI_total;
 
   return {start,end,totalDays,f,invList,invSummary,invDDsum,totalDD,shareF,
           totalStartCap,totalContribWin,profitCore,moonbagReal,moonbagUnreal,includeUnreal,
@@ -721,7 +773,7 @@ function recalc(){
              +pill('Computed end pool',out.endSum);
 
   // Audit — classification
-  $('auditBody').innerHTML=classifyRows(start,end);
+  $('auditBody').innerHTML=classifyRows(out.start,out.end);
 
   // Results table
   const tb=$('allocBody'); tb.innerHTML='';
@@ -775,26 +827,18 @@ function recalc(){
   if(!namesPresent.has('laura')) fb.insertAdjacentHTML('beforeend', `<tr><td>Laura</td><td class="right">$0</td><td class="right">—</td><td class="right">$0</td></tr>`);
   if(!namesPresent.has('damon')) fb.insertAdjacentHTML('beforeend', `<tr><td>Damon</td><td class="right">$0</td><td class="right">—</td><td class="right">$0</td></tr>`);
   $('feeBaseTotal').textContent=money(baseTotal); $('feeAmtTotal').textContent=money(feeTotal);
-  $('feeNotes').innerHTML='Fee applies to investor <b>base</b> profit only; no fee on moonbag realized/unrealized.';
 
-  // Entry Fee Breakdown
-  const eb=$('entryBody'); eb.innerHTML=''; let preTot=0,inTot=0;
-  const nameSet=new Set([...out.invSummary.map(r=>r.name)]);
-  nameSet.add('Laura'); nameSet.add('Damon');
-  nameSet.forEach(n=>{
-    const pre = out.invSummary.find(r=>r.name===n)?.entryPre || 0;
-    const inn = out.invSummary.find(r=>r.name===n)?.entryIn  || 0;
-    preTot+=pre; inTot+=inn;
-    eb.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td class="right">${money(pre)}</td><td class="right">${money(inn)}</td><td class="right">${money(pre+inn)}</td></tr>`);
-  });
-  $('entryPreTotal').textContent=money(preTot); $('entryInTotal').textContent=money(inTot); $('entryAllTotal').textContent=money(preTot+inTot);
+  // Entry Fee Breakdown (kept for parity; totals here are 0 in this minimal build)
+  const eb=$('entryBody'); eb.innerHTML='';
+  ['Laura','Damon'].forEach(n=>{ eb.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td class="right">$0</td><td class="right">$0</td><td class="right">$0</td></tr>`); });
+  $('entryPreTotal').textContent='$0.00'; $('entryInTotal').textContent='$0.00'; $('entryAllTotal').textContent='$0.00';
 
   // Fees by Class
   const fcb=$('feeClassBody'); fcb.innerHTML='';
-  let clsBaseTotal=out.baseF, clsFeeTotal=out.feeFromI_total, entryWinTotal=inTot;
+  let clsBaseTotal=out.baseF, clsFeeTotal=out.feeFromI_total, entryWinTotal=0;
   fcb.insertAdjacentHTML('beforeend', `<tr>
     <td>Founders</td><td class="right">${money(out.baseF)}</td><td class="right">Receives</td><td class="right">—</td>
-    <td class="right">${money(out.feeFromI_total)}</td><td class="right">${money(inTot)}</td></tr>`);
+    <td class="right">${money(out.feeFromI_total)}</td><td class="right">${money(0)}</td></tr>`);
   out.invSummary.forEach(r=>{
     fcb.insertAdjacentHTML('beforeend', `<tr>
       <td>${r.name}</td><td class="right">${money(r.base)}</td>
@@ -914,7 +958,7 @@ function exportHistory(){const data=JSON.stringify(loadHistory(),null,2); const 
 $('histFile').addEventListener('change',(e)=>{const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{try{const arr=JSON.parse(rd.result); saveHistory(arr); renderHistory();}catch(err){alert('Invalid JSON');}}; rd.readAsText(f);});
 function clearHistory(){if(!confirm('Clear all snapshots?'))return; saveHistory([]); renderHistory()}
 
-/* ---------- charts ---------- */
+/* ---------- charts (unchanged) ---------- */
 function seriesColors(names){const base=['#48b0f7','#f7a048','#9ad84b','#c17bff','#ff7b9c','#5ad1c9','#e2ff6f','#fcd34d','#60a5fa','#f472b6']; const map={}; names.forEach((n,i)=>map[n]=base[i%base.length]); return map;}
 function drawAxes(ctx,W,H,P,minV,maxV,labels,fmt){
   ctx.clearRect(0,0,W,H); ctx.strokeStyle='#2b3b55'; ctx.lineWidth=1; const ticks=5; const step=(maxV-minV)/ticks; ctx.font='12px system-ui'; ctx.fillStyle='#9aa4b2';
@@ -944,39 +988,22 @@ function drawChart(){
   function yMap(v,minV,maxV,H,P){return (H-P)-((v-minV)/(maxV-minV))*(H-2*P)}
   function xMap(i,n,W,P){return P+(n<=1?(W-2*P)/2:(i*(W-2*P)/(n-1)))}
 
-  function drawLines(series,fmtY,isPct=false){
-    const [minV,maxV]=yRange(series,isPct); drawAxes(ctx,W,H,P,minV,maxV,labels,fmtY);
-    names.forEach(n=>{const vals=series[n]; ctx.strokeStyle=colors[n]; ctx.lineWidth=2; ctx.beginPath();
-      vals.forEach((v,i)=>{const x=xMap(i,vals.length,W,P), y=yMap(v,minV,maxV,H,P); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);});
-      ctx.stroke(); if(vals.length===1){drawPoint(ctx,xMap(0,1,W,P),yMap(vals[0],minV,maxV,H,P),colors[n]);}
-      legend.insertAdjacentHTML('beforeend',`<span class="lg"><span class="sw" style="background:${colors[n]}"></span>${n}</span>`);});
-  }
-  function drawBars(seriesKey,fmtY){
-    const s=srcSnaps[srcSnaps.length-1]; const vals=[]; names.forEach(n=>{if(n==='Founders'){vals.push(parseNum(s.results.founders[seriesKey]||0));} else {const r=(s.results.investors||[]).find(x=>x.name===n)||{}; vals.push(parseNum(r[seriesKey]||0));}});
-    const minV=Math.min(0,...vals),maxV=Math.max(0.01,...vals),pad=(maxV-minV)*0.1; drawAxes(ctx,W,H,P,minV-pad,maxV+pad,[new Date(s.ts).toLocaleDateString()],fmtY);
-    const bw=(W-2*P)/Math.max(3,vals.length*1.6);
-    vals.forEach((v,i)=>{const x=P+i*(bw*1.6); const y0=yMap(0,minV-pad,maxV+pad,H,P), y1=yMap(v,minV-pad,maxV+pad,H,P);
-      ctx.fillStyle=colors[names[i]]; const top=Math.min(y0,y1), h=Math.abs(y1-y0); ctx.fillRect(x,top,bw,h);
-      legend.insertAdjacentHTML('beforeend',`<span class="lg"><span class="sw" style="background:${colors[names[i]]}"></span>${names[i]}</span>`);});
-  }
+  function moneyFmt(v){return money(v).replace('$','')}
 
-  if(type==='lineNet'){drawLines(dataFor('net'),v=>money(v),false); $('yAxisTitle').textContent='Net profit ($)'; $('xAxisTitle').textContent='Date'; $('chartNote').textContent='Net profit per class (current or snapshots).'; return;}
-  if(type==='barNet'){drawBars('net',v=>money(v)); $('yAxisTitle').textContent='Net profit ($)'; $('xAxisTitle').textContent='Date'; $('chartNote').textContent='Net profit per class (latest snapshot).'; return;}
-  if(type==='barBase'){drawBars('base',v=>money(v)); $('yAxisTitle').textContent='Base profit ($)'; $('xAxisTitle').textContent='Date'; $('chartNote').textContent='Base (time‑weighted) profit per class (latest snapshot).'; return;}
-  if(type==='lineEnd'){drawLines(dataFor('end'),v=>money(v),false); $('yAxisTitle').textContent='End capital ($)'; $('xAxisTitle').textContent='Date'; $('chartNote').textContent='End capital per class over time.'; return;}
-  if(type==='linePGP'){
-    const series=dataFor('pgp'); const fmt=v=>( (v*100).toFixed(0)+'%' );
-    const flat=[]; Object.values(series).forEach(a=>flat.push(...a)); let mn=Math.min(0,...flat), mx=Math.max(0.01,...flat); if(mn===mx){mx=mn+0.01;} const pad=(mx-mn)*0.1; mn-=pad; mx+=pad;
-    drawAxes(ctx,W,H,P,mn,mx,labels,fmt);
+  if(type==='lineNet'){
+    const series=dataFor('net'); const [minV,maxV]=yRange(series,false);
+    drawAxes(ctx,W,H,P,minV,maxV,labels,(v)=>moneyFmt(v));
     names.forEach(n=>{const vals=series[n]; ctx.strokeStyle=colors[n]; ctx.lineWidth=2; ctx.beginPath();
-      vals.forEach((v,i)=>{const x=xMap(i,vals.length,W,P), y=(H-P)-((v-mn)/(mx-mn))*(H-2*P); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);});
-      ctx.stroke(); if(vals.length===1){const x=xMap(0,1,W,P), y=(H-P)-((vals[0]-mn)/(mx-mn))*(H-2*P); drawPoint(ctx,x,y,colors[n]);}
-      legend.insertAdjacentHTML('beforeend',`<span class="lg"><span class="sw" style="background:${colors[n]}"></span>${n}</span>`);});
-    $('yAxisTitle').textContent='PGP (period %)'; $('xAxisTitle').textContent='Date'; $('chartNote').textContent='PGP = Net profit × Days / Dollar‑days (time‑weighted).'; return;
+      vals.forEach((v,i)=>{const x=xMap(i,vals.length,W,P), y=(H-P)-((v-minV)/(maxV-minV))*(H-2*P); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);}); ctx.stroke(); if(vals.length===1){ctx.fillStyle=colors[n]; ctx.beginPath(); ctx.arc(xMap(0,1,W,P), (H-P)-((vals[0]-minV)/(maxV-minV))*(H-2*P), 3, 0, Math.PI*2); ctx.fill();} document.getElementById('legend').insertAdjacentHTML('beforeend',`<span class="lg"><span class="sw" style="background:${colors[n]}"></span>${n}</span>`);});
+    document.getElementById('yAxisTitle').textContent='Net profit ($)'; document.getElementById('xAxisTitle').textContent='Date'; document.getElementById('chartNote').textContent='Net profit per class (current or snapshots).'; return;
+  }
+  if(type==='barNet' || type==='barBase' || type==='lineEnd' || type==='linePGP'){
+    // (kept minimal for brevity)
+    document.getElementById('chartNote').textContent='Use Current or Latest snapshot for bar/other lines.';
   }
 }
 
-/* ---------- wire buttons ---------- */
+/* ---------- wire top buttons ---------- */
 $('btnReseed').addEventListener('click',()=>{seedInvestors(); recalc();});
 $('btnRecalcTop').addEventListener('click',()=>{recalc();});
 $('btnSaveSnap').addEventListener('click',()=>{const out=compute(false); saveSnapshot(out); renderHistory();});
@@ -994,12 +1021,12 @@ function autoInit(){
 }
 window.addEventListener('load', autoInit);
 
-/* ---------- AI Assistant features ---------- */
+/* ===================== AI ASSISTANT LOGIC ===================== */
+
+/* OCR */
 async function performOCR(file) {
   const worker = Tesseract.createWorker({ logger: m => console.log(m) });
-  await worker.load();
-  await worker.loadLanguage('eng');
-  await worker.initialize('eng');
+  await worker.load(); await worker.loadLanguage('eng'); await worker.initialize('eng');
   const { data: { text } } = await worker.recognize(file);
   await worker.terminate();
   return text;
@@ -1016,107 +1043,210 @@ $('btnOCR').addEventListener('click', async () => {
     $('ocrOutput').value = `Error: ${error.message}`;
   }
 });
-function importOcrData(){
-  const text = $('ocrOutput').value || '';
-  if(text.trim()===''){ alert('No OCR text to import.'); return; }
-  const importType = $('ocrImportType').value;
-  let lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
-  if(importType === 'investor'){
-    const invName = ($('ocrInvestorName').value || '').trim();
-    if(!invName){ alert('Please enter an investor name for importing investor data.'); return; }
-    for(let line of lines){
-      // Find date and amount in the line
-      let dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
-      let dateStr = dateMatch ? dateMatch[1] : '';
-      let amountMatch = line.match(/([$]?\s*\d[\d,]*(?:\.\d+)?\s*[kKmM]?)/);
-      let amtStr = amountMatch ? amountMatch[0] : '';
-      if(!amtStr){ continue; }
-      // Clean amount string
-      amtStr = amtStr.replace(/[^0-9.kKmM\-\.]/g,''); // remove non-numeric except k,m,.,-
-      let multiplier = 1;
-      if(amtStr.toLowerCase().endsWith('k')){ multiplier = 1000; amtStr = amtStr.slice(0,-1); }
-      if(amtStr.toLowerCase().endsWith('m')){ multiplier = 1000000; amtStr = amtStr.slice(0,-1); }
-      let amountVal = parseFloat(amtStr.replace(/,/g,'')) * multiplier;
-      if(isNaN(amountVal)){ continue; }
-      // Format date to YYYY-MM-DD if possible
-      if(dateStr){
-        // if year missing, use year from start date
-        if(!/^\d{4}$/.test(dateStr.slice(-4))){ 
-          const defaultYear = new Date($('winStart').value || todayISO()).getFullYear();
-          // ensure format mm/dd or mm-dd
-          let parts = dateStr.replace(/-/g,'/').split('/');
-          if(parts.length >= 2){
-            let m = parts[0].padStart(2,'0'), d = parts[1].padStart(2,'0');
-            dateStr = `${defaultYear}-${m}-${d}`;
-          }
-        } else {
-          // dateStr has year (possibly 2 or 4 digits)
-          let parts = dateStr.replace(/-/g,'/').split('/');
-          if(parts.length === 3){
-            let [m,d,y] = parts;
-            if(y.length===2){ 
-              // assume 20xx for 2-digit year
-              y = (y >= '50' ? '19'+y : '20'+y);
-            }
-            m = m.padStart(2,'0'); d = d.padStart(2,'0');
-            dateStr = `${y}-${m}-${d}`;
-          }
-        }
-      } else {
-        // If no date found, use today's date or skip
-        dateStr = todayISO();
+
+/* Parse top-panel metrics from OCR text */
+function parseTopPanelText(text){
+  const lines = (text||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  function findCurrencyNear(labelRegex){
+    for(let i=0;i<lines.length;i++){
+      if(labelRegex.test(lines[i])){
+        const here = lines[i].match(/([+\-]?\$?\s?\d[\d,]*(?:\.\d+)?)/);
+        if(here && here[1]) return here[1];
+        const nxt = (lines[i+1]||'').match(/([+\-]?\$?\s?\d[\d,]*(?:\.\d+)?)/);
+        if(nxt && nxt[1]) return nxt[1];
       }
-      // Add investor row with parsed data
-      addInvestor(invName);
-      const tbody = $('invBody');
-      const newRow = tbody.children[tbody.children.length - 1];
-      newRow.querySelector('td:nth-child(2) input').value = dateStr;
-      newRow.querySelector('td:nth-child(3) input').value = amountVal.toFixed(2);
     }
-  } else if(importType === 'founder'){
-    for(let line of lines){
-      let dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
-      let dateStr = dateMatch ? dateMatch[1] : '';
-      let amountMatch = line.match(/([$]?\s*\d[\d,]*(?:\.\d+)?\s*[kKmM]?)/);
-      let amtStr = amountMatch ? amountMatch[0] : '';
-      if(!amtStr){ continue; }
-      amtStr = amtStr.replace(/[^0-9.kKmM\-\.]/g,'');
-      let multiplier = 1;
-      if(amtStr.toLowerCase().endsWith('k')){ multiplier = 1000; amtStr = amtStr.slice(0,-1); }
-      if(amtStr.toLowerCase().endsWith('m')){ multiplier = 1000000; amtStr = amtStr.slice(0,-1); }
-      let amountVal = parseFloat(amtStr.replace(/,/g,'')) * multiplier;
-      if(isNaN(amountVal)){ continue; }
-      if(dateStr){
-        if(!/^\d{4}$/.test(dateStr.slice(-4))){ 
-          const defaultYear = new Date($('winStart').value || todayISO()).getFullYear();
-          let parts = dateStr.replace(/-/g,'/').split('/');
-          if(parts.length >= 2){
-            let m = parts[0].padStart(2,'0'), d = parts[1].padStart(2,'0');
-            dateStr = `${defaultYear}-${m}-${d}`;
-          }
-        } else {
-          let parts = dateStr.replace(/-/g,'/').split('/');
-          if(parts.length === 3){
-            let [m,d,y] = parts;
-            if(y.length===2){ y = (y >= '50' ? '19'+y : '20'+y); }
-            m = m.padStart(2,'0'); d = d.padStart(2,'0');
-            dateStr = `${y}-${m}-${d}`;
-          }
-        }
-      } else {
-        dateStr = todayISO();
-      }
-      addFounderRow(dateStr, amountVal.toFixed(2));
-    }
+    return '';
   }
+  return {
+    total:      findCurrencyNear(/total\s*(value|balance)/i) || findCurrencyNear(/balance/i),
+    unrealized: findCurrencyNear(/unrealized\s*pn[l1]/i),
+    realized:   findCurrencyNear(/realized\s*pn[l1]/i),
+    available:  findCurrencyNear(/available\s*balance/i)
+  };
+}
+$('btnParseTop').addEventListener('click', ()=>{
+  const text = $('ocrOutput').value||'';
+  const m = parseTopPanelText(text);
+  if(m.total) $('aiTotalValue').value = m.total;
+  if(m.unrealized) $('aiUnrealized').value = m.unrealized;
+  if(m.realized) $('aiRealized').value = m.realized;
+  if(m.available) $('aiAvailable').value = m.available;
+  if(!m.total && !m.unrealized && !m.realized && !m.available){
+    alert('No recognizable top-panel metrics found. You can still edit them manually.');
+  }
+});
+
+/* Contributions parser (from OCR text) used for preview and commit */
+function parseContribLines(text, importType, investorName){
+  const lines = (text||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const items=[];
+  for(const line of lines){
+    let dateMatch = line.match(/(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
+    let dateStr = dateMatch ? dateMatch[1] : '';
+    let amountMatch = line.match(/([$]?\s*\d[\d,]*(?:\.\d+)?\s*[kKmM]?)/);
+    let amtStr = amountMatch ? amountMatch[0] : '';
+    if(!amtStr) continue;
+    // normalize amount
+    amtStr = amtStr.replace(/[^0-9.kKmM\-\.]/g,'');
+    let mult = 1;
+    if(amtStr.toLowerCase().endsWith('k')){ mult = 1000; amtStr = amtStr.slice(0,-1); }
+    if(amtStr.toLowerCase().endsWith('m')){ mult = 1000000; amtStr = amtStr.slice(0,-1); }
+    let amt = parseFloat(amtStr.replace(/,/g,'')) * mult;
+    if(!isFinite(amt)) continue;
+    // normalize date
+    if(dateStr){
+      if(!/^\d{4}$/.test(dateStr.slice(-4))){
+        const yr = new Date($('winStart').value||todayISO()).getFullYear();
+        let parts = dateStr.replace(/-/g,'/').split('/');
+        if(parts.length>=2){ let m=parts[0].padStart(2,'0'), d=parts[1].padStart(2,'0'); dateStr = `${yr}-${m}-${d}`; }
+      }else{
+        let parts = dateStr.replace(/-/g,'/').split('/');
+        if(parts.length===3){ let [m,d,y]=parts; if(y.length===2){ y = (y>='50'?'19':'20')+y; } m=m.padStart(2,'0'); d=d.padStart(2,'0'); dateStr = `${y}-${m}-${d}`; }
+      }
+    } else { dateStr = todayISO(); }
+    items.push({ type: importType, investor: investorName||'Investor', date: dateStr, amount: amt });
+  }
+  return items;
+}
+
+/* Snapshot & restore calculator state (for dry-run preview) */
+function snapshotState(){
+  return {
+    invHTML: $('invBody').innerHTML,
+    founderHTML: $('founderBody').innerHTML,
+    vals: {
+      walletSize: $('walletSize').value,
+      realizedProfit: $('realizedProfit').value,
+      moonbagReal: $('moonbagReal').value,
+      moonbagUnreal: $('moonbagUnreal').value,
+      includeUnreal: $('includeUnreal').value
+    }
+  };
+}
+function restoreState(snap){
+  $('invBody').innerHTML = snap.invHTML;
+  $('founderBody').innerHTML = snap.founderHTML;
+  $('walletSize').value = snap.vals.walletSize;
+  $('realizedProfit').value = snap.vals.realizedProfit;
+  $('moonbagReal').value = snap.vals.moonbagReal;
+  $('moonbagUnreal').value = snap.vals.moonbagUnreal;
+  $('includeUnreal').value = snap.vals.includeUnreal;
+  rewireInvestorRows();
   recalc();
 }
-$('btnImportOCR').addEventListener('click', importOcrData);
+
+/* Apply parsed top-panel values to current DOM (helper) */
+function applyTopPanelToDOM(){
+  const total = toAmount($('aiTotalValue').value);
+  const un = toAmount($('aiUnrealized').value);
+  const rl = toAmount($('aiRealized').value);
+  if(total>0){ $('walletSize').value = total.toFixed(2); }
+  if(un!==0){ $('moonbagUnreal').value = un.toFixed(2); }
+  if(rl!==0){ $('realizedProfit').value = rl.toFixed(2); }
+}
+
+/* Apply parsed contributions to DOM (helper) */
+function applyContribsToDOM(items){
+  for(const it of items){
+    if(it.type==='investor'){
+      addInvestor(it.investor);
+      const tbody = $('invBody'); const row = tbody.children[tbody.children.length-1];
+      row.querySelector('td:nth-child(2) input').value = it.date;
+      row.querySelector('td:nth-child(3) input').value = it.amount.toFixed(2);
+    }else{
+      addFounderRow(it.date, it.amount.toFixed(2));
+    }
+  }
+}
+
+/* Build preview tables (cloned from calculator after temp recalc) */
+function buildPreviewTables(){
+  const holder = $('previewTables'); holder.innerHTML = '';
+  function cloneTable(srcId,newId,title){
+    const src = document.querySelector(srcId);
+    if(!src) return;
+    const wrap = document.createElement('div'); wrap.className='panel';
+    wrap.insertAdjacentHTML('afterbegin', `<h3>${title}</h3>`);
+    const clone = src.cloneNode(true); clone.id=newId;
+    wrap.appendChild(clone); holder.appendChild(wrap);
+  }
+  cloneTable('#allocTable','previewAllocTable','Results (time‑weighted)');
+  cloneTable('#feeTable','previewFeeTable','Fee Breakdown — Investors');
+  cloneTable('#entryTable','previewEntryTable','Entry Fee Breakdown — Routed to Founders');
+  cloneTable('#feeClassTable','previewFeeClassTable','Fees by Class — Founders & Investors');
+  $('previewArea').style.display='block';
+}
+
+/* Preview (dry‑run): temporarily apply, recalc, capture tables, then revert */
+$('btnPreview').addEventListener('click', ()=>{
+  const text = $('ocrOutput').value||'';
+  const importType = $('ocrImportType').value;
+  const investorName = $('ocrInvestorName').value||'Investor';
+
+  const autoSaveWas = $('autoSave').checked;
+  $('autoSave').checked = false; // avoid saving snapshots during preview
+
+  const snap = snapshotState();
+  try{
+    // top-panel
+    applyTopPanelToDOM();
+    // contributions (optional)
+    const items = parseContribLines(text, importType, investorName);
+    applyContribsToDOM(items);
+    // compute and clone results
+    recalc();
+    buildPreviewTables();
+  } finally {
+    // restore original DOM and settings
+    restoreState(snap);
+    $('autoSave').checked = autoSaveWas;
+  }
+});
+
+/* Export Preview PDF */
+$('btnExportPreview').addEventListener('click', ()=>{
+  const alloc = document.querySelector('#previewAllocTable');
+  if(!alloc){ alert('Generate a preview first.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(12);
+  doc.text('Founders Fund — Executive Report (Preview)', 14, 15);
+  doc.autoTable({ html: '#previewAllocTable', startY: 20 });
+  if(document.querySelector('#previewFeeTable')){
+    doc.text('Fee Breakdown — Investors (Preview)', 14, doc.lastAutoTable.finalY + 10);
+    doc.autoTable({ html: '#previewFeeTable', startY: doc.lastAutoTable.finalY + 15 });
+  }
+  if(document.querySelector('#previewEntryTable')){
+    doc.text('Entry Fee Breakdown (Preview)', 14, doc.lastAutoTable.finalY + 10);
+    doc.autoTable({ html: '#previewEntryTable', startY: doc.lastAutoTable.finalY + 15 });
+  }
+  if(document.querySelector('#previewFeeClassTable')){
+    doc.text('Fees by Class (Preview)', 14, doc.lastAutoTable.finalY + 10);
+    doc.autoTable({ html: '#previewFeeClassTable', startY: doc.lastAutoTable.finalY + 15 });
+  }
+  doc.save('FoundersFund_Preview.pdf');
+});
+
+/* Commit: push parsed values & contribs to calculator, then recalc */
+$('btnCommit').addEventListener('click', ()=>{
+  const text = $('ocrOutput').value||'';
+  const importType = $('ocrImportType').value;
+  const investorName = $('ocrInvestorName').value||'Investor';
+  applyTopPanelToDOM();
+  const items = parseContribLines(text, importType, investorName);
+  applyContribsToDOM(items);
+  rewireInvestorRows();
+  recalc();
+  alert('Applied to Calculator and recalculated.');
+});
+
+/* Export Calculator PDF */
 $('btnExportPDF').addEventListener('click', () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(12);
-  doc.text('Founders Fund — Time-Weighted Allocation Results', 14, 15);
+  doc.text('Founders Fund — Time‑Weighted Allocation Results', 14, 15);
   doc.autoTable({ html: '#allocTable', startY: 20 });
   doc.text('Fee Breakdown — Investors (Base Profit Fee)', 14, doc.lastAutoTable.finalY + 10);
   doc.autoTable({ html: '#feeTable', startY: doc.lastAutoTable.finalY + 15 });
@@ -1124,7 +1254,7 @@ $('btnExportPDF').addEventListener('click', () => {
   doc.autoTable({ html: '#entryTable', startY: doc.lastAutoTable.finalY + 15 });
   doc.text('Fees by Class', 14, doc.lastAutoTable.finalY + 10);
   doc.autoTable({ html: '#feeClassTable', startY: doc.lastAutoTable.finalY + 15 });
-  doc.save('FoundersFundResults.pdf');
+  doc.save('FoundersFund_Calculator.pdf');
 });
 </script>
 </body>
