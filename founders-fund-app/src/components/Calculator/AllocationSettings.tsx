@@ -1,6 +1,7 @@
 'use client';
 
 import { useCalculator } from '@/context/CalculatorContext';
+import AdvancedAllocationSettings from './AdvancedAllocationSettings';
 
 export default function AllocationSettings() {
   const {
@@ -66,6 +67,7 @@ export default function AllocationSettings() {
           />
         </div>
       </div>
+      <AdvancedAllocationSettings />
     </div>
   );
 }
