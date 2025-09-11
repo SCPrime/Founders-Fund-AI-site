@@ -703,11 +703,22 @@ function compute(dry=false){
     const feeSel=r.querySelector('td:nth-child(4) select').value;
     const feeMode=(feeSel==='default')?feeReduceGlobal:feeSel;
     const aNet=(feeMode==='yes')?aGross*(1-entryFee):aGross;
+    const entryFeeAmt=(feeMode==='yes')?aGross*entryFee:0;
 
-    if(!invMap.has(name))invMap.set(name,{name,startCap:0,contribInWin:0,dd:0,preStart:0});
+    if(!invMap.has(name))invMap.set(name,{name,startCap:0,contribInWin:0,dd:0,preStart:0,entryPre:0,entryIn:0});
     const rec=invMap.get(name);
 
-    if(d<=start){ rec.startCap+=aNet; rec.preStart+=aNet; }
+    if(d<=start){
+      rec.startCap+=aNet; rec.preStart+=aNet; rec.entryPre+=entryFeeAmt;
+      if(entryFeeAmt>0){ f.startCap+=entryFeeAmt; f.dd+=entryFeeAmt*totalDays; }
+    }else if(d<=end){
+      rec.entryIn+=entryFeeAmt;
+      if(entryFeeAmt>0){
+        f.contribInWin=(f.contribInWin||0)+entryFeeAmt;
+        f.dd+=entryFeeAmt*daysBetweenInclusive(d,end);
+      }
+    }
+
     const inWinStart=d<start?start:d;
     if(inWinStart<=end){
       const days=daysBetweenInclusive(inWinStart,end);
@@ -766,8 +777,11 @@ function compute(dry=false){
     name:x.name, startCap:x.startCap, contribInWin:x.contribInWin, dd:x.dd,
     base:baseI_each[i], feeMgmt:feeFromI_each[i], moon:moonI_each[i],
     net:netI_each[i], end:endI_each[i],
-    pgp:(x.dd>0)?(netI_each[i]*totalDays/x.dd):0
+    pgp:(x.dd>0)?(netI_each[i]*totalDays/x.dd):0,
+    entryPre:x.entryPre, entryIn:x.entryIn
   }));
+  const entryPreTotal=invSummary.reduce((s,r)=>s+r.entryPre,0);
+  const entryInTotal=invSummary.reduce((s,r)=>s+r.entryIn,0);
 
   const feesToFounders_total=feeFromI_total;
 
@@ -775,7 +789,8 @@ function compute(dry=false){
           totalStartCap,totalContribWin,profitCore,moonbagReal,moonbagUnreal,includeUnreal,
           moonF,baseF,baseI_each,feeFromI_each,feeFromI_total,moonI_total,moonI_each,
           netF,netI_each,endF,endI_each,endSum,domState,domMsg,reqF,maxInvEnd,drawTotal,
-          feesToFounders_total,pgpF,walletSize,minWallet,mgmtFee,applyDraws};
+          feesToFounders_total,pgpF,walletSize,minWallet,mgmtFee,applyDraws,
+          entryPreTotal,entryInTotal};
 }
 function recalc(){
   const start=$('winStart').value; const end=$('winEnd').value||todayISO();
@@ -842,10 +857,10 @@ function recalc(){
   $('feeNotes').innerHTML='Fee applies to investor <b>base</b> profit only; no fee on moonbag realized/unrealized.';
 
   const eb=$('entryBody'); eb.innerHTML=''; let preTot=0,inTot=0;
-  const nameSet=new Set([...out.invSummary.map(r=>r.name)]);
-  nameSet.forEach(n=>{
-    const pre = 0, inn = 0;
-    eb.insertAdjacentHTML('beforeend', `<tr><td>${n}</td><td class="right">${money(pre)}</td><td class="right">${money(inn)}</td><td class="right">${money(pre+inn)}</td></tr>`);
+  out.invSummary.forEach(r=>{
+    const pre=r.entryPre||0; const inn=r.entryIn||0;
+    preTot+=pre; inTot+=inn;
+    eb.insertAdjacentHTML('beforeend', `<tr><td>${r.name}</td><td class="right">${money(pre)}</td><td class="right">${money(inn)}</td><td class="right">${money(pre+inn)}</td></tr>`);
   });
   $('entryPreTotal').textContent=money(preTot); $('entryInTotal').textContent=money(inTot); $('entryAllTotal').textContent=money(preTot+inTot);
 
