@@ -8,7 +8,6 @@ import FoundersTable from '@/components/Calculator/FoundersTable';
 import InvestorsTable from '@/components/Calculator/InvestorsTable';
 import ResultsTables from '@/components/Calculator/ResultsTables';
 import PreviewArea from '@/components/Preview/PreviewArea';
-import ScreenshotUploader from '@/components/OCR/ScreenshotUploader';
 import AIAssistant from '@/components/AI/AIAssistant';
 import History from '@/components/History';
 import Charts from '@/components/Charts';
@@ -31,7 +30,6 @@ export default function Home() {
             <InvestorsTable />
             <ResultsTables />
             <PreviewArea />
-            <ScreenshotUploader />
           </>
         )}
         {tab === 'history' && <History />}
