@@ -58,11 +58,13 @@
     <span id="seedMsg" class="small">Seeding defaults…</span>
     <button class="btn" id="btnReseed">Force re‑seed</button>
     <button class="btn" id="btnRecalcTop">Recalculate</button>
-    <button class="btn" id="btnSelfTest">Self‑Test</button>
-    <label class="small"><input type="checkbox" id="autoSave" checked> Auto‑save on Recalculate</label>
-    <button class="btn" id="btnSaveSnap">Save snapshot now</button>
-    <span class="small" id="calcTime"></span>
-  </div>
+      <button class="btn" id="btnSelfTest">Self‑Test</button>
+      <label class="small"><input type="checkbox" id="autoSave" checked> Auto‑save on Recalculate</label>
+      <button class="btn" id="btnSaveSnap">Save snapshot now</button>
+      <input type="file" id="screenshotInput" accept="image/*" style="display:none"/>
+      <button class="btn" id="btnUploadScreenshot">Upload Screenshot</button>
+      <span class="small" id="calcTime"></span>
+    </div>
 
   <h1>Founders Fund</h1>
 
@@ -1489,9 +1491,31 @@ function renderDetTable(){
   tb.querySelectorAll('select').forEach(sel=>sel.addEventListener('change',e=>{const id=e.target.dataset.id; const d=detections.find(x=>String(x.id)===String(id)); if(d){d.field=e.target.value;}}));
   tb.querySelectorAll('[contenteditable]').forEach(cell=>cell.addEventListener('input',e=>{const id=e.target.dataset.id, k=e.target.dataset.k; const d=detections.find(x=>String(x.id)===String(id)); if(d){d[k]=e.target.textContent.trim();}}));
 }
-const FIELD_LABEL={total:'Total Value', unrealized:'Unrealized PNL', realized:'Realized PNL', available:'Available Balance'};
-const FIELD_OPTS=['total','unrealized','realized','available'];
-function canonicalField(s){s=(s||'').toLowerCase(); if(s.startsWith('tot')) return 'total'; if(s.startsWith('unr')) return 'unrealized'; if(s.startsWith('rea')) return 'realized'; if(s.startsWith('ava')||s.includes('bal')) return 'available'; return 'total';}
+  const FIELD_LABEL={total:'Total Value', unrealized:'Unrealized PNL', realized:'Realized PNL', available:'Available Balance'};
+  const FIELD_OPTS=['total','unrealized','realized','available'];
+  function canonicalField(s){s=(s||'').toLowerCase(); if(s.startsWith('tot')) return 'total'; if(s.startsWith('unr')) return 'unrealized'; if(s.startsWith('rea')) return 'realized'; if(s.startsWith('ava')||s.includes('bal')) return 'available'; return 'total';}
+
+  /* Screenshot upload & parsing */
+  const screenshotInput=$('screenshotInput');
+  $('btnUploadScreenshot').addEventListener('click',()=>screenshotInput.click());
+  screenshotInput.addEventListener('change',()=>{
+    const file=screenshotInput.files[0];
+    if(!file) return;
+    const reader=new FileReader();
+    reader.onload=async()=>{
+      const base64=reader.result.split(',')[1];
+      try{
+        const resp=await fetch('/api/parseScreenshot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:base64})});
+        const data=await resp.json();
+        window.portfolio=Object.assign(window.portfolio||{},data);
+        if(data.total_value) $('aiTotalValue').value=data.total_value;
+        if(data.unrealized) $('aiUnrealized').value=data.unrealized;
+        if(data.realized) $('aiRealized').value=data.realized;
+        if(data.available) $('aiAvailable').value=data.available;
+      }catch(err){console.error(err);}
+    };
+    reader.readAsDataURL(file);
+  });
 </script>
 </body>
 </html>
