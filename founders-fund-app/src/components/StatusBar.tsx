@@ -8,6 +8,8 @@ export default function StatusBar() {
 
   const [autoSave, setAutoSave] = useState(true);
   const [calcTime, setCalcTime] = useState('');
+  const [analysis, setAnalysis] = useState<unknown>(null);
+  const [message, setMessage] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleReseed = () => {
@@ -33,10 +35,45 @@ export default function StatusBar() {
     fileRef.current?.click();
   };
 
-  const handleScreenshot = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      console.log('Uploaded screenshot', file.name);
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      setAnalysis(data);
+      setMessage('');
+    } catch (err) {
+      console.error('Analyze error', err);
+      setMessage('Failed to analyze image');
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const handleConfirmSave = async () => {
+    if (!analysis) return;
+    try {
+      const res = await fetch('/api/save-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysis }),
+      });
+      if (res.ok) {
+        setMessage('Analysis saved successfully');
+      } else {
+        setMessage('Failed to save analysis');
+      }
+    } catch (err) {
+      console.error('Save analysis error', err);
+      setMessage('Failed to save analysis');
+    } finally {
+      setAnalysis(null);
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -78,6 +115,15 @@ export default function StatusBar() {
         Upload Screenshot
       </button>
       <span className="small">{calcTime}</span>
+      {analysis && (
+        <div className="analysis-preview">
+          <pre>{JSON.stringify(analysis, null, 2)}</pre>
+          <button className="btn" onClick={handleConfirmSave}>
+            Save Analysis
+          </button>
+        </div>
+      )}
+      {message && <span className="small">{message}</span>}
     </div>
   );
 }
