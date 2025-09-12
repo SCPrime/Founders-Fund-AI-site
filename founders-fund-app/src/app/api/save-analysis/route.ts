@@ -36,3 +36,23 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function GET() {
+  try {
+    const analyses = await prisma.analysis.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        createdAt: true,
+        analysis: true,
+      },
+    });
+    return NextResponse.json(analyses, { status: 200 });
+  } catch (err) {
+    console.error("Fetch Analyses API error", err);
+    return NextResponse.json(
+      { error: "Failed to fetch analyses" },
+      { status: 500 }
+    );
+  }
+}
+

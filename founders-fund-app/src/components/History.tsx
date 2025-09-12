@@ -1,9 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+interface AnalysisEntry {
+  id: string;
+  createdAt: string;
+  analysis: unknown;
+}
 
 export default function History() {
-  const [snapshots] = useState<string[]>([]);
+  const [snapshots, setSnapshots] = useState<AnalysisEntry[]>([]);
+
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/save-analysis');
+        if (!res.ok) throw new Error('Failed to load history');
+        const data: AnalysisEntry[] = await res.json();
+        setSnapshots(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadHistory();
+  }, []);
 
   const handleExport = () => {
     console.log('Export history');
@@ -24,13 +44,18 @@ export default function History() {
     <div className="panel">
       <h2>Saved Snapshots</h2>
       <div className="small">
-        Snapshots are saved to your browser’s local storage. They include inputs and computed results (for charts).
+        Saved analyses are fetched from the server and include inputs and results.
       </div>
       <div className="small" style={{ marginTop: '10px' }}>
         {snapshots.length === 0 ? (
           <p className="muted">No snapshots yet</p>
         ) : (
-          snapshots.map((s, i) => <div key={i}>{s}</div>)
+          snapshots.map((s) => (
+            <div key={s.id} style={{ marginBottom: '10px' }}>
+              <div>{new Date(s.createdAt).toLocaleString()}</div>
+              <pre>{JSON.stringify(s.analysis)}</pre>
+            </div>
+          ))
         )}
       </div>
       <div className="hr"></div>
