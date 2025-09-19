@@ -15,7 +15,11 @@
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
       "Bash(git commit:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(del package-lock.json)",
+      "Bash(gh repo view:*)",
+      "WebFetch(domain:founders-fund-ai-site.vercel.app)"
     ],
     "deny": [],
     "ask": []

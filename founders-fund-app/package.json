@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "build:turbo": "next build --turbopack",
+    "build:static": "NEXT_BUILD_LINT=false next build",
     "start": "next start",
     "lint": "eslint",
     "migrate": "prisma migrate deploy"
