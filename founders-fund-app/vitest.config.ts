@@ -8,4 +8,9 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.ts'],
   },
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
 });
