@@ -1,7 +1,8 @@
 'use client';
 
 import { useCalculator } from '@/context/CalculatorContext';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
+import Image from 'next/image';
 
 export default function StatusBar() {
   useCalculator();
@@ -35,7 +36,7 @@ export default function StatusBar() {
     fileRef.current?.click();
   };
 
-  const handleScreenshot = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleScreenshot = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       console.log('Uploaded screenshot', file.name);
@@ -88,7 +89,7 @@ export default function StatusBar() {
         <input
           type="checkbox"
           checked={autoSave}
-          onChange={e => setAutoSave(e.target.checked)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setAutoSave(e.target.checked)}
         />{' '}
         Auto-save on Recalculate
       </label>
@@ -123,7 +124,7 @@ export default function StatusBar() {
         </div>
       )}
       {processedImage && (
-        <img id="ocrCanvas" src={processedImage} alt="processed" style={{ width: 160, marginLeft: 12, borderRadius: 6 }} />
+        <Image id="ocrCanvas" src={processedImage} alt="processed" width={160} height={120} style={{ marginLeft: 12, borderRadius: 6 }} />
       )}
       <span className="small">{calcTime}</span>
     </div>

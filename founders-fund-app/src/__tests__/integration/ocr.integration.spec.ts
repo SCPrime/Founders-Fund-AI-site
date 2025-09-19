@@ -1,6 +1,4 @@
-/// <reference types="vitest" />
 import { describe, it, expect } from 'vitest';
-import fetch from 'node-fetch';
 
 // Integration test scaffold for OCR worker.
 // To run locally:

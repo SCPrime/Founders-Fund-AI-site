@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, type ChangeEvent } from 'react';
 import { INVESTOR_PRESET } from '@/data/presets';
 import { useCalculator } from '@/context/CalculatorContext';
 
@@ -12,11 +12,14 @@ interface InvestorRow {
   cls?: string;
 }
 
-export default function InvestorsTable(): JSX.Element {
-  // Seed baseline data from presets
-  const [rows, setRows] = useState<InvestorRow[]>(
-    INVESTOR_PRESET.map(r => ({ name: r.name, date: r.date, amount: String(r.amount), rule: r.rule || 'net', cls: r.cls || 'investor' })),
-  );
+export default function InvestorsTable() {
+  // Seed baseline data from presets (including founders)
+  const [rows, setRows] = useState<InvestorRow[]>([
+    // Add founders first
+    { name: 'Founders', date: '2025-07-10', amount: '5000', rule: 'net', cls: 'founder' },
+    // Then add investors
+    ...INVESTOR_PRESET.map(r => ({ name: r.name, date: r.date, amount: String(r.amount), rule: r.rule || 'net', cls: r.cls || 'investor' }))
+  ]);
   const calc = useCalculator();
 
   const addRow = () =>
@@ -26,15 +29,44 @@ export default function InvestorsTable(): JSX.Element {
   };
 
   const loadPresets = () => {
-    setRows(INVESTOR_PRESET.map(r => ({ name: r.name, date: r.date, amount: String(r.amount), rule: r.rule || 'net', cls: r.cls || 'investor' })));
-    // Update realizedProfit in context as example (sum of investor amounts)
-    const sum = INVESTOR_PRESET.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    calc.setRealizedProfit(sum);
+    const combinedData = [
+      { name: 'Founders', date: '2025-07-10', amount: '5000', rule: 'net', cls: 'founder' },
+      ...INVESTOR_PRESET.map(r => ({ name: r.name, date: r.date, amount: String(r.amount), rule: r.rule || 'net', cls: r.cls || 'investor' }))
+    ];
+    setRows(combinedData);
+    // Update realizedProfit in context as example (sum of investor amounts only)
+    const investorSum = INVESTOR_PRESET.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    calc.setRealizedProfit(investorSum);
   };
 
   const clearRows = () => {
     setRows([]);
   };
+
+  const populateFromAI = useCallback(async (aiData: Array<{ name?: string; date: string; amount: number; rule?: string; cls?: string }>) => {
+    const formattedRows = aiData.map((item, index) => ({
+      name: item.name || `Investor ${index + 1}`,
+      date: item.date,
+      amount: String(item.amount),
+      rule: item.rule || 'net',
+      cls: item.cls || 'investor'
+    }));
+    setRows(formattedRows);
+
+    // Update realized profit with total
+    const sum = aiData.reduce((s, item) => s + (Number(item.amount) || 0), 0);
+    calc.setRealizedProfit(sum);
+  }, [calc]);
+
+  // Expose functions globally for AI integration and results calculation
+  React.useEffect(() => {
+    (window as unknown as { populateInvestorsFromAI?: typeof populateFromAI }).populateInvestorsFromAI = populateFromAI;
+    (window as unknown as { getInvestorData?: () => InvestorRow[] }).getInvestorData = () => rows;
+    return () => {
+      delete (window as unknown as { populateInvestorsFromAI?: typeof populateFromAI }).populateInvestorsFromAI;
+      delete (window as unknown as { getInvestorData?: () => InvestorRow[] }).getInvestorData;
+    };
+  }, [populateFromAI, rows]);
 
   const updateRow = (
     index: number,
@@ -48,7 +80,7 @@ export default function InvestorsTable(): JSX.Element {
 
   return (
     <div className="panel">
-      <h2>Investors & Contributions</h2>
+      <h2>Founders & Investors</h2>
       <div className="tablewrap">
         <table>
           <thead>
@@ -68,11 +100,11 @@ export default function InvestorsTable(): JSX.Element {
                   <input
                     type="text"
                     value={row.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'name', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'name', e.target.value)}
                   />
                 </td>
                 <td>
-                  <select value={row.cls || 'investor'} onChange={e => updateRow(idx, 'cls', e.target.value)}>
+                  <select value={row.cls || 'investor'} onChange={(e: ChangeEvent<HTMLSelectElement>) => updateRow(idx, 'cls', e.target.value)}>
                     <option value="founder">founder</option>
                     <option value="investor">investor</option>
                   </select>
@@ -81,7 +113,7 @@ export default function InvestorsTable(): JSX.Element {
                   <input
                     type="date"
                     value={row.date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
                   />
                 </td>
                 <td>
@@ -89,13 +121,13 @@ export default function InvestorsTable(): JSX.Element {
                     type="number"
                     step="0.01"
                     value={row.amount}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
                   />
                 </td>
                 <td>
                   <select
                     value={row.rule}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateRow(idx, 'rule', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => updateRow(idx, 'rule', e.target.value)}
                   >
                     <option value="net">Net of fee</option>
                     <option value="gross">Fee outside</option>
@@ -120,6 +152,23 @@ export default function InvestorsTable(): JSX.Element {
                 </button>
                 <button className="btn" onClick={clearRows} style={{ marginLeft: 8 }}>
                   Clear
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    const completeData = [
+                      { name: 'Founders', date: '2025-07-10', amount: 5000, rule: 'net', cls: 'founder' },
+                      { name: 'Laura', date: '2025-07-22', amount: 5000, rule: 'net', cls: 'investor' },
+                      { name: 'Laura', date: '2025-07-31', amount: 5000, rule: 'net', cls: 'investor' },
+                      { name: 'Laura', date: '2025-08-25', amount: 2500, rule: 'net', cls: 'investor' },
+                      { name: 'Laura', date: '2025-09-06', amount: 2500, rule: 'net', cls: 'investor' },
+                      { name: 'Damon', date: '2025-08-02', amount: 5000, rule: 'net', cls: 'investor' }
+                    ];
+                    populateFromAI(completeData);
+                  }}
+                  style={{ marginLeft: 8, backgroundColor: '#4CAF50', color: 'white' }}
+                >
+                  🤖 AI Populate (Complete Data)
                 </button>
               </td>
             </tr>

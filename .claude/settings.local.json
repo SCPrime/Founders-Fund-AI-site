@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run build:*)",
+      "Bash(npm run:*)",
+      "Bash(npx next:*)",
+      "WebFetch(domain:scprime.github.io)",
+      "Bash(rd:*)",
+      "Bash(npm install:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

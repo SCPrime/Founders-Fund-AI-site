@@ -1,5 +1,5 @@
-/// <reference types="vitest" />
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { type NextRequest } from 'next/server';
 
 // A lightweight mock for a File-like object accepted by formData.get('file')
 class MockFile {
@@ -13,9 +13,7 @@ class MockFile {
 }
 
 describe('OCR route', () => {
-  let originalEnv: NodeJS.ProcessEnv;
   beforeEach(() => {
-    originalEnv = { ...process.env };
     vi.restoreAllMocks();
   });
 
@@ -30,7 +28,7 @@ describe('OCR route', () => {
         };
       },
     }));
-    vi.mock('sharp', () => ({ default: (buf: any) => ({
+    vi.mock('sharp', () => ({ default: (buf: Uint8Array) => ({
       grayscale: () => ({
         normalize: () => ({
           sharpen: () => ({
@@ -50,20 +48,20 @@ describe('OCR route', () => {
       ok: true,
       status: 200,
       json: async () => fakeResponse,
-    })) as any);
+    })) as unknown as typeof fetch);
 
     // Dynamic import after mocks
     const mod = await import('@/app/api/ocr/route');
-    const POST = (mod as any).POST as (req: Request) => Promise<any>;
+    const POST = mod.POST;
 
     // Build a fake NextRequest with formData
     const req = {
       headers: new Map([['content-type', 'multipart/form-data']]),
       formData: async () => ({ get: () => new MockFile(new Uint8Array([1, 2, 3])) }),
-    } as unknown as Request;
+    } as unknown as NextRequest;
 
-    const res = await POST(req as any);
-    expect((global as any).fetch).toHaveBeenCalled();
+    const res = await POST(req);
+    expect((global as { fetch?: unknown }).fetch).toHaveBeenCalled();
     expect(res).toBeTruthy();
   });
 });

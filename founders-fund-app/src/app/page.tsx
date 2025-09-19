@@ -4,7 +4,6 @@ import { useState } from 'react';
 import StatusBar from '@/components/StatusBar';
 import Tabs from '@/components/Tabs';
 import AllocationSettings from '@/components/Calculator/AllocationSettings';
-import FoundersTable from '@/components/Calculator/FoundersTable';
 import InvestorsTable from '@/components/Calculator/InvestorsTable';
 import ResultsTables from '@/components/Calculator/ResultsTables';
 import PreviewArea from '@/components/Preview/PreviewArea';
@@ -26,7 +25,6 @@ export default function Home() {
         {tab === 'calc' && (
           <>
             <AllocationSettings />
-            <FoundersTable />
             <InvestorsTable />
             <ResultsTables />
             <PreviewArea />

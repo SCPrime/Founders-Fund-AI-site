@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, type ChangeEvent } from 'react';
 import { FOUNDER_PRESET } from '@/data/presets';
 import { useCalculator } from '@/context/CalculatorContext';
 
@@ -9,7 +9,7 @@ interface FounderRow {
   amount: string;
 }
 
-export default function FoundersTable(): JSX.Element {
+export default function FoundersTable() {
   // Seed with preset baseline contributions
   const [rows, setRows] = useState<FounderRow[]>(FOUNDER_PRESET.map(r => ({ date: r.date, amount: String(r.amount) })));
   const calc = useCalculator();
@@ -28,6 +28,26 @@ export default function FoundersTable(): JSX.Element {
   const clearRows = () => {
     setRows([]);
   };
+
+  const populateFromAI = useCallback(async (aiData: Array<{ date: string; amount: number }>) => {
+    const formattedRows = aiData.map(item => ({
+      date: item.date,
+      amount: String(item.amount)
+    }));
+    setRows(formattedRows);
+
+    // Update wallet size with total
+    const sum = aiData.reduce((s, item) => s + (Number(item.amount) || 0), 0);
+    calc.setWalletSize(sum);
+  }, [calc]);
+
+  // Expose function globally for AI integration
+  React.useEffect(() => {
+    (window as unknown as { populateFoundersFromAI?: typeof populateFromAI }).populateFoundersFromAI = populateFromAI;
+    return () => {
+      delete (window as unknown as { populateFoundersFromAI?: typeof populateFromAI }).populateFoundersFromAI;
+    };
+  }, [populateFromAI]);
 
   const updateRow = (index: number, field: keyof FounderRow, value: string) => {
     const newRows = [...rows];
@@ -54,7 +74,7 @@ export default function FoundersTable(): JSX.Element {
                   <input
                     type="date"
                     value={row.date}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
                   />
                 </td>
                 <td>
@@ -62,7 +82,7 @@ export default function FoundersTable(): JSX.Element {
                     type="number"
                     step="0.01"
                     value={row.amount}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
                   />
                 </td>
                 <td>
@@ -84,6 +104,18 @@ export default function FoundersTable(): JSX.Element {
                 </button>
                 <button className="btn" onClick={clearRows} style={{ marginLeft: 8 }}>
                   Clear
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    const founderData = [
+                      { date: '2025-07-10', amount: 5000 } // Correct founder seed date and amount
+                    ];
+                    populateFromAI(founderData);
+                  }}
+                  style={{ marginLeft: 8, backgroundColor: '#4CAF50', color: 'white' }}
+                >
+                  🤖 AI Populate (Founder Seed)
                 </button>
               </td>
             </tr>

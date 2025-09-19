@@ -1,9 +1,121 @@
 'use client';
 
+import { useCalculator } from '@/context/CalculatorContext';
+import { useEffect, useState } from 'react';
+
+interface InvestorFee {
+  name: string;
+  baseProfitShare: number;
+  feeRate: number;
+  feeAmount: number;
+}
+
 export default function FeeBreakdown() {
+  const calc = useCalculator();
+  const [investorFees, setInvestorFees] = useState<InvestorFee[]>([]);
+  const [totalFees, setTotalFees] = useState(0);
+
+  useEffect(() => {
+    const calculateFees = () => {
+      const investorData = (window as any).getInvestorData?.() || [];
+
+      if (investorData.length === 0) {
+        setInvestorFees([]);
+        setTotalFees(0);
+        return;
+      }
+
+      const windowStart = new Date(calc.winStart);
+      const windowEnd = new Date(calc.winEnd);
+      const windowDays = Math.max(1, Math.ceil((windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60 * 24)));
+
+      // Group contributions by investor
+      const investorGroups: { [key: string]: any[] } = {};
+
+      investorData.forEach((contrib: any) => {
+        const key = `${contrib.name || 'Unknown'}_${contrib.cls || 'investor'}`;
+        if (!investorGroups[key]) {
+          investorGroups[key] = [];
+        }
+        investorGroups[key].push(contrib);
+      });
+
+      const feeResults: InvestorFee[] = [];
+      let totalDollarDays = 0;
+
+      // Calculate dollar-days for each investor
+      Object.values(investorGroups).forEach(contributions => {
+        if (contributions.length === 0) return;
+
+        const investor = contributions[0];
+        let dollarDays = 0;
+
+        contributions.forEach(contrib => {
+          const contribDate = new Date(contrib.date);
+          if (contribDate >= windowStart && contribDate <= windowEnd) {
+            const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));
+            dollarDays += (Number(contrib.amount) || 0) * daysInWindow;
+          }
+        });
+
+        totalDollarDays += dollarDays;
+      });
+
+      // Calculate fees for each investor
+      Object.values(investorGroups).forEach(contributions => {
+        if (contributions.length === 0) return;
+
+        const investor = contributions[0];
+        let dollarDays = 0;
+
+        contributions.forEach(contrib => {
+          const contribDate = new Date(contrib.date);
+          if (contribDate >= windowStart && contribDate <= windowEnd) {
+            const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));
+            dollarDays += (Number(contrib.amount) || 0) * daysInWindow;
+          }
+        });
+
+        // Only calculate fees for investors, not founders
+        if (investor.cls === 'investor') {
+          const twShare = totalDollarDays > 0 ? (dollarDays / totalDollarDays) : 0;
+          const baseProfitShare = twShare * calc.realizedProfit;
+          const feeRate = calc.mgmtFeePct / 100;
+          const feeAmount = baseProfitShare * feeRate;
+
+          feeResults.push({
+            name: investor.name || 'Unknown',
+            baseProfitShare: baseProfitShare,
+            feeRate: calc.mgmtFeePct,
+            feeAmount: feeAmount
+          });
+        }
+      });
+
+      const totalFeeAmount = feeResults.reduce((sum, fee) => sum + fee.feeAmount, 0);
+
+      setInvestorFees(feeResults);
+      setTotalFees(totalFeeAmount);
+    };
+
+    calculateFees();
+  }, [calc.winStart, calc.winEnd, calc.realizedProfit, calc.mgmtFeePct]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   return (
     <div className="panel">
       <h2>Fee Breakdown — Investors (base profit only)</h2>
+      <div className="small">
+        Management fees collected on base profit share at {calc.mgmtFeePct}% rate
+      </div>
       <div className="tablewrap">
         <table>
           <thead>
@@ -15,15 +127,42 @@ export default function FeeBreakdown() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={4} className="muted">
-                No fee data
-              </td>
-            </tr>
+            {investorFees.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="muted">
+                  No investor fee data available. Add investors in the table above to see fee breakdown.
+                </td>
+              </tr>
+            ) : (
+              investorFees.map((fee, index) => (
+                <tr key={index}>
+                  <td><strong>{fee.name}</strong></td>
+                  <td className="right">{formatCurrency(fee.baseProfitShare)}</td>
+                  <td className="right">{fee.feeRate.toFixed(1)}%</td>
+                  <td className="right"><strong>{formatCurrency(fee.feeAmount)}</strong></td>
+                </tr>
+              ))
+            )}
+            {investorFees.length > 0 && (
+              <tr style={{ borderTop: '2px solid #333', fontWeight: 'bold' }}>
+                <td>TOTAL FEES</td>
+                <td className="right">-</td>
+                <td className="right">-</td>
+                <td className="right"><strong>{formatCurrency(totalFees)}</strong></td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      <div className="small" id="feeNotes"></div>
+      <div className="small" id="feeNotes">
+        {totalFees > 0 && (
+          <>
+            Total management fees: {formatCurrency(totalFees)} |
+            Fee rate: {calc.mgmtFeePct}% of base profit share |
+            Fees paid to founders
+          </>
+        )}
+      </div>
     </div>
   );
 }
