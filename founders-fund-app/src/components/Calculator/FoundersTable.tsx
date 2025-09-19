@@ -1,18 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { FOUNDER_PRESET } from '@/data/presets';
+import { useCalculator } from '@/context/CalculatorContext';
 
 interface FounderRow {
   date: string;
   amount: string;
 }
 
-export default function FoundersTable() {
-  const [rows, setRows] = useState<FounderRow[]>([{ date: '', amount: '' }]);
+export default function FoundersTable(): JSX.Element {
+  // Seed with preset baseline contributions
+  const [rows, setRows] = useState<FounderRow[]>(FOUNDER_PRESET.map(r => ({ date: r.date, amount: String(r.amount) })));
+  const calc = useCalculator();
 
   const addRow = () => setRows([...rows, { date: '', amount: '' }]);
   const removeRow = (index: number) => {
-    setRows(rows.filter((_, i) => i !== index));
+    setRows(rows.filter((_: FounderRow, i: number) => i !== index));
+  };
+
+  const loadPresets = () => {
+    setRows(FOUNDER_PRESET.map(r => ({ date: r.date, amount: String(r.amount) })));
+    const sum = FOUNDER_PRESET.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    calc.setWalletSize(sum);
+  };
+
+  const clearRows = () => {
+    setRows([]);
   };
 
   const updateRow = (index: number, field: keyof FounderRow, value: string) => {
@@ -34,13 +48,13 @@ export default function FoundersTable() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, idx) => (
+            {rows.map((row: FounderRow, idx: number) => (
               <tr key={idx}>
                 <td>
                   <input
                     type="date"
                     value={row.date}
-                    onChange={e => updateRow(idx, 'date', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
                   />
                 </td>
                 <td>
@@ -48,7 +62,7 @@ export default function FoundersTable() {
                     type="number"
                     step="0.01"
                     value={row.amount}
-                    onChange={e => updateRow(idx, 'amount', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
                   />
                 </td>
                 <td>
@@ -64,6 +78,12 @@ export default function FoundersTable() {
               <td colSpan={3}>
                 <button className="btn" onClick={addRow}>
                   + Add founder contribution
+                </button>
+                <button className="btn" onClick={loadPresets} style={{ marginLeft: 8 }}>
+                  Load baseline
+                </button>
+                <button className="btn" onClick={clearRows} style={{ marginLeft: 8 }}>
+                  Clear
                 </button>
               </td>
             </tr>

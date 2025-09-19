@@ -9,6 +9,8 @@ export default function StatusBar() {
   const [autoSave, setAutoSave] = useState(true);
   const [calcTime, setCalcTime] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const [ocrText, setOcrText] = useState<string>('');
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
 
   const handleReseed = () => {
     console.log('Reseed defaults');
@@ -37,6 +39,32 @@ export default function StatusBar() {
     const file = e.target.files?.[0];
     if (file) {
       console.log('Uploaded screenshot', file.name);
+      setOcrText('Processing...');
+      const form = new FormData();
+      form.append('file', file);
+
+      fetch('/api/ocr', {
+        method: 'POST',
+        body: form,
+      })
+        .then(async res => {
+          const json = await res.json();
+          if (!res.ok) {
+            setOcrText(`OCR error: ${json?.error || res.statusText}`);
+            console.error('OCR error', json);
+            return;
+          }
+          setOcrText(json.text || json.error || 'No text recognized');
+          if (json.processed_png_base64) {
+            setProcessedImage(`data:image/png;base64,${json.processed_png_base64}`);
+          } else {
+            setProcessedImage(null);
+          }
+        })
+        .catch(err => {
+          console.error('OCR request failed', err);
+          setOcrText('OCR request failed');
+        });
     }
   };
 
@@ -77,6 +105,26 @@ export default function StatusBar() {
       <button className="btn" onClick={handleUploadClick}>
         Upload Screenshot
       </button>
+      {ocrText && (
+        <div className="small" style={{ marginLeft: '12px' }} id="ocrResult">
+          <b>OCR:</b> {ocrText}{' '}
+          <button
+            className="btn"
+            onClick={() => navigator.clipboard?.writeText(ocrText)}
+            title="Copy OCR text"
+          >
+            Copy
+          </button>
+          {processedImage && (
+            <a className="btn" href={processedImage} download="processed.png" style={{ marginLeft: '8px' }}>
+              Download Processed Image
+            </a>
+          )}
+        </div>
+      )}
+      {processedImage && (
+        <img id="ocrCanvas" src={processedImage} alt="processed" style={{ width: 160, marginLeft: 12, borderRadius: 6 }} />
+      )}
       <span className="small">{calcTime}</span>
     </div>
   );
