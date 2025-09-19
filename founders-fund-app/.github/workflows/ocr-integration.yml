@@ -1,0 +1,42 @@
+name: OCR Worker Integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ocr-integration:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.body, 'RUN_OCR_INTEGRATION=true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start OCR worker
+        run: |
+          cd ocr-worker
+          docker compose up -d --build
+
+      - name: Wait for worker
+        run: |
+          for i in {1..30}; do
+            if curl -sS http://localhost:8000/ >/dev/null 2>&1; then
+              echo 'worker ready'; break
+            fi
+            sleep 1
+          done
+
+      - name: Run integration tests
+        run: |
+          cd ..
+          npm ci
+          RUN_OCR_INTEGRATION=1 npx vitest src/__tests__/integration/ocr.integration.spec.ts --run
+
+      - name: Tear down
+        run: |
+          cd ocr-worker
+          docker compose down
