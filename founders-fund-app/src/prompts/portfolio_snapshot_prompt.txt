@@ -1,0 +1,29 @@
+You are given an image of a portfolio snapshot. Extract the relevant data and respond with a JSON object matching exactly the following structure:
+
+{
+  "portfolio_snapshot": {
+    "allocation_window": {
+      "start": <null or ISO 8601 date if visible>,
+      "end": <null or ISO 8601 date if visible>,
+      "period": "<detected period, e.g. '1d', '7d', '30d', 'max'>"
+    },
+    "pnl_metrics": {
+      "realized_pnl": {
+        "period": "current",
+        "value": <numeric value or null if not displayed>
+      },
+      "unrealized_pnl": {
+        "currency": "USD",
+        "sign": "<positive|negative|neutral>",
+        "value": <numeric value as float>
+      }
+    },
+    "wallet_metrics": {
+      "total_value": <numeric value as float>,
+      "available_balance": <numeric value as float>,
+      "currency": "USD"
+    }
+  }
+}
+
+If a value cannot be determined, set it to null. Do not include any additional fields.

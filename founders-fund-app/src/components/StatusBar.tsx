@@ -9,6 +9,8 @@ export default function StatusBar() {
 
   const [autoSave, setAutoSave] = useState(true);
   const [calcTime, setCalcTime] = useState('');
+  const [analysis, setAnalysis] = useState<unknown>(null);
+  const [message, setMessage] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrText, setOcrText] = useState<string>('');
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -66,6 +68,28 @@ export default function StatusBar() {
           console.error('OCR request failed', err);
           setOcrText('OCR request failed');
         });
+    }
+  };
+
+  const handleConfirmSave = async () => {
+    if (!analysis) return;
+    try {
+      const res = await fetch('/api/save-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysis }),
+      });
+      if (res.ok) {
+        setMessage('Analysis saved successfully');
+      } else {
+        setMessage('Failed to save analysis');
+      }
+    } catch (err) {
+      console.error('Save analysis error', err);
+      setMessage('Failed to save analysis');
+    } finally {
+      setAnalysis(null);
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -127,6 +151,15 @@ export default function StatusBar() {
         <Image id="ocrCanvas" src={processedImage} alt="processed" width={160} height={120} style={{ marginLeft: 12, borderRadius: 6 }} />
       )}
       <span className="small">{calcTime}</span>
+      {analysis && (
+        <div className="analysis-preview">
+          <pre>{JSON.stringify(analysis, null, 2)}</pre>
+          <button className="btn" onClick={handleConfirmSave}>
+            Save Analysis
+          </button>
+        </div>
+      )}
+      {message && <span className="small">{message}</span>}
     </div>
   );
 }
