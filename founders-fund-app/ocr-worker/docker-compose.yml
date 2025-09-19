@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  ocr-worker:
+    build: .
+    image: founders-fund-ocr-worker:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
