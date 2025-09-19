@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_VISION_KEY_JSON) {
       try {
         // dynamic import, narrow to minimal local type
-        const visionModule = (await import('@google-cloud/vision')) as unknown;
+  // Use a computed path for dynamic import so bundlers/test runners cannot statically analyze it
+  const _visionPath = '@google-cloud/vision';
+  const visionModule = (await import(/* @vite-ignore */ _visionPath)) as unknown;
         const Vision = (visionModule as any)?.ImageAnnotatorClient;
         if (!Vision) throw new Error('Vision client not available');
 
@@ -60,7 +62,9 @@ export async function POST(req: NextRequest) {
         let buffer = Buffer.from(arrayBuffer as ArrayBuffer);
 
         try {
-          const sharpModule = (await import('sharp')) as unknown;
+          // sharp is optional at runtime; use a computed import path to avoid static resolution by Vite
+          const _sharpPath = 'sharp';
+          const sharpModule = (await import(/* @vite-ignore */ _sharpPath)) as unknown;
           const sharpFn = (sharpModule as any)?.default ?? (sharpModule as any);
           if (typeof sharpFn === 'function') {
             buffer = await sharpFn(buffer)
