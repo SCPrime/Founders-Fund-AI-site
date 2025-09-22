@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { ocrService } from '@/lib/ocrService';
 import OCRTestSuite from './OCRTestSuite';
 
 interface OCRProcessorProps {
@@ -65,8 +64,20 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
         message: 'Initializing OCR engine...'
       });
 
-      // Process with sophisticated OCR
-      const result = await ocrService.processImage(file);
+      // Process with sophisticated OCR via API
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/simple-ocr', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`OCR API error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
 
       setProcessingState({
         status: 'processing',
@@ -94,7 +105,7 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
       });
 
       // Force auto-population with debug feedback
-      this.performAutoPopulation(result.extractedData);
+      // Note: Auto-population is handled by the parent component through onOCRComplete
 
       // Pass extracted data to parent
       onOCRComplete(result.extractedData);
@@ -119,8 +130,8 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
       });
 
       // Convert base64 to blob
-      const response = await fetch(imageData);
-      const blob = await response.blob();
+      const imageResponse = await fetch(imageData);
+      const blob = await imageResponse.blob();
       const file = new File([blob], 'test-image.png', { type: 'image/png' });
 
       setUploadedImage(imageData);
@@ -131,8 +142,20 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
         message: 'Running OCR analysis...'
       });
 
-      // Process with OCR
-      const result = await ocrService.processImage(file);
+      // Process with OCR via API (same as normal upload)
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/simple-ocr', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`OCR API error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
 
       setProcessingState({
         status: 'processing',
