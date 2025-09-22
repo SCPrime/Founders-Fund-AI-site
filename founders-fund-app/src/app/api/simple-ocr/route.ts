@@ -3,11 +3,6 @@ import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
   try {
     console.log('Simple OCR API called');
@@ -20,6 +15,11 @@ export async function POST(req: NextRequest) {
         error: 'OpenAI API key not configured'
       }, { status: 500 });
     }
+
+    // Initialize OpenAI inside the function
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
