@@ -19,7 +19,7 @@ export default function FeesByClass() {
 
   useEffect(() => {
     const calculateFeesByClass = () => {
-      const investorData = (window as any).getInvestorData?.() || [];
+      const investorData = (window as Record<string, unknown>).getInvestorData?.() || [];
 
       if (investorData.length === 0) {
         setFeesByClass([]);
@@ -30,9 +30,9 @@ export default function FeesByClass() {
       const windowEnd = new Date(calc.winEnd);
 
       // Group contributions by investor/founder
-      const participantGroups: { [key: string]: any[] } = {};
+      const participantGroups: { [key: string]: Record<string, unknown>[] } = {};
 
-      investorData.forEach((contrib: any) => {
+      investorData.forEach((contrib: Record<string, unknown>) => {
         const key = `${contrib.name || 'Unknown'}_${contrib.cls || 'investor'}`;
         if (!participantGroups[key]) {
           participantGroups[key] = [];

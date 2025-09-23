@@ -5,16 +5,9 @@ import Anthropic from '@anthropic-ai/sdk';
 // Ultra-high accuracy OCR with ensemble approach
 // Target: 95-98% confidence for trading dashboard extraction
 
-interface UltraOCRResult {
-  extractedData: any;
-  confidence: number;
-  modelConsensus: number;
-  validationScore: number;
-  processingDetails: string[];
-}
 
 interface ModelResult {
-  data: any;
+  data: Record<string, unknown>;
   confidence: number;
   model: string;
   processingTime: number;
@@ -173,7 +166,7 @@ Output format:
                   type: "image",
                   source: {
                     type: "base64",
-                    media_type: mimeType as any,
+                    media_type: mimeType as "image/jpeg" | "image/png" | "image/webp",
                     data: base64
                   }
                 }
@@ -300,7 +293,7 @@ Return the corrected/confirmed JSON with your confidence level:`
   }
 }
 
-function parseAIResponse(content: string, model: string): any {
+function parseAIResponse(content: string, model: string): Record<string, unknown> {
   try {
     // Clean the response
     const jsonStr = content
@@ -327,13 +320,13 @@ function parseAIResponse(content: string, model: string): any {
   }
 }
 
-function computeEnsembleConsensus(results: ModelResult[]): { data: any; confidence: number; consensus: number } {
+function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string, unknown>; confidence: number; consensus: number } {
   if (results.length === 0) {
     return { data: {}, confidence: 0, consensus: 0 };
   }
 
   const fields = ['totalValue', 'unrealizedPNL', 'realizedPNL', 'availableBalance', 'totalTransactions', 'wins', 'losses', 'timestamp'];
-  const consensus: any = {};
+  const consensus: Record<string, unknown> = {};
   let totalAgreement = 0;
 
   fields.forEach(field => {
@@ -387,7 +380,7 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: any; confiden
   };
 }
 
-function performAdvancedValidation(data: any): number {
+function performAdvancedValidation(data: Record<string, unknown>): number {
   let score = 100;
   const issues: string[] = [];
 

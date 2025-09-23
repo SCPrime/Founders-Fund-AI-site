@@ -158,7 +158,7 @@ Return this EXACT format:
   }
 }
 
-function validateExtractedData(data: any) {
+function validateExtractedData(data: Record<string, unknown>) {
   const issues: string[] = [];
   let confidenceBonus = 0;
 

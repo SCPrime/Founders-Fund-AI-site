@@ -1,182 +1,277 @@
 "use client";
 
-import React, { useState, useCallback, type ChangeEvent } from 'react';
-import { INVESTOR_PRESET } from '@/data/presets';
-import { useCalculator } from '@/context/CalculatorContext';
-
-interface InvestorRow {
-  name: string;
-  date: string;
-  amount: string;
-  rule: string;
-  cls?: string;
-}
+import React, { useCallback } from 'react';
+import { useAllocationStore } from '@/store/allocationStore';
 
 export default function InvestorsTable() {
-  // Seed baseline data from presets (including founders)
-  const [rows, setRows] = useState<InvestorRow[]>([
-    // Add founders first
-    { name: 'Founders', date: '2025-07-10', amount: '5000', rule: 'net', cls: 'founder' },
-    // Then add investors
-    ...INVESTOR_PRESET.map(r => ({ name: r.name, date: r.date, amount: String(r.amount), rule: r.rule || 'net', cls: r.cls || 'investor' }))
-  ]);
-  const calc = useCalculator();
+  const {
+    state,
+    addContribution,
+    updateContribution,
+    removeContribution,
+    clearContributions,
+    validationErrors
+  } = useAllocationStore();
 
-  const addRow = () =>
-    setRows([...rows, { name: '', date: '', amount: '', rule: 'net' }]);
-  const removeRow = (index: number) => {
-    setRows(rows.filter((_: InvestorRow, i: number) => i !== index));
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
-  const loadPresets = () => {
-    const combinedData = [
-      { name: 'Founders', date: '2025-07-10', amount: '5000', rule: 'net', cls: 'founder' },
-      ...INVESTOR_PRESET.map(r => ({ name: r.name, date: r.date, amount: String(r.amount), rule: r.rule || 'net', cls: r.cls || 'investor' }))
-    ];
-    setRows(combinedData);
-    // Update realizedProfit in context as example (sum of investor amounts only)
-    const investorSum = INVESTOR_PRESET.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    calc.setRealizedProfit(investorSum);
+  const addRow = () => {
+    addContribution({
+      owner: 'investor',
+      name: '',
+      type: 'investor_contribution',
+      amount: 0,
+      ts: new Date().toISOString().split('T')[0],
+      earnsDollarDaysThisWindow: true
+    });
   };
 
-  const clearRows = () => {
-    setRows([]);
+  const removeRow = (id: string) => {
+    removeContribution(id);
   };
 
-  const populateFromAI = useCallback(async (aiData: Array<{ name?: string; date: string; amount: number; rule?: string; cls?: string }>) => {
-    const formattedRows = aiData.map((item, index) => ({
-      name: item.name || `Investor ${index + 1}`,
-      date: item.date,
-      amount: String(item.amount),
-      rule: item.rule || 'net',
-      cls: item.cls || 'investor'
-    }));
-    setRows(formattedRows);
+  const updateRow = (id: string, field: string, value: string | number) => {
+    const updates: Record<string, unknown> = { [field]: value };
 
-    // Update realized profit with total
-    const sum = aiData.reduce((s, item) => s + (Number(item.amount) || 0), 0);
-    calc.setRealizedProfit(sum);
-  }, [calc]);
+    // Convert owner/type based on legacy field mappings
+    if (field === 'cls') {
+      updates.owner = value === 'founder' ? 'founders' : 'investor';
+      updates.type = value === 'founder' ? 'seed' : 'investor_contribution';
+    }
+    if (field === 'date') {
+      updates.ts = value;
+    }
 
-  // Expose functions globally for AI integration and results calculation
-  React.useEffect(() => {
-    (window as unknown as { populateInvestorsFromAI?: typeof populateFromAI }).populateInvestorsFromAI = populateFromAI;
-    (window as unknown as { getInvestorData?: () => InvestorRow[] }).getInvestorData = () => rows;
-    return () => {
-      delete (window as unknown as { populateInvestorsFromAI?: typeof populateFromAI }).populateInvestorsFromAI;
-      delete (window as unknown as { getInvestorData?: () => InvestorRow[] }).getInvestorData;
-    };
-  }, [populateFromAI, rows]);
-
-  const updateRow = (
-    index: number,
-    field: keyof InvestorRow,
-    value: string,
-  ) => {
-    const newRows = [...rows];
-    newRows[index][field] = value;
-    setRows(newRows);
+    updateContribution(id, updates);
   };
+
+  const populateDemo = useCallback(() => {
+    // This is handled by the bootstrap now, but kept for legacy compatibility
+    console.log('Demo data is now loaded automatically on startup');
+  }, []);
+
+  // Group contributions by type for display - exclude entry fee legs from main table
+  const foundersContributions = state.contributions.filter(c =>
+    c.owner === 'founders' && c.type !== 'founders_entry_fee'
+  );
+  const investorContributions = state.contributions.filter(c => c.owner === 'investor');
 
   return (
     <div className="panel">
-      <h2>Founders & Investors</h2>
-      <div className="tablewrap">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <h2>👥 Founders & Investors</h2>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn" onClick={addRow}>
+            + Add Investor
+          </button>
+          <button className="btn secondary" onClick={clearContributions}>
+            Clear All
+          </button>
+          <button className="btn secondary" onClick={populateDemo}>
+            Demo Data (Auto-loaded)
+          </button>
+        </div>
+      </div>
+
+      {/* Validation Issues */}
+      {validationErrors.length > 0 && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '12px',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+          border: '1px solid var(--bad)',
+          borderRadius: '6px'
+        }}>
+          <strong style={{ color: 'var(--bad)' }}>⚠️ Issues ({validationErrors.length}):</strong>
+          {validationErrors.slice(0, 3).map((issue, idx) => (
+            <div key={idx} style={{ fontSize: '13px', color: 'var(--bad)', marginTop: '4px' }}>
+              {issue.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Contributions Table */}
+      <div className="table-container">
         <table>
           <thead>
             <tr>
-              <th style={{ width: '14%' }}>Investor</th>
-              <th style={{ width: '12%' }}>Class</th>
-              <th style={{ width: '18%' }}>Date</th>
-              <th style={{ width: '18%' }}>Amount ($)</th>
-              <th style={{ width: '18%' }}>Gross→Net rule</th>
-              <th>Action</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Date</th>
+              <th>Amount ($)</th>
+              <th>Net Rule</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row: InvestorRow, idx: number) => (
-              <tr key={idx}>
-                <td>
-                  <input
-                    type="text"
-                    value={row.name}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'name', e.target.value)}
-                  />
-                </td>
-                <td>
-                  <select value={row.cls || 'investor'} onChange={(e: ChangeEvent<HTMLSelectElement>) => updateRow(idx, 'cls', e.target.value)}>
-                    <option value="founder">founder</option>
-                    <option value="investor">investor</option>
-                  </select>
-                </td>
-                <td>
-                  <input
-                    type="date"
-                    value={row.date}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={row.amount}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
-                  />
-                </td>
-                <td>
-                  <select
-                    value={row.rule}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) => updateRow(idx, 'rule', e.target.value)}
-                  >
-                    <option value="net">Net of fee</option>
-                    <option value="gross">Fee outside</option>
-                  </select>
-                </td>
-                <td>
-                  <span className="x" onClick={() => removeRow(idx)}>
-                    Remove
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {/* Founders Rows */}
+            {foundersContributions.map((contrib, index) => {
+              const getTestId = (name: string, idx: number) => {
+                const baseTestId = `row-${name}`;
+                const existingWithSameName = foundersContributions
+                  .slice(0, idx)
+                  .filter(c => c.name === name).length;
+                return existingWithSameName > 0 ? `${baseTestId}-${existingWithSameName}` : baseTestId;
+              };
+
+              return (
+                <tr key={contrib.id} data-testid={getTestId(contrib.name, index)}>
+                  <td>
+                    <input
+                      type="text"
+                      value={contrib.name}
+                      onChange={(e) => updateRow(contrib.id, 'name', e.target.value)}
+                      placeholder="Enter name"
+                      style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)' }}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value="founder"
+                      disabled
+                      style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)' }}
+                    >
+                      <option value="founder">Founder</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={contrib.ts}
+                      onChange={(e) => updateRow(contrib.id, 'date', e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="100"
+                      value={contrib.amount}
+                      onChange={(e) => updateRow(contrib.id, 'amount', Number(e.target.value) || 0)}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value="gross"
+                      disabled
+                      style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)' }}
+                    >
+                      <option value="gross">Gross</option>
+                    </select>
+                    <small style={{ display: 'block', color: 'var(--muted)', fontSize: '11px' }}>
+                      No entry fee on founders
+                    </small>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => removeRow(contrib.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--bad)',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+
+            {/* Investor Rows */}
+            {investorContributions.map((contrib, index) => {
+              const getTestId = (name: string, idx: number) => {
+                const baseTestId = `row-${name}`;
+                const existingWithSameName = investorContributions
+                  .slice(0, idx)
+                  .filter(c => c.name === name).length;
+                return existingWithSameName > 0 ? `${baseTestId}-${existingWithSameName}` : baseTestId;
+              };
+
+              return (
+                <tr key={contrib.id} data-testid={getTestId(contrib.name, index)}>
+                  <td>
+                    <input
+                      type="text"
+                      value={contrib.name}
+                      onChange={(e) => updateRow(contrib.id, 'name', e.target.value)}
+                      placeholder="Enter name"
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value="investor"
+                      onChange={(e) => updateRow(contrib.id, 'cls', e.target.value)}
+                    >
+                      <option value="investor">Investor</option>
+                      <option value="founder">Founder</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={contrib.ts}
+                      onChange={(e) => updateRow(contrib.id, 'date', e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      step="100"
+                      value={contrib.amount}
+                      onChange={(e) => updateRow(contrib.id, 'amount', Number(e.target.value) || 0)}
+                    />
+                  </td>
+                  <td>
+                    <select value="net-of-fee" disabled>
+                      <option value="net-of-fee">Net of fee</option>
+                    </select>
+                    <small style={{ display: 'block', color: 'var(--muted)', fontSize: '11px' }}>
+                      {state.constants.ENTRY_FEE_RATE * 100}% entry fee to founders
+                    </small>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => removeRow(contrib.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--bad)',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={5}>
-                <button className="btn" onClick={addRow}>
-                  + Add investor
-                </button>
-                <button className="btn" onClick={loadPresets} style={{ marginLeft: 8 }}>
-                  Load baseline
-                </button>
-                <button className="btn" onClick={clearRows} style={{ marginLeft: 8 }}>
-                  Clear
-                </button>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    const completeData = [
-                      { name: 'Founders', date: '2025-07-10', amount: 5000, rule: 'net', cls: 'founder' },
-                      { name: 'Laura', date: '2025-07-22', amount: 5000, rule: 'net', cls: 'investor' },
-                      { name: 'Laura', date: '2025-07-31', amount: 5000, rule: 'net', cls: 'investor' },
-                      { name: 'Laura', date: '2025-08-25', amount: 2500, rule: 'net', cls: 'investor' },
-                      { name: 'Laura', date: '2025-09-06', amount: 2500, rule: 'net', cls: 'investor' },
-                      { name: 'Damon', date: '2025-08-02', amount: 5000, rule: 'net', cls: 'investor' }
-                    ];
-                    populateFromAI(completeData);
-                  }}
-                  style={{ marginLeft: 8, backgroundColor: '#4CAF50', color: 'white' }}
-                >
-                  🤖 AI Populate (Complete Data)
-                </button>
-              </td>
-            </tr>
-          </tfoot>
         </table>
       </div>
-      <div className="small" id="presetNote">
-        Preset: example investors; fees placeholders.
+
+      {/* Summary */}
+      <div style={{
+        marginTop: '16px',
+        padding: '12px',
+        backgroundColor: 'var(--ink)',
+        borderRadius: '6px',
+        fontSize: '13px',
+        color: 'var(--muted)'
+      }}>
+        <strong>Summary:</strong> {foundersContributions.length} founder entries, {investorContributions.length} investor entries •
+        Total gross: {formatCurrency(state.contributions.reduce((sum, c) => sum + c.amount, 0))} •
+        Net credited: {formatCurrency(state.contributions.filter(c => c.earnsDollarDaysThisWindow).reduce((sum, c) => sum + c.amount, 0))}
       </div>
     </div>
   );

@@ -242,25 +242,22 @@ export default function SmartValidation() {
         <h3>🔍 Smart Validation</h3>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {errorCount > 0 && (
-            <span style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>
+            <span style={{ backgroundColor: 'rgba(255, 107, 107, 0.2)', color: 'var(--bad)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>
               {errorCount} error{errorCount !== 1 ? 's' : ''}
             </span>
           )}
           {warningCount > 0 && (
-            <span style={{ backgroundColor: '#fff3e0', color: '#ef6c00', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>
+            <span style={{ backgroundColor: 'rgba(255, 176, 32, 0.2)', color: 'var(--warn)', padding: '2px 8px', borderRadius: '12px', fontSize: '12px' }}>
               {warningCount} warning{warningCount !== 1 ? 's' : ''}
             </span>
           )}
           <button
             onClick={validateData}
             disabled={isValidating}
+            className="btn"
             style={{
               padding: '4px 8px',
-              fontSize: '12px',
-              backgroundColor: '#f5f5f5',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              cursor: isValidating ? 'not-allowed' : 'pointer'
+              fontSize: '12px'
             }}
           >
             {isValidating ? '⏳' : '🔄'} Revalidate
@@ -271,10 +268,10 @@ export default function SmartValidation() {
       {issues.length === 0 && !isValidating && (
         <div style={{
           padding: '12px',
-          backgroundColor: '#e8f5e8',
-          border: '1px solid #4caf50',
+          backgroundColor: 'rgba(53, 199, 89, 0.1)',
+          border: '1px solid var(--good)',
           borderRadius: '4px',
-          color: '#2e7d32',
+          color: 'var(--good)',
           textAlign: 'center'
         }}>
           ✅ All validations passed! Your fund settings look good.
@@ -289,7 +286,7 @@ export default function SmartValidation() {
               padding: '10px',
               border: `1px solid ${getSeverityColor(issue.severity)}`,
               borderRadius: '4px',
-              backgroundColor: issue.severity === 'error' ? '#ffebee' : issue.severity === 'warning' ? '#fff3e0' : '#e3f2fd'
+              backgroundColor: issue.severity === 'error' ? 'rgba(255, 107, 107, 0.1)' : issue.severity === 'warning' ? 'rgba(255, 176, 32, 0.1)' : 'rgba(57, 208, 216, 0.1)'
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div style={{ flex: 1 }}>
@@ -302,7 +299,7 @@ export default function SmartValidation() {
                     {getSeverityIcon(issue.severity)} {issue.message}
                   </div>
                   {issue.suggestion && (
-                    <div style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic' }}>
                       💡 {issue.suggestion}
                     </div>
                   )}
@@ -330,7 +327,7 @@ export default function SmartValidation() {
         </div>
       )}
 
-      <div style={{ marginTop: '12px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--muted)', fontStyle: 'italic' }}>
         💡 Validation runs automatically when you change settings. Use Quick Fix buttons for common issues.
       </div>
     </div>

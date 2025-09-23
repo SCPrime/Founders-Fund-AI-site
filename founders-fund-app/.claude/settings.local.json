@@ -3,7 +3,14 @@
     "allow": [
       "Bash(npm install)",
       "Bash(npm audit:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npm run build:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(cat:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

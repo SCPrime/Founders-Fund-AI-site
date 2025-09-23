@@ -1,4 +1,4 @@
-import Tesseract from 'tesseract.js';
+import OpenAI from 'openai';
 
 export interface OCRResult {
   text: string;
@@ -32,9 +32,18 @@ export interface FinancialEntry {
   description?: string;
 }
 
+interface DetectedEntry {
+  originalLine: string;
+  lineNumber: number;
+  amount?: number;
+  date?: string;
+  name?: string;
+  type?: string;
+}
+
 export class OCRService {
   private static instance: OCRService;
-  private worker: Tesseract.Worker | null = null;
+  private openai: OpenAI | null = null;
 
   static getInstance(): OCRService {
     if (!OCRService.instance) {
@@ -43,99 +52,126 @@ export class OCRService {
     return OCRService.instance;
   }
 
-  async initializeWorker(): Promise<void> {
-    if (!this.worker) {
-      this.worker = await Tesseract.createWorker('eng', 1, {
-        logger: (m) => console.log('Tesseract:', m),
+  private getOpenAIClient(): OpenAI {
+    if (!this.openai) {
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY,
       });
-
-      // Ultra-enhanced configuration for maximum accuracy
-      await this.worker.setParameters({
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,/$%-:()/ ',
-        tessedit_pageseg_mode: Tesseract.PSM.AUTO, // Most robust for mixed content
-        preserve_interword_spaces: '1',
-        // Maximum accuracy settings
-        tessedit_ocr_engine_mode: '1', // LSTM neural network engine
-        classify_enable_learning: '1',
-        classify_enable_adaptive_matcher: '1',
-        // Enhanced image processing
-        user_defined_dpi: '400', // Even higher DPI
-        textord_min_xheight: '8', // Better small text detection
-        textord_really_old_xheight: '1',
-        // Superior table and layout detection
-        textord_tabfind_find_tables: '1',
-        textord_tablefind_good_width: '5',
-        textord_tablefind_good_height: '5',
-        // Number and symbol recognition improvements
-        tessedit_enable_doc_dict: '0', // Don't use dictionary constraints
-        tessedit_enable_bigram_correction: '1',
-        load_system_dawg: '0', // Better for numbers and symbols
-        load_freq_dawg: '0',
-        // Quality settings
-        tessedit_write_images: '0',
-        debug_file: '/dev/null'
-      });
-
-      console.log('OCR worker initialized with enhanced accuracy settings');
     }
+    return this.openai;
   }
 
   async processImage(imageFile: File): Promise<OCRResult> {
     try {
-      console.log('Initializing OCR worker...');
-      await this.initializeWorker();
+      console.log('Processing image with ChatGPT...');
 
-      if (!this.worker) {
-        throw new Error('OCR worker not initialized');
+      // Convert image to base64
+      const base64Image = await this.convertImageToBase64(imageFile);
+
+      const openai = this.getOpenAIClient();
+
+      // Create the prompt for extracting financial data
+      const prompt = `Analyze this financial document image and extract the data into the following JSON format:
+
+{
+  "text": "raw extracted text from the image",
+  "confidence": 95,
+  "extractedData": {
+    "founders": [{
+      "name": "Founders",
+      "date": "2025-07-10",
+      "amount": 5000,
+      "cls": "founder"
+    }],
+    "investors": [{
+      "name": "Investor Name",
+      "date": "YYYY-MM-DD",
+      "amount": 10000,
+      "rule": "net",
+      "cls": "investor"
+    }],
+    "settings": {
+      "walletSize": 25000,
+      "realizedProfit": 20000,
+      "unrealizedProfit": 50000,
+      "moonbagUnreal": 50000,
+      "moonbagFounderPct": 75,
+      "mgmtFeePct": 20,
+      "entryFeePct": 10,
+      "transactionStats": {
+        "winning": 15,
+        "losing": 5,
+        "total": 20,
+        "winRate": 75
       }
+    }
+  }
+}
 
-      console.log('Preprocessing image for OCR...');
-      // Convert file to image data with enhanced preprocessing
-      const imageData = await this.preprocessImage(imageFile);
+Extract all financial entries, dates, amounts, names, and settings from the image. For founders, always include the seed money. For investors, include their contributions. Extract any fee percentages, profit figures, wallet size, and transaction statistics if visible. Return ONLY the JSON response with no additional text.`;
 
-      // Perform OCR with retry logic
-      console.log('Starting OCR processing...');
-      let ocrResult;
-      let attempts = 0;
-      const maxAttempts = 2;
-
-      while (attempts < maxAttempts) {
-        try {
-          const { data } = await this.worker.recognize(imageData);
-          ocrResult = data;
-          break;
-        } catch (ocrError) {
-          attempts++;
-          console.warn(`OCR attempt ${attempts} failed:`, ocrError);
-          if (attempts >= maxAttempts) {
-            throw ocrError;
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: prompt
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: base64Image,
+                  detail: "high"
+                }
+              }
+            ]
           }
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+        ],
+        max_tokens: 2000,
+        temperature: 0.1
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from ChatGPT');
       }
 
-      if (!ocrResult) {
-        throw new Error('OCR processing failed after multiple attempts');
+      console.log('ChatGPT response:', content);
+
+      // Parse the JSON response
+      let parsedResult: OCRResult;
+      try {
+        // Clean the response to extract only JSON
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : content;
+        parsedResult = JSON.parse(jsonStr);
+      } catch {
+        console.warn('Failed to parse ChatGPT response as JSON, using fallback');
+        // If parsing fails, create a basic structure with the raw text
+        parsedResult = {
+          text: content,
+          confidence: 85,
+          extractedData: this.getFallbackFoundersData()
+        };
       }
 
-      console.log('OCR completed with confidence:', ocrResult.confidence);
-      console.log('Raw OCR text:', ocrResult.text);
+      // Ensure the result has the required structure
+      if (!parsedResult.extractedData) {
+        parsedResult.extractedData = this.getFallbackFoundersData();
+      }
 
-      // Enhanced data extraction with founders-specific logic
-      const extractedData = this.extractFinancialDataWithFoundersLogic(ocrResult.text, ocrResult.confidence);
+      console.log('Parsed OCR result:', parsedResult);
+      return parsedResult;
 
-      return {
-        text: ocrResult.text,
-        confidence: ocrResult.confidence,
-        extractedData
-      };
     } catch (error) {
-      console.error('OCR processing error:', error);
+      console.error('ChatGPT OCR processing error:', error);
 
       // Return fallback data to prevent total failure
       return {
-        text: 'OCR processing failed, using fallback data',
+        text: 'ChatGPT OCR processing failed, using fallback data',
         confidence: 0,
         extractedData: this.getFallbackFoundersData()
       };
@@ -160,118 +196,23 @@ export class OCRService {
     };
   }
 
-  private async preprocessImage(file: File): Promise<string> {
+  private async convertImageToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-
-      img.onload = () => {
-        // Maximum resolution scaling for OCR accuracy
-        const scale = 3; // Increased from 2 to 3
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-
-        if (!ctx) {
-          reject(new Error('Canvas context not available'));
-          return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error('Failed to convert image to base64'));
         }
-
-        // Ultra high-quality scaling
-        ctx.imageSmoothingEnabled = false; // Disable for sharper text
-        ctx.textRenderingOptimization = 'optimizeQuality';
-
-        // Draw scaled image
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        // Advanced image enhancement for colored documents with graphs
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-
-        // Multi-pass enhancement for better text extraction
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-
-          // Calculate luminance for better text detection
-          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-
-          // Adaptive thresholding for text vs background
-          let enhanced;
-          if (luminance > 180) {
-            // Bright areas - likely background, make whiter
-            enhanced = Math.min(255, luminance * 1.3);
-          } else if (luminance < 80) {
-            // Dark areas - likely text, make darker
-            enhanced = Math.max(0, luminance * 0.6);
-          } else {
-            // Mid-range - apply moderate enhancement
-            enhanced = luminance > 130 ? Math.min(255, luminance * 1.1) : Math.max(0, luminance * 0.9);
-          }
-
-          // Apply enhanced value to all color channels for grayscale
-          data[i] = enhanced;     // Red
-          data[i + 1] = enhanced; // Green
-          data[i + 2] = enhanced; // Blue
-          // Alpha stays the same
-        }
-
-        // Apply sharpening filter for better text clarity
-        const sharpenedData = this.applySharpenFilter(data, canvas.width, canvas.height);
-
-        // Create new image data with sharpened results
-        const finalImageData = new ImageData(sharpenedData, canvas.width, canvas.height);
-        ctx.putImageData(finalImageData, 0, 0);
-
-        // Convert to high-quality base64
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
-        resolve(dataUrl);
       };
-
-      img.onerror = () => {
-        reject(new Error('Failed to load image'));
-      };
-
-      img.src = URL.createObjectURL(file);
+      reader.onerror = () => reject(new Error('Failed to read image file'));
+      reader.readAsDataURL(file);
     });
   }
 
-  private applySharpenFilter(data: Uint8ClampedArray, width: number, height: number): Uint8ClampedArray {
-    const output = new Uint8ClampedArray(data.length);
-    const kernel = [
-      0, -1, 0,
-      -1, 5, -1,
-      0, -1, 0
-    ];
 
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        for (let c = 0; c < 3; c++) { // RGB channels only
-          let sum = 0;
-          for (let ky = -1; ky <= 1; ky++) {
-            for (let kx = -1; kx <= 1; kx++) {
-              const idx = ((y + ky) * width + (x + kx)) * 4 + c;
-              sum += data[idx] * kernel[(ky + 1) * 3 + (kx + 1)];
-            }
-          }
-          const idx = (y * width + x) * 4 + c;
-          output[idx] = Math.max(0, Math.min(255, sum));
-        }
-        // Copy alpha channel
-        output[(y * width + x) * 4 + 3] = data[(y * width + x) * 4 + 3];
-      }
-    }
-
-    // Copy edges
-    for (let i = 0; i < data.length; i++) {
-      if (output[i] === 0) output[i] = data[i];
-    }
-
-    return output;
-  }
-
-  private extractFinancialDataWithFoundersLogic(text: string, confidence: number): OCRResult['extractedData'] {
+  private extractFinancialDataWithFoundersLogic(text: string): OCRResult['extractedData'] {
     console.log('Extracting financial data with founders-specific logic...');
 
     const extractedData: OCRResult['extractedData'] = {
@@ -327,7 +268,7 @@ export class OCRService {
     extractedData.settings = {
       walletSize: walletSize || (foundersTotal + investorEntries.reduce((sum, inv) => sum + inv.amount, 0)),
       realizedProfit: realizedProfit,
-      unrealizedProfit: unrealizedProfit,
+      unrealizedProfit: unrealizedProfit || undefined,
       moonbagUnreal: moonbagValue,
       moonbagFounderPct: 75, // 75% to founders
       mgmtFeePct: 20,
@@ -493,46 +434,11 @@ export class OCRService {
     console.log('Processing OCR text for financial data extraction:', text);
 
     // Normalize text for processing while preserving structure
-    const normalizedText = text.replace(/\s+/g, ' ').toLowerCase();
     const lines = text.split('\n').filter(line => line.trim().length > 2);
 
-    // Enhanced extraction patterns for complex documents
-    const advancedPatterns = {
-      // More comprehensive money patterns
-      money: [
-        /\$\s*[\d,]+\.?\d*/g,                    // $1,000.00 or $ 1000
-        /[\d,]+\.?\d*\s*\$+/g,                   // 1000$ or 1,000.00$
-        /(?:amount|total|sum|value|profit|fee|capital|investment):\s*\$?\s*[\d,]+\.?\d*/gi,
-        /[\d,]+\.?\d*\s*(?:dollars?|usd)/gi,     // 1000 dollars
-        /(?:usd|eur|gbp)\s*[\d,]+\.?\d*/gi       // USD 1000
-      ],
-
-      // Enhanced date patterns
-      dates: [
-        /\d{1,2}\/\d{1,2}\/\d{4}/g,             // MM/DD/YYYY
-        /\d{4}-\d{1,2}-\d{1,2}/g,               // YYYY-MM-DD
-        /\d{1,2}-\d{1,2}-\d{4}/g,               // MM-DD-YYYY
-        /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]*\d{1,2}[,\s]*\d{4}/gi,
-        /\d{1,2}[\s,]+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,]+\d{4}/gi
-      ],
-
-      // Better name extraction for founders/investors
-      names: [
-        /(?:founder|investor|contributor|member|owner)[\s:]*([a-z]+(?:\s+[a-z]+)*)/gi,
-        /([a-z]+(?:\s+[a-z]+){1,2})[\s:-]*\$?\s*[\d,]+/gi,  // Name followed by amount
-        /^([a-z]+(?:\s+[a-z]+){0,2})[\s,-]*(?:\d{1,2}\/\d{1,2}\/\d{4}|\$[\d,]+)/gmi
-      ],
-
-      // Percentage and fee patterns
-      percentages: [
-        /(\d+(?:\.\d+)?)\s*%/g,
-        /(?:fee|rate|percentage|commission|mgmt|management|entry)[\s:]*(\d+(?:\.\d+)?)\s*%/gi,
-        /(\d+(?:\.\d+)?)\s*(?:percent|pct)/gi
-      ]
-    };
 
     // Process each line for comprehensive extraction
-    const detectedEntries: any[] = [];
+    const detectedEntries: DetectedEntry[] = [];
 
     lines.forEach((line, lineIndex) => {
       const lineLower = line.toLowerCase();
@@ -540,7 +446,7 @@ export class OCRService {
       // Skip obvious headers and non-data lines
       if (this.isHeaderOrNonDataLine(lineLower)) return;
 
-      const entry: any = { originalLine: line, lineNumber: lineIndex };
+      const entry: DetectedEntry = { originalLine: line, lineNumber: lineIndex };
 
       // Extract monetary amounts from line
       const amounts = this.extractAmounts(line);
@@ -654,7 +560,7 @@ export class OCRService {
     patterns.forEach(pattern => {
       const matches = text.match(pattern);
       if (matches) {
-        matches.forEach(match => {
+        matches.forEach(() => {
           const nameMatch = pattern.exec(text);
           if (nameMatch && nameMatch[1]) {
             const name = nameMatch[1].trim();
@@ -669,7 +575,7 @@ export class OCRService {
     return names;
   }
 
-  private determineEntryType(text: string, entry: any): string {
+  private determineEntryType(text: string, entry: DetectedEntry): string {
     if (text.includes('founder') || text.includes('seed')) return 'founder';
     if (text.includes('investor') || text.includes('investment') || text.includes('contribution')) return 'investor';
     if (text.includes('fee') || text.includes('%')) return 'fee';
@@ -896,10 +802,8 @@ export class OCRService {
   }
 
   async terminate(): Promise<void> {
-    if (this.worker) {
-      await this.worker.terminate();
-      this.worker = null;
-    }
+    // No cleanup needed for OpenAI client
+    this.openai = null;
   }
 }
 

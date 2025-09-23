@@ -182,10 +182,10 @@ export default function PredictiveAnalytics() {
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low': return '#4CAF50';
-      case 'medium': return '#FF9800';
-      case 'high': return '#F44336';
-      default: return '#666';
+      case 'low': return 'var(--good)';
+      case 'medium': return 'var(--warn)';
+      case 'high': return 'var(--bad)';
+      default: return 'var(--muted)';
     }
   };
 
@@ -215,10 +215,10 @@ export default function PredictiveAnalytics() {
       {error && (
         <div style={{
           padding: '12px',
-          backgroundColor: '#ffebee',
-          border: '1px solid #e57373',
+          backgroundColor: 'rgba(255, 107, 107, 0.1)',
+          border: '1px solid var(--bad)',
           borderRadius: '4px',
-          color: '#c62828',
+          color: 'var(--bad)',
           marginBottom: '16px'
         }}>
           ❌ {error}
@@ -232,27 +232,27 @@ export default function PredictiveAnalytics() {
             <div style={{
               marginBottom: '20px',
               padding: '16px',
-              backgroundColor: '#f8f9fa',
+              backgroundColor: 'var(--ink)',
               borderRadius: '6px',
-              border: '1px solid #dee2e6'
+              border: '1px solid var(--line)'
             }}>
-              <h4>📊 ROI Projections ({prediction.roi_projection.timeframe_months} months)</h4>
+              <h4 style={{ color: 'var(--text)' }}>📊 ROI Projections ({prediction.roi_projection.timeframe_months} months)</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 <div style={{ textAlign: 'center', padding: '8px' }}>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Conservative</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4CAF50' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Conservative</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--good)' }}>
                     {(prediction.roi_projection.conservative * 100).toFixed(1)}%
                   </div>
                 </div>
                 <div style={{ textAlign: 'center', padding: '8px' }}>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Moderate</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#FF9800' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Moderate</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--warn)' }}>
                     {(prediction.roi_projection.moderate * 100).toFixed(1)}%
                   </div>
                 </div>
                 <div style={{ textAlign: 'center', padding: '8px' }}>
-                  <div style={{ fontSize: '12px', color: '#666' }}>Aggressive</div>
-                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#F44336' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Aggressive</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--bad)' }}>
                     {(prediction.roi_projection.aggressive * 100).toFixed(1)}%
                   </div>
                 </div>
@@ -264,17 +264,17 @@ export default function PredictiveAnalytics() {
           <div style={{
             marginBottom: '20px',
             padding: '16px',
-            backgroundColor: '#fff',
+            backgroundColor: 'var(--panel)',
             borderRadius: '6px',
-            border: '1px solid #dee2e6'
+            border: '1px solid var(--line)'
           }}>
-            <h4>⚠️ Risk Assessment</h4>
+            <h4 style={{ color: 'var(--text)' }}>⚠️ Risk Assessment</h4>
             <div style={{
               display: 'inline-block',
               padding: '4px 12px',
               borderRadius: '20px',
               backgroundColor: getRiskColor(prediction.risk_assessment.overall_risk),
-              color: 'white',
+              color: 'var(--text)',
               fontWeight: 'bold',
               textTransform: 'uppercase',
               fontSize: '12px',
@@ -285,10 +285,10 @@ export default function PredictiveAnalytics() {
 
             {prediction.risk_assessment.factors.length > 0 && (
               <div style={{ marginBottom: '12px' }}>
-                <strong>Risk Factors:</strong>
+                <strong style={{ color: 'var(--text)' }}>Risk Factors:</strong>
                 <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                   {prediction.risk_assessment.factors.map((factor, idx) => (
-                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px' }}>{factor}</li>
+                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px', color: 'var(--text)' }}>{factor}</li>
                   ))}
                 </ul>
               </div>
@@ -296,10 +296,10 @@ export default function PredictiveAnalytics() {
 
             {prediction.risk_assessment.recommendations.length > 0 && (
               <div>
-                <strong>Recommendations:</strong>
+                <strong style={{ color: 'var(--text)' }}>Recommendations:</strong>
                 <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                   {prediction.risk_assessment.recommendations.map((rec, idx) => (
-                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px', color: '#2e7d32' }}>{rec}</li>
+                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px', color: 'var(--good)' }}>{rec}</li>
                   ))}
                 </ul>
               </div>
@@ -309,18 +309,18 @@ export default function PredictiveAnalytics() {
           {/* Optimization Suggestions */}
           <div style={{
             padding: '16px',
-            backgroundColor: '#f1f8e9',
+            backgroundColor: 'rgba(53, 199, 89, 0.1)',
             borderRadius: '6px',
-            border: '1px solid #c8e6c9'
+            border: '1px solid var(--good)'
           }}>
-            <h4>💡 Optimization Suggestions</h4>
+            <h4 style={{ color: 'var(--text)' }}>💡 Optimization Suggestions</h4>
 
             {prediction.optimization_suggestions.fee_structure.length > 0 && (
               <div style={{ marginBottom: '12px' }}>
-                <strong>Fee Structure:</strong>
+                <strong style={{ color: 'var(--text)' }}>Fee Structure:</strong>
                 <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                   {prediction.optimization_suggestions.fee_structure.map((suggestion, idx) => (
-                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px' }}>{suggestion}</li>
+                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px', color: 'var(--text)' }}>{suggestion}</li>
                   ))}
                 </ul>
               </div>
@@ -328,10 +328,10 @@ export default function PredictiveAnalytics() {
 
             {prediction.optimization_suggestions.allocation_strategy.length > 0 && (
               <div style={{ marginBottom: '12px' }}>
-                <strong>Allocation Strategy:</strong>
+                <strong style={{ color: 'var(--text)' }}>Allocation Strategy:</strong>
                 <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                   {prediction.optimization_suggestions.allocation_strategy.map((suggestion, idx) => (
-                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px' }}>{suggestion}</li>
+                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px', color: 'var(--text)' }}>{suggestion}</li>
                   ))}
                 </ul>
               </div>
@@ -339,10 +339,10 @@ export default function PredictiveAnalytics() {
 
             {prediction.optimization_suggestions.timing_recommendations.length > 0 && (
               <div>
-                <strong>Timing Recommendations:</strong>
+                <strong style={{ color: 'var(--text)' }}>Timing Recommendations:</strong>
                 <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                   {prediction.optimization_suggestions.timing_recommendations.map((rec, idx) => (
-                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px' }}>{rec}</li>
+                    <li key={idx} style={{ marginBottom: '4px', fontSize: '13px', color: 'var(--text)' }}>{rec}</li>
                   ))}
                 </ul>
               </div>
@@ -351,7 +351,7 @@ export default function PredictiveAnalytics() {
         </div>
       )}
 
-      <div style={{ marginTop: '16px', fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '16px', fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic' }}>
         💡 Predictions are based on current fund settings and historical market patterns. Results should be used for guidance only.
       </div>
     </div>

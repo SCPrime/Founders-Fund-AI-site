@@ -10,6 +10,13 @@ interface InvestorFee {
   feeAmount: number;
 }
 
+interface ContributionData {
+  name?: string;
+  cls?: string;
+  amount?: number;
+  date?: string;
+}
+
 export default function FeeBreakdown() {
   const calc = useCalculator();
   const [investorFees, setInvestorFees] = useState<InvestorFee[]>([]);
@@ -17,7 +24,7 @@ export default function FeeBreakdown() {
 
   useEffect(() => {
     const calculateFees = () => {
-      const investorData = (window as any).getInvestorData?.() || [];
+      const investorData = (window as { getInvestorData?: () => ContributionData[] }).getInvestorData?.() || [];
 
       if (investorData.length === 0) {
         setInvestorFees([]);
@@ -27,12 +34,11 @@ export default function FeeBreakdown() {
 
       const windowStart = new Date(calc.winStart);
       const windowEnd = new Date(calc.winEnd);
-      const windowDays = Math.max(1, Math.ceil((windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60 * 24)));
 
       // Group contributions by investor
-      const investorGroups: { [key: string]: any[] } = {};
+      const investorGroups: { [key: string]: ContributionData[] } = {};
 
-      investorData.forEach((contrib: any) => {
+      investorData.forEach((contrib: ContributionData) => {
         const key = `${contrib.name || 'Unknown'}_${contrib.cls || 'investor'}`;
         if (!investorGroups[key]) {
           investorGroups[key] = [];
@@ -47,7 +53,6 @@ export default function FeeBreakdown() {
       Object.values(investorGroups).forEach(contributions => {
         if (contributions.length === 0) return;
 
-        const investor = contributions[0];
         let dollarDays = 0;
 
         contributions.forEach(contrib => {

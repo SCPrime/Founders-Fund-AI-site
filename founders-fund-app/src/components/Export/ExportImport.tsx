@@ -129,7 +129,7 @@ export default function ExportImport() {
       } else {
         setMessage('❌ Invalid JSON format');
       }
-    } catch (error) {
+    } catch {
       setMessage('❌ Error parsing JSON');
     }
     setTimeout(() => setMessage(''), 3000);
@@ -177,7 +177,7 @@ export default function ExportImport() {
       doc.save(`founders-fund-report-${new Date().toISOString().split('T')[0]}.pdf`);
       setMessage('✅ PDF report generated');
       setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
+    } catch {
       setMessage('❌ Error generating PDF');
       setTimeout(() => setMessage(''), 3000);
     }
@@ -189,7 +189,7 @@ export default function ExportImport() {
     if (saved) {
       try {
         setSnapshots(JSON.parse(saved));
-      } catch (error) {
+      } catch {
         console.warn('Failed to load snapshots from localStorage');
       }
     }

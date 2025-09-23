@@ -14,7 +14,7 @@ export default function CacheBuster() {
     setVersion(timestamp.toString().slice(-6));
 
     // Add version to window for debugging
-    (window as any).APP_VERSION = timestamp;
+    (window as { APP_VERSION?: number }).APP_VERSION = timestamp;
 
     // Clear any existing service worker cache
     if ('serviceWorker' in navigator) {

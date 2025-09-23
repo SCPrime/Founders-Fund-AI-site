@@ -3,8 +3,24 @@
 import React, { useState, useRef } from 'react';
 import OCRTestSuite from './OCRTestSuite';
 
+interface ExtractedData {
+  founders?: Array<{
+    name?: string;
+    amount?: number;
+    date?: string;
+    cls?: string;
+  }>;
+  investors?: Array<{
+    name?: string;
+    amount?: number;
+    date?: string;
+    cls?: string;
+  }>;
+  settings?: Record<string, unknown>;
+}
+
 interface OCRProcessorProps {
-  onOCRComplete: (extractedData: any) => void;
+  onOCRComplete: (extractedData: ExtractedData) => void;
   onError: (error: string) => void;
 }
 
@@ -22,7 +38,7 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
   });
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState<string>('');
-  const [ocrResults, setOcrResults] = useState<any>(null);
+  const [ocrResults, setOcrResults] = useState<ExtractedData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -100,8 +116,8 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
       // Debug logging for troubleshooting
       console.log('OCR Results:', result.extractedData);
       console.log('Auto-population functions available:', {
-        populateFoundersFromAI: typeof (window as any).populateFoundersFromAI,
-        populateInvestorsFromAI: typeof (window as any).populateInvestorsFromAI
+        populateFoundersFromAI: typeof (window as Record<string, unknown>).populateFoundersFromAI,
+        populateInvestorsFromAI: typeof (window as Record<string, unknown>).populateInvestorsFromAI
       });
 
       // Force auto-population with debug feedback
@@ -228,73 +244,6 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
     img.src = imageUrl;
   };
 
-  const performAutoPopulation = (extractedData: any) => {
-    console.log('Starting auto-population with data:', extractedData);
-
-    // Combine founders and investors into single dataset for proper fee calculation
-    const allEntries = [
-      ...(extractedData.founders || []),
-      ...(extractedData.investors || [])
-    ];
-
-    if (allEntries.length > 0) {
-      console.log('Populating combined founders and investors:', allEntries);
-
-      // Calculate fees and update founders amounts
-      const foundersWithFees = allEntries.map(entry => {
-        if (entry.cls === 'founder') {
-          // Calculate total fees that founders receive
-          const investorEntries = allEntries.filter(e => e.cls === 'investor');
-          let totalEntryFees = 0;
-          let totalMgmtFees = 0;
-
-          // Entry fees from all investors
-          investorEntries.forEach(investor => {
-            totalEntryFees += investor.amount * 0.10; // 10% entry fee
-          });
-
-          // Management fees from realized profit (default 20k if not specified)
-          const realizedProfit = extractedData.settings?.realizedProfit || 20000;
-          totalMgmtFees = realizedProfit * 0.20; // 20% management fee
-
-          // Moonbag calculation: 75% to founders, 25% to investors
-          const moonbagValue = extractedData.settings?.unrealizedProfit || 0;
-          const moonbagToFounders = moonbagValue * 0.75;
-
-          // Founders total = seed money + fees received + moonbag share
-          const foundersTotal = 5000 + totalEntryFees + totalMgmtFees + moonbagToFounders;
-
-          console.log('Founders comprehensive calculation:', {
-            seedMoney: 5000,
-            totalEntryFees,
-            totalMgmtFees,
-            moonbagValue,
-            moonbagToFounders,
-            foundersTotal
-          });
-
-          return {
-            ...entry,
-            amount: Math.round(foundersTotal)
-          };
-        }
-        return entry;
-      });
-
-      if (typeof (window as any).populateInvestorsFromAI === 'function') {
-        (window as any).populateInvestorsFromAI(foundersWithFees);
-        console.log('✅ All entries populated with proper founder calculations');
-      } else {
-        console.warn('populateInvestorsFromAI function not available');
-      }
-    }
-
-    // Force a refresh of the results section if available
-    if (typeof (window as any).refreshCalculatorResults === 'function') {
-      (window as any).refreshCalculatorResults();
-      console.log('✅ Calculator results refreshed');
-    }
-  };
 
   const resetProcessor = () => {
     setProcessingState({
@@ -492,7 +441,7 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
                 padding: '10px'
               }}>
                 <strong>👥 Founders ({ocrResults.founders.length})</strong>
-                {ocrResults.founders.map((founder: any, index: number) => (
+                {ocrResults.founders.map((founder, index: number) => (
                   <div key={index} style={{ fontSize: '12px', marginTop: '4px' }}>
                     {founder.name || 'Unnamed'}: ${founder.amount?.toLocaleString()} ({founder.date})
                   </div>
@@ -508,7 +457,7 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
                 padding: '10px'
               }}>
                 <strong>💼 Investors ({ocrResults.investors.length})</strong>
-                {ocrResults.investors.map((investor: any, index: number) => (
+                {ocrResults.investors.map((investor, index: number) => (
                   <div key={index} style={{ fontSize: '12px', marginTop: '4px' }}>
                     {investor.name || 'Unnamed'}: ${investor.amount?.toLocaleString()} ({investor.date})
                   </div>

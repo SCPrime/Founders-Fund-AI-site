@@ -107,7 +107,7 @@ Return ONLY the JSON object, no explanatory text.`
       // Remove any markdown formatting if present
       const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       pnlData = JSON.parse(jsonStr);
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse OpenAI response:', content);
 
       // Try to extract values using regex as fallback

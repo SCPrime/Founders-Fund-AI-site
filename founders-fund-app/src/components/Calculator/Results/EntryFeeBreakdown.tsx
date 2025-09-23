@@ -1,7 +1,6 @@
 'use client';
 
-import { useCalculator } from '@/context/CalculatorContext';
-import { useEffect, useState } from 'react';
+import { useAllocationStore } from '@/store/allocationStore';
 
 interface InvestorEntryFee {
   name: string;
@@ -11,146 +10,123 @@ interface InvestorEntryFee {
 }
 
 export default function EntryFeeBreakdown() {
-  const calc = useCalculator();
-  const [entryFees, setEntryFees] = useState<InvestorEntryFee[]>([]);
-  const [totalEntryFees, setTotalEntryFees] = useState(0);
-
-  useEffect(() => {
-    const calculateEntryFees = () => {
-      const investorData = (window as any).getInvestorData?.() || [];
-
-      if (investorData.length === 0) {
-        setEntryFees([]);
-        setTotalEntryFees(0);
-        return;
-      }
-
-      const windowStart = new Date(calc.winStart);
-      const entryFeeRate = calc.entryFeePct / 100;
-
-      // Group contributions by investor
-      const investorGroups: { [key: string]: any[] } = {};
-
-      investorData.forEach((contrib: any) => {
-        const key = `${contrib.name || 'Unknown'}_${contrib.cls || 'investor'}`;
-        if (!investorGroups[key]) {
-          investorGroups[key] = [];
-        }
-        investorGroups[key].push(contrib);
-      });
-
-      const entryFeeResults: InvestorEntryFee[] = [];
-
-      // Calculate entry fees for each investor
-      Object.values(investorGroups).forEach(contributions => {
-        if (contributions.length === 0) return;
-
-        const investor = contributions[0];
-        let preStartFees = 0;
-        let inWindowFees = 0;
-
-        contributions.forEach(contrib => {
-          const contribDate = new Date(contrib.date);
-          const contribAmount = Number(contrib.amount) || 0;
-          const entryFee = contribAmount * entryFeeRate;
-
-          if (contribDate < windowStart) {
-            preStartFees += entryFee;
-          } else {
-            inWindowFees += entryFee;
-          }
-        });
-
-        const totalFees = preStartFees + inWindowFees;
-
-        if (totalFees > 0) {
-          entryFeeResults.push({
-            name: investor.name || 'Unknown',
-            preStartFees: preStartFees,
-            inWindowFees: inWindowFees,
-            totalFees: totalFees
-          });
-        }
-      });
-
-      const totalAmount = entryFeeResults.reduce((sum, fee) => sum + fee.totalFees, 0);
-
-      setEntryFees(entryFeeResults);
-      setTotalEntryFees(totalAmount);
-    };
-
-    calculateEntryFees();
-  }, [calc.winStart, calc.entryFeePct]);
+  const { state, outputs } = useAllocationStore();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
+  // Calculate entry fees from actual contribution legs
+  const calculateEntryFees = (): InvestorEntryFee[] => {
+    const windowStart = new Date(state.window.start);
+    const entryFeeLegs = state.contributions.filter(leg => leg.type === 'founders_entry_fee');
+
+    if (entryFeeLegs.length === 0) {
+      return [];
+    }
+
+    // Group by investor name (extract from leg.id which has format like "laura_2025-07-22_0_entry_fee")
+    const feesByInvestor: Record<string, InvestorEntryFee> = {};
+
+    entryFeeLegs.forEach(leg => {
+      // Extract investor name from the corresponding net contribution
+      const baseLegId = leg.id.replace('_entry_fee', '');
+      const netLeg = state.contributions.find(c => c.id === baseLegId + '_net');
+      const investorName = netLeg?.name || 'Unknown';
+
+      if (!feesByInvestor[investorName]) {
+        feesByInvestor[investorName] = {
+          name: investorName,
+          preStartFees: 0,
+          inWindowFees: 0,
+          totalFees: 0
+        };
+      }
+
+      const legDate = new Date(leg.ts);
+      if (legDate < windowStart) {
+        feesByInvestor[investorName].preStartFees += leg.amount;
+      } else {
+        feesByInvestor[investorName].inWindowFees += leg.amount;
+      }
+      feesByInvestor[investorName].totalFees += leg.amount;
+    });
+
+    return Object.values(feesByInvestor);
+  };
+
+  const entryFees = calculateEntryFees();
+  const totalPreStart = entryFees.reduce((sum, fee) => sum + fee.preStartFees, 0);
+  const totalInWindow = entryFees.reduce((sum, fee) => sum + fee.inWindowFees, 0);
+  const totalEntryFees = entryFees.reduce((sum, fee) => sum + fee.totalFees, 0);
+
   return (
     <div className="panel">
-      <h2>Entry Fee Breakdown — Routed to Founders ({calc.entryFeePct}%)</h2>
-      <div className="small">
-        Entry fees charged on investor contributions at {calc.entryFeePct}% rate, paid to founders
-      </div>
-      <div className="tablewrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Investor</th>
-              <th className="right">Entry fees — Pre-start</th>
-              <th className="right">Entry fees — In window</th>
-              <th className="right">Total entry fees</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entryFees.length === 0 ? (
+      <h2>🎯 Entry Fee Breakdown</h2>
+      <p className="small">
+        Entry fees ({(state.constants.ENTRY_FEE_RATE * 100).toFixed(0)}%) paid by investors to founders
+      </p>
+
+      {entryFees.length === 0 ? (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          color: 'var(--muted)',
+          fontStyle: 'italic'
+        }}>
+          No entry fees calculated. Add investor contributions to see breakdown.
+        </div>
+      ) : (
+        <div className="table-container">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={4} className="muted">
-                  No entry fee data available. Add investors in the table above to see entry fee breakdown.
-                </td>
+                <th>Investor</th>
+                <th>Pre-start Fees</th>
+                <th>In-window Fees</th>
+                <th>Total Fees</th>
               </tr>
-            ) : (
-              entryFees.map((fee, index) => (
-                <tr key={index}>
+            </thead>
+            <tbody>
+              {entryFees.map((fee, idx) => (
+                <tr key={idx}>
                   <td><strong>{fee.name}</strong></td>
-                  <td className="right">{formatCurrency(fee.preStartFees)}</td>
-                  <td className="right">{formatCurrency(fee.inWindowFees)}</td>
-                  <td className="right"><strong>{formatCurrency(fee.totalFees)}</strong></td>
+                  <td data-testid="entry-fees-prestart-total">{formatCurrency(fee.preStartFees)}</td>
+                  <td data-testid="entry-fees-inwindow-total">{formatCurrency(fee.inWindowFees)}</td>
+                  <td>{formatCurrency(fee.totalFees)}</td>
                 </tr>
-              ))
-            )}
-            {entryFees.length > 0 && (
-              <tr style={{ borderTop: '2px solid #333', fontWeight: 'bold' }}>
-                <td>TOTAL ENTRY FEES</td>
-                <td className="right">
-                  {formatCurrency(entryFees.reduce((sum, fee) => sum + fee.preStartFees, 0))}
-                </td>
-                <td className="right">
-                  {formatCurrency(entryFees.reduce((sum, fee) => sum + fee.inWindowFees, 0))}
-                </td>
-                <td className="right"><strong>{formatCurrency(totalEntryFees)}</strong></td>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="total-row">
+                <td><strong>Totals</strong></td>
+                <td><strong>{formatCurrency(totalPreStart)}</strong></td>
+                <td><strong>{formatCurrency(totalInWindow)}</strong></td>
+                <td><strong>{formatCurrency(totalEntryFees)}</strong></td>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="small">
-        {totalEntryFees > 0 && (
-          <>
-            Total entry fees collected: {formatCurrency(totalEntryFees)} |
-            Entry fee rate: {calc.entryFeePct}% of contributions |
-            {calc.feeReducesInvestor === 'yes' ? 'Reduces investor contributions' : 'Does not reduce investor contributions'}
-          </>
-        )}
-        {totalEntryFees === 0 && (
-          <>Entry fees are capital transfers to Founders.</>
-        )}
-      </div>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {outputs && (
+        <div style={{
+          marginTop: '16px',
+          padding: '12px',
+          backgroundColor: 'var(--ink)',
+          borderRadius: '6px',
+          fontSize: '13px',
+          color: 'var(--muted)'
+        }}>
+          <strong>Summary:</strong> Total entry fees of {formatCurrency(totalEntryFees)} go to founders immediately upon investment.
+          These fees are included in founders&apos; dollar-days calculation but do not reduce investor capital credited.
+        </div>
+      )}
     </div>
   );
 }

@@ -1,204 +1,16 @@
 'use client';
 
-import { useCalculator } from '@/context/CalculatorContext';
-import { useEffect, useState } from 'react';
-
-interface InvestorContribution {
-  name: string;
-  date: string;
-  amount: number;
-  rule: string;
-  cls: string;
-}
-
-interface CalculatedResult {
-  name: string;
-  cls: string;
-  startCapital: number;
-  contributions: number;
-  dollarDays: number;
-  twShare: number;
-  baseProfitShare: number;
-  regularFee: number;
-  moonbag: number;
-  draws: number;
-  netProfit: number;
-  pgp: number;
-  endCapital: number;
-}
+import { useFundStore } from '@/store/fundStore';
 
 export default function TimeWeightedResults() {
-  const calc = useCalculator();
-  const [results, setResults] = useState<CalculatedResult[]>([]);
-  const [totalStats, setTotalStats] = useState({
-    totalContributions: 0,
-    totalDollarDays: 0,
-    totalBaseProfitShare: 0,
-    totalFees: 0,
-    totalNetProfit: 0
-  });
-
-  useEffect(() => {
-    const calculateResults = () => {
-      // Get investor data from global window object if available
-      const investorData = (window as any).getInvestorData?.() || [];
-
-      if (investorData.length === 0) {
-        setResults([]);
-        return;
-      }
-
-      const windowStart = new Date(calc.winStart);
-      const windowEnd = new Date(calc.winEnd);
-      const windowDays = Math.max(1, Math.ceil((windowEnd.getTime() - windowStart.getTime()) / (1000 * 60 * 60 * 24)));
-
-      // Group contributions by investor
-      const investorGroups: { [key: string]: InvestorContribution[] } = {};
-
-      investorData.forEach((contrib: any) => {
-        const key = `${contrib.name || 'Unknown'}_${contrib.cls || 'investor'}`;
-        if (!investorGroups[key]) {
-          investorGroups[key] = [];
-        }
-        investorGroups[key].push({
-          name: contrib.name || 'Unknown',
-          date: contrib.date,
-          amount: Number(contrib.amount) || 0,
-          rule: contrib.rule || 'net',
-          cls: contrib.cls || 'investor'
-        });
-      });
-
-      const calculatedResults: CalculatedResult[] = [];
-      let totalDollarDays = 0;
-
-      // Calculate dollar-days for each investor
-      Object.values(investorGroups).forEach(contributions => {
-        if (contributions.length === 0) return;
-
-        const investor = contributions[0];
-        let dollarDays = 0;
-        let totalContributions = 0;
-
-        contributions.forEach(contrib => {
-          const contribDate = new Date(contrib.date);
-          if (contribDate >= windowStart && contribDate <= windowEnd) {
-            const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));
-            dollarDays += contrib.amount * daysInWindow;
-            totalContributions += contrib.amount;
-          }
-        });
-
-        // For founders, include their $5,000 seed amount in start capital
-        const startCapital = investor.cls === 'founder' ? 5000 : 0;
-
-        calculatedResults.push({
-          name: investor.name,
-          cls: investor.cls,
-          startCapital: startCapital,
-          contributions: totalContributions,
-          dollarDays: dollarDays,
-          twShare: 0, // Will calculate after total is known
-          baseProfitShare: 0,
-          regularFee: 0,
-          moonbag: 0,
-          draws: investor.cls === 'founder' ? calc.drawPerFounder : 0,
-          netProfit: 0,
-          pgp: 0,
-          endCapital: 0
-        });
-
-        totalDollarDays += dollarDays;
-      });
-
-      // Calculate time-weighted shares and profits
-      const totalRealizedProfit = calc.realizedProfit;
-      const mgmtFeeRate = calc.mgmtFeePct / 100;
-      const entryFeeRate = calc.entryFeePct / 100;
-
-      let totalBaseProfitShare = 0;
-      let totalFees = 0;
-      let totalNetProfit = 0;
-      let totalContributions = 0;
-
-      // First pass: calculate time-weighted shares and base profits
-      calculatedResults.forEach(result => {
-        result.twShare = totalDollarDays > 0 ? (result.dollarDays / totalDollarDays) * 100 : 0;
-        result.baseProfitShare = (result.twShare / 100) * totalRealizedProfit;
-      });
-
-      // Calculate totals for fee distribution
-      const totalInvestorMgmtFees = calculatedResults
-        .filter(r => r.cls === 'investor')
-        .reduce((sum, r) => sum + (r.baseProfitShare * mgmtFeeRate), 0);
-
-      const totalInvestorEntryFees = calculatedResults
-        .filter(r => r.cls === 'investor')
-        .reduce((sum, r) => sum + (r.contributions * entryFeeRate), 0);
-
-      const founderCount = calculatedResults.filter(r => r.cls === 'founder').length || calc.founderCount;
-      const totalUnrealizedProfit = calc.moonbagUnreal || 0;
-
-      // Second pass: calculate fees and moonbag
-      calculatedResults.forEach(result => {
-        // Management fees
-        if (result.cls === 'investor') {
-          result.regularFee = -(result.baseProfitShare * mgmtFeeRate); // Negative = they pay
-        } else if (result.cls === 'founder') {
-          result.regularFee = totalInvestorMgmtFees / Math.max(1, founderCount); // Positive = they receive
-        }
-
-        // Entry fees
-        let entryFeeAmount = 0;
-        if (result.cls === 'investor') {
-          entryFeeAmount = -(result.contributions * entryFeeRate); // Negative = they pay
-          if (calc.feeReducesInvestor === 'yes') {
-            result.contributions *= (1 - entryFeeRate); // Reduce their effective contribution
-          }
-        } else if (result.cls === 'founder') {
-          entryFeeAmount = totalInvestorEntryFees / Math.max(1, founderCount); // Positive = they receive
-        }
-
-        // Moonbag distribution: 75% to founders, 25% time-weighted to investors (no mgmt fees)
-        if (result.cls === 'founder') {
-          result.moonbag = (totalUnrealizedProfit * 0.75) / Math.max(1, founderCount);
-        } else if (result.cls === 'investor') {
-          // 25% of unrealized profit distributed time-weighted to investors
-          result.moonbag = (totalUnrealizedProfit * 0.25) * (result.twShare / 100);
-        }
-
-        // Combine all fees for display
-        result.regularFee += entryFeeAmount;
-
-        // Net profit (base profit + fees + moonbag - draws)
-        // Note: regularFee is already signed correctly (+ for receiving, - for paying)
-        result.netProfit = result.baseProfitShare + result.regularFee + result.moonbag - result.draws;
-
-        // Period Gross Profit percentage
-        result.pgp = result.contributions > 0 ? (result.netProfit / result.contributions) * 100 : 0;
-
-        // End capital
-        result.endCapital = result.contributions + result.netProfit;
-
-        // Accumulate totals
-        totalBaseProfitShare += result.baseProfitShare;
-        totalFees += result.regularFee;
-        totalNetProfit += result.netProfit;
-        totalContributions += result.contributions;
-      });
-
-      setResults(calculatedResults);
-      setTotalStats({
-        totalContributions,
-        totalDollarDays,
-        totalBaseProfitShare,
-        totalFees,
-        totalNetProfit
-      });
-    };
-
-    calculateResults();
-  }, [calc.winStart, calc.winEnd, calc.realizedProfit, calc.mgmtFeePct, calc.entryFeePct, calc.feeReducesInvestor, calc.moonbagReal, calc.moonbagFounderPct, calc.founderCount, calc.drawPerFounder]);
+  const {
+    results,
+    summary,
+    settings,
+    isCalculating,
+    lastCalculated,
+    validationIssues
+  } = useFundStore();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -213,84 +25,267 @@ export default function TimeWeightedResults() {
     return `${percent.toFixed(1)}%`;
   };
 
+  const hasErrors = validationIssues.some(issue => issue.type === 'error');
+
   return (
     <div className="panel">
-      <h2>Results (time-weighted)</h2>
-      <div className="small">
-        Window: {calc.winStart} to {calc.winEnd} |
-        Total Realized Profit: {formatCurrency(calc.realizedProfit)} |
-        Management Fee: {calc.mgmtFeePct}% | Entry Fee: {calc.entryFeePct}%
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>Results (time-weighted)</h2>
+        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+          {isCalculating ? (
+            <span style={{ color: 'var(--warn)' }}>🔄 Calculating...</span>
+          ) : lastCalculated ? (
+            <span>Updated: {lastCalculated.toLocaleTimeString()}</span>
+          ) : (
+            <span>Not calculated</span>
+          )}
+        </div>
       </div>
+
+      <div className="small">
+        Window: {settings.winStart} to {settings.winEnd} |
+        Total Realized Profit: {formatCurrency(settings.realizedProfit)} |
+        Management Fee: {settings.mgmtFeePct}% | Entry Fee: {settings.entryFeePct}%
+        {settings.moonbagUnreal > 0 && ` | Unrealized: ${formatCurrency(settings.moonbagUnreal)}`}
+      </div>
+
+      {/* Error Warning */}
+      {hasErrors && (
+        <div style={{
+          padding: '8px 12px',
+          backgroundColor: '#ffebee',
+          border: '1px solid #f44336',
+          borderRadius: '4px',
+          color: '#c62828',
+          fontSize: '12px',
+          marginTop: '8px'
+        }}>
+          ❌ <strong>Calculation errors detected</strong> - Results may be inaccurate. Check validation panel.
+        </div>
+      )}
+
       <div className="tablewrap">
         <table style={{ marginTop: '10px' }}>
           <thead>
             <tr>
               <th>Class / Name</th>
-              <th className="right">Start-of-window capital</th>
-              <th className="right">Contribs in window</th>
-              <th className="right">Dollar-days (weight)</th>
+              <th className="right">Start capital</th>
+              <th className="right">Contributions</th>
+              <th className="right">Dollar-days</th>
               <th className="right">TW Share %</th>
-              <th className="right">Base profit share</th>
-              <th className="right">Regular fund fee ({calc.mgmtFeePct}%)</th>
-              <th className="right">Moonbag (realized)</th>
+              <th className="right">Base profit</th>
+              <th className="right">Fees ({settings.mgmtFeePct}% + {settings.entryFeePct}%)</th>
+              <th className="right">Moonbag</th>
               <th className="right">Draws</th>
-              <th className="right">Net Profit (after fees)</th>
-              <th className="right">PGP (period %)</th>
+              <th className="right">Net Profit</th>
+              <th className="right">PGP %</th>
               <th className="right">End capital</th>
             </tr>
           </thead>
           <tbody>
             {results.length === 0 ? (
               <tr>
-                <td colSpan={12} className="muted">
-                  No investor data available. Add investors in the table above or click "Load baseline" to see results.
+                <td colSpan={12} className="muted" style={{ textAlign: 'center', padding: '20px' }}>
+                  {isCalculating ? (
+                    'Calculating results...'
+                  ) : (
+                    'No data available. Add contributions in the table above to see results.'
+                  )}
                 </td>
               </tr>
             ) : (
-              results.map((result, index) => (
-                <tr key={index} className={result.cls === 'founder' ? 'founder-row' : 'investor-row'}>
+              <>
+                {results.map((result) => (
+                  <tr
+                    key={result.id}
+                    className={result.cls === 'founder' ? 'founder-row' : 'investor-row'}
+                    style={{
+                      opacity: isCalculating ? 0.6 : 1,
+                      transition: 'opacity 0.2s'
+                    }}
+                  >
+                    <td>
+                      <strong>{result.name}</strong>
+                      <br />
+                      <span className="small" style={{
+                        color: result.cls === 'founder' ? '#4CAF50' : '#2196f3',
+                        fontWeight: 'bold'
+                      }}>
+                        {result.cls}
+                      </span>
+                    </td>
+                    <td className="right">{formatCurrency(result.startCapital)}</td>
+                    <td className="right">{formatCurrency(result.contributions)}</td>
+                    <td className="right">
+                      <span title={`${result.dollarDays.toLocaleString()} dollar-days`}>
+                        {result.dollarDays.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="right">
+                      <strong>{formatPercent(result.twShare)}</strong>
+                    </td>
+                    <td className="right">{formatCurrency(result.baseProfitShare)}</td>
+                    <td className="right" style={{
+                      color: result.regularFee > 0 ? '#4CAF50' : result.regularFee < 0 ? '#f44336' : 'inherit'
+                    }}>
+                      {formatCurrency(result.regularFee)}
+                    </td>
+                    <td className="right">
+                      {result.moonbag > 0 ? (
+                        <span style={{ color: 'var(--warn)', fontWeight: 'bold' }}>
+                          {formatCurrency(result.moonbag)}
+                        </span>
+                      ) : (
+                        formatCurrency(result.moonbag)
+                      )}
+                    </td>
+                    <td className="right">
+                      {result.draws > 0 ? (
+                        <span style={{ color: '#f44336' }}>
+                          -{formatCurrency(result.draws)}
+                        </span>
+                      ) : (
+                        formatCurrency(result.draws)
+                      )}
+                    </td>
+                    <td className="right">
+                      <strong style={{
+                        color: result.netProfit > 0 ? '#4CAF50' : result.netProfit < 0 ? '#f44336' : 'inherit',
+                        fontSize: '16px'
+                      }}>
+                        {formatCurrency(result.netProfit)}
+                      </strong>
+                    </td>
+                    <td className="right" style={{
+                      color: result.pgp > 0 ? '#4CAF50' : result.pgp < 0 ? '#f44336' : 'inherit'
+                    }}>
+                      {formatPercent(result.pgp)}
+                    </td>
+                    <td className="right">{formatCurrency(result.endCapital)}</td>
+                  </tr>
+                ))}
+
+                {/* Totals Row */}
+                <tr className="total-row" style={{
+                  borderTop: '2px solid var(--line)',
+                  fontWeight: 'bold',
+                  backgroundColor: 'var(--panel)'
+                }}>
                   <td>
-                    <strong>{result.name}</strong>
+                    <strong>TOTALS</strong>
                     <br />
-                    <span className="small">{result.cls}</span>
+                    <span className="small">{results.length} participants</span>
                   </td>
-                  <td className="right">{formatCurrency(result.startCapital)}</td>
-                  <td className="right">{formatCurrency(result.contributions)}</td>
-                  <td className="right">{result.dollarDays.toLocaleString()}</td>
-                  <td className="right">{formatPercent(result.twShare)}</td>
-                  <td className="right">{formatCurrency(result.baseProfitShare)}</td>
-                  <td className="right">{formatCurrency(result.regularFee)}</td>
-                  <td className="right">{formatCurrency(result.moonbag)}</td>
-                  <td className="right">{formatCurrency(result.draws)}</td>
-                  <td className="right"><strong>{formatCurrency(result.netProfit)}</strong></td>
-                  <td className="right">{formatPercent(result.pgp)}</td>
-                  <td className="right">{formatCurrency(result.endCapital)}</td>
+                  <td className="right">
+                    {formatCurrency(results.reduce((sum, r) => sum + r.startCapital, 0))}
+                  </td>
+                  <td className="right">
+                    <strong>{formatCurrency(summary.totalContributions)}</strong>
+                  </td>
+                  <td className="right">
+                    <span title={`${summary.totalDollarDays.toLocaleString()} total dollar-days over ${summary.windowDays} days`}>
+                      {summary.totalDollarDays.toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="right">
+                    <strong>100.0%</strong>
+                  </td>
+                  <td className="right">
+                    <strong>{formatCurrency(summary.totalBaseProfitShare)}</strong>
+                  </td>
+                  <td className="right" style={{
+                    color: summary.totalFees > 0 ? '#4CAF50' : summary.totalFees < 0 ? '#f44336' : 'inherit'
+                  }}>
+                    <strong>{formatCurrency(summary.totalFees)}</strong>
+                  </td>
+                  <td className="right">
+                    <strong style={{ color: 'var(--warn)' }}>
+                      {formatCurrency(summary.totalMoonbagDistributed)}
+                    </strong>
+                  </td>
+                  <td className="right">
+                    <strong style={{ color: '#f44336' }}>
+                      -{formatCurrency(summary.totalDraws)}
+                    </strong>
+                  </td>
+                  <td className="right">
+                    <strong style={{
+                      color: summary.totalNetProfit > 0 ? '#4CAF50' : summary.totalNetProfit < 0 ? '#f44336' : 'inherit',
+                      fontSize: '18px'
+                    }}>
+                      {formatCurrency(summary.totalNetProfit)}
+                    </strong>
+                  </td>
+                  <td className="right">-</td>
+                  <td className="right">
+                    <strong>{formatCurrency(results.reduce((sum, r) => sum + r.endCapital, 0))}</strong>
+                  </td>
                 </tr>
-              ))
-            )}
-            {results.length > 0 && (
-              <tr className="total-row" style={{ borderTop: '2px solid #333', fontWeight: 'bold' }}>
-                <td>TOTALS</td>
-                <td className="right">-</td>
-                <td className="right">{formatCurrency(totalStats.totalContributions)}</td>
-                <td className="right">{totalStats.totalDollarDays.toLocaleString()}</td>
-                <td className="right">100.0%</td>
-                <td className="right">{formatCurrency(totalStats.totalBaseProfitShare)}</td>
-                <td className="right">{formatCurrency(totalStats.totalFees)}</td>
-                <td className="right">-</td>
-                <td className="right">-</td>
-                <td className="right"><strong>{formatCurrency(totalStats.totalNetProfit)}</strong></td>
-                <td className="right">-</td>
-                <td className="right">-</td>
-              </tr>
+              </>
             )}
           </tbody>
         </table>
       </div>
-      <div className="small" id="domNote">
-        {calc.domLeadPct > 0 && (
-          <>Dominant Lead Fee: {calc.domLeadPct}% applied to calculations above.</>
+
+      {/* Summary Cards */}
+      {results.length > 0 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '12px',
+          marginTop: '16px',
+          padding: '12px',
+          backgroundColor: 'var(--ink)',
+          border: '1px solid var(--line)',
+          borderRadius: '6px'
+        }}>
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Fee Collection</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--good)' }}>
+              Mgmt: {formatCurrency(summary.totalMgmtFeesCollected)}
+            </div>
+            <div style={{ fontWeight: 'bold', color: 'var(--good)' }}>
+              Entry: {formatCurrency(summary.totalEntryFeesCollected)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Moonbag Distribution</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--warn)' }}>
+              Founders: {formatPercent(settings.moonbagFounderPct)}
+            </div>
+            <div style={{ fontWeight: 'bold', color: 'var(--warn)' }}>
+              Investors: {formatPercent(100 - settings.moonbagFounderPct)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Performance</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--text)' }}>
+              ROI: {formatPercent(summary.totalContributions > 0 ? (summary.totalNetProfit / summary.totalContributions) * 100 : 0)}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+              Over {summary.windowDays} days
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Validation</div>
+            <div style={{
+              fontWeight: 'bold',
+              color: hasErrors ? 'var(--bad)' : validationIssues.length > 0 ? 'var(--warn)' : 'var(--good)'
+            }}>
+              {hasErrors ? '❌ Errors' : validationIssues.length > 0 ? '⚠️ Warnings' : '✅ Valid'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+              {validationIssues.length} issue{validationIssues.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="small" id="domNote" style={{ marginTop: '8px', color: 'var(--muted)' }}>
+        {settings.domLeadPct > 0 && (
+          <>Dominant Lead Fee: {settings.domLeadPct}% applied to calculations above. • </>
         )}
+        💡 <strong>Powered by Fund Store:</strong> Real-time calculations with automatic validation
       </div>
     </div>
   );

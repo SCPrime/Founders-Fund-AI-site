@@ -89,7 +89,7 @@ Aug 26, 2025`,
   });
 }
 
-export async function POST(request: Request) {
+export async function POST() {
   return NextResponse.json({
     message: "Use GET to see simulated debug results, or upload an actual image to /api/debug-ocr"
   });
