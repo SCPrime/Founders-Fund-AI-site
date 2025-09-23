@@ -10,7 +10,9 @@
       "Bash(npx eslint:*)",
       "Bash(cat:*)",
       "Bash(npx vitest run:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Read(//c/Users/SSaint-Cyr/Documents/source/Founders-Fund-AI-site/**)"
     ],
     "deny": [],
     "ask": []
