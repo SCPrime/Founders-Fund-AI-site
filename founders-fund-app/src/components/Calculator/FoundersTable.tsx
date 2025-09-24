@@ -1,45 +1,88 @@
 'use client';
 
-import React, { useState, useCallback, type ChangeEvent } from 'react';
-import { FOUNDER_PRESET } from '@/data/presets';
-import { useCalculator } from '@/context/CalculatorContext';
-
-interface FounderRow {
-  date: string;
-  amount: string;
-}
+import React, { useCallback } from 'react';
+import { useAllocationStore } from '@/store/allocationStore';
 
 export default function FoundersTable() {
-  // Seed with preset baseline contributions
-  const [rows, setRows] = useState<FounderRow[]>(FOUNDER_PRESET.map(r => ({ date: r.date, amount: String(r.amount) })));
-  const calc = useCalculator();
+  const {
+    state,
+    addContribution,
+    updateContribution,
+    removeContribution
+  } = useAllocationStore();
 
-  const addRow = () => setRows([...rows, { date: '', amount: '' }]);
-  const removeRow = (index: number) => {
-    setRows(rows.filter((_: FounderRow, i: number) => i !== index));
+  // Get founders contributions from store
+  const foundersContributions = state.contributions.filter(c =>
+    c.owner === 'founders' && c.type !== 'founders_entry_fee'
+  );
+
+  const addRow = () => {
+    addContribution({
+      owner: 'founders',
+      name: 'Founder',
+      type: 'seed',
+      amount: 0,
+      ts: new Date().toISOString().split('T')[0],
+      cls: 'founder'
+    });
+  };
+
+  const removeRow = (id: string) => {
+    removeContribution(id);
+  };
+
+  const updateRow = (id: string, field: string, value: string | number) => {
+    const updates: Record<string, unknown> = { [field]: value };
+
+    // Convert date field to ts
+    if (field === 'date') {
+      updates.ts = value;
+    }
+
+    updateContribution(id, updates);
   };
 
   const loadPresets = () => {
-    setRows(FOUNDER_PRESET.map(r => ({ date: r.date, amount: String(r.amount) })));
-    const sum = FOUNDER_PRESET.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    calc.setWalletSize(sum);
+    // Clear existing founders contributions first
+    foundersContributions.forEach(contrib => removeContribution(contrib.id));
+
+    // Add preset data
+    const FOUNDER_PRESET = [
+      { date: '2025-07-10', amount: 5000 }
+    ];
+
+    FOUNDER_PRESET.forEach(preset => {
+      addContribution({
+        owner: 'founders',
+        name: 'Founder',
+        type: 'seed',
+        amount: preset.amount,
+        ts: preset.date,
+        cls: 'founder'
+      });
+    });
   };
 
   const clearRows = () => {
-    setRows([]);
+    foundersContributions.forEach(contrib => removeContribution(contrib.id));
   };
 
   const populateFromAI = useCallback(async (aiData: Array<{ date: string; amount: number }>) => {
-    const formattedRows = aiData.map(item => ({
-      date: item.date,
-      amount: String(item.amount)
-    }));
-    setRows(formattedRows);
+    // Clear existing founders contributions
+    foundersContributions.forEach(contrib => removeContribution(contrib.id));
 
-    // Update wallet size with total
-    const sum = aiData.reduce((s, item) => s + (Number(item.amount) || 0), 0);
-    calc.setWalletSize(sum);
-  }, [calc]);
+    // Add AI data
+    aiData.forEach(item => {
+      addContribution({
+        owner: 'founders',
+        name: 'Founder',
+        type: 'seed',
+        amount: item.amount,
+        ts: item.date,
+        cls: 'founder'
+      });
+    });
+  }, [foundersContributions, addContribution, removeContribution]);
 
   // Expose function globally for AI integration
   React.useEffect(() => {
@@ -48,12 +91,6 @@ export default function FoundersTable() {
       delete (window as unknown as { populateFoundersFromAI?: typeof populateFromAI }).populateFoundersFromAI;
     };
   }, [populateFromAI]);
-
-  const updateRow = (index: number, field: keyof FounderRow, value: string) => {
-    const newRows = [...rows];
-    newRows[index][field] = value;
-    setRows(newRows);
-  };
 
   return (
     <div className="panel" style={{ marginTop: '16px' }}>
@@ -68,25 +105,25 @@ export default function FoundersTable() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row: FounderRow, idx: number) => (
-              <tr key={idx}>
+            {foundersContributions.map((contribution) => (
+              <tr key={contribution.id}>
                 <td>
                   <input
                     type="date"
-                    value={row.date}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'date', e.target.value)}
+                    value={contribution.ts}
+                    onChange={(e) => updateRow(contribution.id, 'date', e.target.value)}
                   />
                 </td>
                 <td>
                   <input
                     type="number"
                     step="0.01"
-                    value={row.amount}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => updateRow(idx, 'amount', e.target.value)}
+                    value={contribution.amount}
+                    onChange={(e) => updateRow(contribution.id, 'amount', Number(e.target.value))}
                   />
                 </td>
                 <td>
-                  <span className="x" onClick={() => removeRow(idx)}>
+                  <span className="x" onClick={() => removeRow(contribution.id)}>
                     Remove
                   </span>
                 </td>
