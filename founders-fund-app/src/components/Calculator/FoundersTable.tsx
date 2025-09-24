@@ -44,7 +44,10 @@ export default function FoundersTable() {
 
   const loadPresets = () => {
     // Clear existing founders contributions first
-    foundersContributions.forEach(contrib => removeContribution(contrib.id));
+    const currentFoundersContributions = state.contributions.filter(c =>
+      c.owner === 'founders' && c.type !== 'founders_entry_fee'
+    );
+    currentFoundersContributions.forEach(contrib => removeContribution(contrib.id));
 
     // Add preset data
     const FOUNDER_PRESET = [
@@ -64,12 +67,18 @@ export default function FoundersTable() {
   };
 
   const clearRows = () => {
-    foundersContributions.forEach(contrib => removeContribution(contrib.id));
+    const currentFoundersContributions = state.contributions.filter(c =>
+      c.owner === 'founders' && c.type !== 'founders_entry_fee'
+    );
+    currentFoundersContributions.forEach(contrib => removeContribution(contrib.id));
   };
 
   const populateFromAI = useCallback(async (aiData: Array<{ date: string; amount: number }>) => {
     // Clear existing founders contributions
-    foundersContributions.forEach(contrib => removeContribution(contrib.id));
+    const currentFoundersContributions = state.contributions.filter(c =>
+      c.owner === 'founders' && c.type !== 'founders_entry_fee'
+    );
+    currentFoundersContributions.forEach(contrib => removeContribution(contrib.id));
 
     // Add AI data
     aiData.forEach(item => {
@@ -82,7 +91,7 @@ export default function FoundersTable() {
         cls: 'founder'
       });
     });
-  }, [foundersContributions, addContribution, removeContribution]);
+  }, [state.contributions, addContribution, removeContribution]);
 
   // Expose function globally for AI integration
   React.useEffect(() => {

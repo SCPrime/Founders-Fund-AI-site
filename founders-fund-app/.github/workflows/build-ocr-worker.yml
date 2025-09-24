@@ -1,4 +1,4 @@
-name: Build and Publish OCR Worker
+3name: Build and Publish OCR Worker
 
 on:
   push:

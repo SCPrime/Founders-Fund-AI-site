@@ -5,6 +5,7 @@ import StatusBar from '@/components/StatusBar';
 import Tabs from '@/components/Tabs';
 import AllocationSettings from '@/components/Calculator/AllocationSettings';
 import InvestorsTable from '@/components/Calculator/InvestorsTable';
+import FoundersTable from '@/components/Calculator/FoundersTable';
 import ResultsTables from '@/components/Calculator/ResultsTables';
 import PreviewArea from '@/components/Preview/PreviewArea';
 import AIAssistant from '@/components/AI/AIAssistant';
@@ -45,6 +46,7 @@ export default function Home() {
               />
             )}
             <AllocationSettings />
+            <FoundersTable />
             <InvestorsTable />
             <ValidationPanel />
             <ResultsTables />
