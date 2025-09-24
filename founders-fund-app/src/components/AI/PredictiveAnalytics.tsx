@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 
 interface PredictionResult {
   roi_projection: {
@@ -26,7 +26,7 @@ export default function PredictiveAnalytics() {
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const calc = useCalculator();
+  const { settings } = useFundStore();
 
   const generatePrediction = async () => {
     setIsLoading(true);
@@ -34,9 +34,9 @@ export default function PredictiveAnalytics() {
 
     try {
       // Generate local prediction based on fund metrics
-      const totalAssets = calc.walletSize + calc.moonbagReal + calc.moonbagUnreal;
-      const currentROI = totalAssets > 0 ? calc.realizedProfit / totalAssets : 0;
-      const feeImpact = (calc.mgmtFeePct + calc.entryFeePct) / 100;
+      const totalAssets = settings.walletSize + settings.moonbagReal + settings.moonbagUnreal;
+      const currentROI = totalAssets > 0 ? settings.realizedProfit / totalAssets : 0;
+      const feeImpact = (settings.mgmtFeePct + settings.entryFeePct) / 100;
 
       // Calculate projections based on current performance
       const baseReturn = Math.max(0.05, currentROI * 0.7); // Conservative based on current performance
@@ -55,7 +55,7 @@ export default function PredictiveAnalytics() {
           factors: [
             ...(totalAssets < 50000 ? ['Small fund size increases volatility'] : []),
             ...(feeImpact > 0.3 ? ['High fee structure may impact returns'] : []),
-            ...(calc.moonbagUnreal > calc.moonbagReal * 3 ? ['High unrealized exposure'] : []),
+            ...(settings.moonbagUnreal > settings.moonbagReal * 3 ? ['High unrealized exposure'] : []),
             ...(currentROI < 0 ? ['Current negative returns'] : [])
           ],
           recommendations: [
@@ -71,7 +71,7 @@ export default function PredictiveAnalytics() {
             ['Fee structure is competitive', 'Consider performance-based adjustments'],
           allocation_strategy: [
             'Maintain diversified portfolio',
-            calc.moonbagUnreal > calc.moonbagReal * 2 ? 'Consider taking some profits' : 'Allocation appears balanced',
+            settings.moonbagUnreal > settings.moonbagReal * 2 ? 'Consider taking some profits' : 'Allocation appears balanced',
             'Regular rebalancing recommended'
           ],
           timing_recommendations: [
@@ -98,9 +98,9 @@ export default function PredictiveAnalytics() {
 
     try {
       // Local anomaly detection logic
-      const totalFees = calc.mgmtFeePct + calc.entryFeePct;
-      const totalAssets = calc.walletSize + calc.moonbagReal + calc.moonbagUnreal;
-      const unrealizedRatio = calc.moonbagReal > 0 ? calc.moonbagUnreal / calc.moonbagReal : 0;
+      const totalFees = settings.mgmtFeePct + settings.entryFeePct;
+      const totalAssets = settings.walletSize + settings.moonbagReal + settings.moonbagUnreal;
+      const unrealizedRatio = settings.moonbagReal > 0 ? settings.moonbagUnreal / settings.moonbagReal : 0;
 
       const anomalies = [];
       const recommendations = [];
@@ -118,7 +118,7 @@ export default function PredictiveAnalytics() {
       }
 
       // Asset allocation analysis
-      if (calc.walletSize < 10000) {
+      if (settings.walletSize < 10000) {
         anomalies.push('Very small fund size');
         allocationIssues.push('Consider minimum investment thresholds');
       }
@@ -130,14 +130,14 @@ export default function PredictiveAnalytics() {
       }
 
       // Performance analysis
-      const currentROI = totalAssets > 0 ? calc.realizedProfit / totalAssets : 0;
+      const currentROI = totalAssets > 0 ? settings.realizedProfit / totalAssets : 0;
       if (currentROI < -0.2) {
         anomalies.push('Significant losses detected');
         recommendations.push('Review investment strategy');
       }
 
       // Governance analysis
-      if (calc.founderCount > 8) {
+      if (settings.founderCount > 8) {
         anomalies.push('High founder count may complicate decisions');
         recommendations.push('Consider governance structure optimization');
       }

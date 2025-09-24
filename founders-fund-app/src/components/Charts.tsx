@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useCalculator } from '@/context/CalculatorContext';
+import { useAllocationStore } from '@/store/allocationStore';
 
 export default function Charts() {
   const [source, setSource] = useState('current');
@@ -9,7 +9,7 @@ export default function Charts() {
   const [includeFounders, setIncludeFounders] = useState('yes');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const calc = useCalculator();
+  const { } = useAllocationStore();
 
   const generateSampleData = () => {
     // Generate sample data for demonstration

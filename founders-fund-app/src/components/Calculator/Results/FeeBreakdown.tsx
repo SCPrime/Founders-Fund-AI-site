@@ -1,6 +1,6 @@
 'use client';
 
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 import { useEffect, useState } from 'react';
 
 interface InvestorFee {
@@ -18,7 +18,7 @@ interface ContributionData {
 }
 
 export default function FeeBreakdown() {
-  const calc = useCalculator();
+  const { settings } = useFundStore();
   const [investorFees, setInvestorFees] = useState<InvestorFee[]>([]);
   const [totalFees, setTotalFees] = useState(0);
 
@@ -32,8 +32,8 @@ export default function FeeBreakdown() {
         return;
       }
 
-      const windowStart = new Date(calc.winStart);
-      const windowEnd = new Date(calc.winEnd);
+      const windowStart = new Date(settings.winStart);
+      const windowEnd = new Date(settings.winEnd);
 
       // Group contributions by investor
       const investorGroups: { [key: string]: ContributionData[] } = {};
@@ -84,14 +84,14 @@ export default function FeeBreakdown() {
         // Only calculate fees for investors, not founders
         if (investor.cls === 'investor') {
           const twShare = totalDollarDays > 0 ? (dollarDays / totalDollarDays) : 0;
-          const baseProfitShare = twShare * calc.realizedProfit;
-          const feeRate = calc.mgmtFeePct / 100;
+          const baseProfitShare = twShare * settings.realizedProfit;
+          const feeRate = settings.mgmtFeePct / 100;
           const feeAmount = baseProfitShare * feeRate;
 
           feeResults.push({
             name: investor.name || 'Unknown',
             baseProfitShare: baseProfitShare,
-            feeRate: calc.mgmtFeePct,
+            feeRate: settings.mgmtFeePct,
             feeAmount: feeAmount
           });
         }
@@ -104,7 +104,7 @@ export default function FeeBreakdown() {
     };
 
     calculateFees();
-  }, [calc.winStart, calc.winEnd, calc.realizedProfit, calc.mgmtFeePct]);
+  }, [settings.winStart, settings.winEnd, settings.realizedProfit, settings.mgmtFeePct]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -119,7 +119,7 @@ export default function FeeBreakdown() {
     <div className="panel">
       <h2>Fee Breakdown — Investors (base profit only)</h2>
       <div className="small">
-        Management fees collected on base profit share at {calc.mgmtFeePct}% rate
+        Management fees collected on base profit share at {settings.mgmtFeePct}% rate
       </div>
       <div className="tablewrap">
         <table>
@@ -163,7 +163,7 @@ export default function FeeBreakdown() {
         {totalFees > 0 && (
           <>
             Total management fees: {formatCurrency(totalFees)} |
-            Fee rate: {calc.mgmtFeePct}% of base profit share |
+            Fee rate: {settings.mgmtFeePct}% of base profit share |
             Fees paid to founders
           </>
         )}

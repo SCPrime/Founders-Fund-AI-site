@@ -1,18 +1,44 @@
 'use client';
 
 import { useFundStore } from '@/store/fundStore';
+import { useAllocationStore } from '@/store/allocationStore';
 
 export default function ValidationPanel() {
+  // Use AllocationStore as primary, FundStore as fallback
+  const allocationValidationErrors = useAllocationStore((state) => state.validationErrors);
+  const allocationOutputs = useAllocationStore((state) => state.outputs);
+  const allocationLastCompute = useAllocationStore((state) => state.lastComputeTime);
+  const allocationIsComputing = useAllocationStore((state) => state.isComputing);
+
   const {
-    validationIssues,
+    validationIssues: fundValidationIssues,
     clearValidationIssues,
     validateData,
-    summary,
-    lastCalculated,
-    isCalculating
+    summary: fundSummary,
+    lastCalculated: fundLastCalculated,
+    isCalculating: fundIsCalculating
   } = useFundStore();
 
-  const hasErrors = validationIssues.some(issue => issue.type === 'error');
+  // Use AllocationStore data as primary
+  const validationIssues = allocationValidationErrors.length > 0 ?
+    allocationValidationErrors.map(err => ({
+      id: err.field || 'general',
+      type: err.type,
+      field: err.field,
+      message: err.message
+    })) :
+    fundValidationIssues;
+
+  const summary = allocationOutputs ? {
+    totalContributions: allocationOutputs.realizedProfit + 20000, // Approximation
+    totalNetProfit: allocationOutputs.realizedProfit,
+    totalDollarDays: allocationOutputs.dollarDays.total
+  } : fundSummary;
+
+  const lastCalculated = allocationLastCompute ? new Date(allocationLastCompute) : fundLastCalculated;
+  const isCalculating = allocationIsComputing || fundIsCalculating;
+
+  const hasErrors = validationIssues.some((issue: Record<string, unknown>) => issue.type === 'error');
 
   return (
     <div className="panel">

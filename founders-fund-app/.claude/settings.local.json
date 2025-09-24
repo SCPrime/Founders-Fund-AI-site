@@ -12,7 +12,10 @@
       "Bash(npx vitest run:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Read(//c/Users/SSaint-Cyr/Documents/source/Founders-Fund-AI-site/**)"
+      "Read(//c/Users/SSaint-Cyr/Documents/source/Founders-Fund-AI-site/**)",
+      "Bash(npx vercel:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

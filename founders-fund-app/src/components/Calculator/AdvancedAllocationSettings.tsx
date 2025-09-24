@@ -1,34 +1,9 @@
 'use client';
 
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 
 export default function AdvancedAllocationSettings() {
-  const {
-    realizedProfit,
-    setRealizedProfit,
-    moonbagReal,
-    setMoonbagReal,
-    moonbagUnreal,
-    setMoonbagUnreal,
-    includeUnreal,
-    setIncludeUnreal,
-    moonbagFounderPct,
-    setMoonbagFounderPct,
-    mgmtFeePct,
-    setMgmtFeePct,
-    entryFeePct,
-    setEntryFeePct,
-    feeReducesInvestor,
-    setFeeReducesInvestor,
-    founderCount,
-    setFounderCount,
-    drawPerFounder,
-    setDrawPerFounder,
-    applyDraws,
-    setApplyDraws,
-    domLeadPct,
-    setDomLeadPct,
-  } = useCalculator();
+  const { settings, updateSettings } = useFundStore();
 
   return (
     <div
@@ -40,8 +15,8 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.01"
-          value={realizedProfit}
-          onChange={e => setRealizedProfit(parseFloat(e.target.value) || 0)}
+          value={settings.realizedProfit}
+          onChange={e => updateSettings({ realizedProfit: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
@@ -51,8 +26,8 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.01"
-          value={moonbagReal}
-          onChange={e => setMoonbagReal(parseFloat(e.target.value) || 0)}
+          value={settings.moonbagReal}
+          onChange={e => updateSettings({ moonbagReal: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
@@ -62,15 +37,15 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.01"
-          value={moonbagUnreal}
-          onChange={e => setMoonbagUnreal(parseFloat(e.target.value) || 0)}
+          value={settings.moonbagUnreal}
+          onChange={e => updateSettings({ moonbagUnreal: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
         <label>Include <b>unrealized</b> in Wallet identity?</label>
         <select
-          value={includeUnreal}
-          onChange={e => setIncludeUnreal(e.target.value as 'yes' | 'no')}
+          value={settings.includeUnreal}
+          onChange={e => updateSettings({ includeUnreal: e.target.value as 'yes' | 'no' })}
         >
           <option value="no">No — track only</option>
           <option value="yes">Yes — include in identity</option>
@@ -82,8 +57,8 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.1"
-          value={moonbagFounderPct}
-          onChange={e => setMoonbagFounderPct(parseFloat(e.target.value) || 0)}
+          value={settings.moonbagFounderPct}
+          onChange={e => updateSettings({ moonbagFounderPct: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
@@ -91,8 +66,8 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.1"
-          value={mgmtFeePct}
-          onChange={e => setMgmtFeePct(parseFloat(e.target.value) || 0)}
+          value={settings.mgmtFeePct}
+          onChange={e => updateSettings({ mgmtFeePct: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
@@ -100,15 +75,15 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.1"
-          value={entryFeePct}
-          onChange={e => setEntryFeePct(parseFloat(e.target.value) || 0)}
+          value={settings.entryFeePct}
+          onChange={e => updateSettings({ entryFeePct: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
         <label>Entry fee reduces investor credited capital?</label>
         <select
-          value={feeReducesInvestor}
-          onChange={e => setFeeReducesInvestor(e.target.value as 'yes' | 'no')}
+          value={settings.feeReducesInvestor}
+          onChange={e => updateSettings({ feeReducesInvestor: e.target.value as 'yes' | 'no' })}
         >
           <option value="yes">Yes (net = gross × (1−fee))</option>
           <option value="no">No (investor credited full; fee outside)</option>
@@ -121,8 +96,8 @@ export default function AdvancedAllocationSettings() {
           type="number"
           min="1"
           step="1"
-          value={founderCount}
-          onChange={e => setFounderCount(parseInt(e.target.value) || 0)}
+          value={settings.founderCount}
+          onChange={e => updateSettings({ founderCount: parseInt(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 2' }}>
@@ -130,15 +105,15 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="1"
-          value={drawPerFounder}
-          onChange={e => setDrawPerFounder(parseFloat(e.target.value) || 0)}
+          value={settings.drawPerFounder}
+          onChange={e => updateSettings({ drawPerFounder: parseFloat(e.target.value) || 0 })}
         />
       </div>
       <div style={{ gridColumn: 'span 3' }}>
         <label>Apply founders’ draws in this period?</label>
         <select
-          value={applyDraws}
-          onChange={e => setApplyDraws(e.target.value as 'yes' | 'no')}
+          value={settings.applyDraws}
+          onChange={e => updateSettings({ applyDraws: e.target.value as 'yes' | 'no' })}
         >
           <option value="no">No</option>
           <option value="yes">Yes</option>
@@ -149,8 +124,8 @@ export default function AdvancedAllocationSettings() {
         <input
           type="number"
           step="0.1"
-          value={domLeadPct}
-          onChange={e => setDomLeadPct(parseFloat(e.target.value) || 0)}
+          value={settings.domLeadPct}
+          onChange={e => updateSettings({ domLeadPct: parseFloat(e.target.value) || 0 })}
         />
       </div>
     </div>

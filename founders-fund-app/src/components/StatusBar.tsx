@@ -1,11 +1,11 @@
 'use client';
 
-import { useCalculator } from '@/context/CalculatorContext';
+import { useAllocationStore } from '@/store/allocationStore';
 import { useRef, useState, type ChangeEvent } from 'react';
 import Image from 'next/image';
 
 export default function StatusBar() {
-  useCalculator();
+  const { recompute, saveSnapshot, lastComputeTime } = useAllocationStore();
 
   const [autoSave, setAutoSave] = useState(true);
   const [calcTime, setCalcTime] = useState('');
@@ -20,10 +20,8 @@ export default function StatusBar() {
   };
 
   const handleRecalc = () => {
-    const start = performance.now();
-    console.log('Recalculate');
-    const end = performance.now();
-    setCalcTime(`Calculated in ${(end - start).toFixed(2)} ms`);
+    recompute();
+    setCalcTime(lastComputeTime || 'Calculating...');
   };
 
   const handleSelfTest = () => {
@@ -31,7 +29,8 @@ export default function StatusBar() {
   };
 
   const handleSaveSnap = () => {
-    console.log('Save snapshot');
+    saveSnapshot();
+    setMessage('Snapshot saved');
   };
 
   const handleUploadClick = () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 import { useEffect, useState } from 'react';
 
 interface FeeByClass {
@@ -14,7 +14,7 @@ interface FeeByClass {
 }
 
 export default function FeesByClass() {
-  const calc = useCalculator();
+  const { settings } = useFundStore();
   const [feesByClass, setFeesByClass] = useState<FeeByClass[]>([]);
 
   useEffect(() => {
@@ -26,8 +26,8 @@ export default function FeesByClass() {
         return;
       }
 
-      const windowStart = new Date(calc.winStart);
-      const windowEnd = new Date(calc.winEnd);
+      const windowStart = new Date(settings.winStart);
+      const windowEnd = new Date(settings.winEnd);
 
       // Group contributions by investor/founder
       const participantGroups: { [key: string]: Record<string, unknown>[] } = {};
@@ -76,19 +76,19 @@ export default function FeesByClass() {
             dollarDays += contribAmount * daysInWindow;
 
             // Entry fees for contributions in window
-            entryFeesInWindow += contribAmount * (calc.entryFeePct / 100);
+            entryFeesInWindow += contribAmount * (settings.entryFeePct / 100);
           }
         });
 
         const twShare = totalDollarDays > 0 ? (dollarDays / totalDollarDays) : 0;
-        const baseProfitShare = twShare * calc.realizedProfit;
+        const baseProfitShare = twShare * settings.realizedProfit;
 
         let mgmtFeeRole: 'Pays' | 'Receives' | 'N/A' = 'N/A';
         let mgmtFeeAmount = 0;
 
         if (participant.cls === 'investor') {
           mgmtFeeRole = 'Pays';
-          mgmtFeeAmount = -baseProfitShare * (calc.mgmtFeePct / 100); // Negative for payments
+          mgmtFeeAmount = -baseProfitShare * (settings.mgmtFeePct / 100); // Negative for payments
         } else if (participant.cls === 'founder') {
           mgmtFeeRole = 'Receives';
           // Founders receive a share of all management fees paid by investors
@@ -104,12 +104,12 @@ export default function FeesByClass() {
                 }
               });
               const investorTwShare = totalDollarDays > 0 ? (investorDollarDays / totalDollarDays) : 0;
-              const investorBaseProfitShare = investorTwShare * calc.realizedProfit;
-              return sum + (investorBaseProfitShare * (calc.mgmtFeePct / 100));
+              const investorBaseProfitShare = investorTwShare * settings.realizedProfit;
+              return sum + (investorBaseProfitShare * (settings.mgmtFeePct / 100));
             }, 0);
 
           // Distribute total management fees among founders
-          const founderCount = Object.values(participantGroups).filter(contribs => contribs[0]?.cls === 'founder').length || calc.founderCount;
+          const founderCount = Object.values(participantGroups).filter(contribs => contribs[0]?.cls === 'founder').length || settings.founderCount;
           mgmtFeeAmount = totalInvestorFees / Math.max(1, founderCount);
         }
 
@@ -126,13 +126,13 @@ export default function FeesByClass() {
               contribs.forEach(contrib => {
                 const contribDate = new Date(contrib.date);
                 if (contribDate >= windowStart && contribDate <= windowEnd) {
-                  fees += (Number(contrib.amount) || 0) * (calc.entryFeePct / 100);
+                  fees += (Number(contrib.amount) || 0) * (settings.entryFeePct / 100);
                 }
               });
               return sum + fees;
             }, 0);
 
-          const founderCount = Object.values(participantGroups).filter(contribs => contribs[0]?.cls === 'founder').length || calc.founderCount;
+          const founderCount = Object.values(participantGroups).filter(contribs => contribs[0]?.cls === 'founder').length || settings.founderCount;
           adjustedEntryFees = totalEntryFees / Math.max(1, founderCount);
         }
 
@@ -141,7 +141,7 @@ export default function FeesByClass() {
           cls: participant.cls || 'investor',
           baseProfitShare: baseProfitShare,
           mgmtFeeRole: mgmtFeeRole,
-          mgmtFeeRate: calc.mgmtFeePct,
+          mgmtFeeRate: settings.mgmtFeePct,
           mgmtFeeAmount: mgmtFeeAmount,
           entryFeesThisWindow: adjustedEntryFees
         });
@@ -151,7 +151,7 @@ export default function FeesByClass() {
     };
 
     calculateFeesByClass();
-  }, [calc.winStart, calc.winEnd, calc.realizedProfit, calc.mgmtFeePct, calc.entryFeePct, calc.founderCount]);
+  }, [settings.winStart, settings.winEnd, settings.realizedProfit, settings.mgmtFeePct, settings.entryFeePct, settings.founderCount]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -166,7 +166,7 @@ export default function FeesByClass() {
     <div className="panel">
       <h2>Fees by Class — Founders & Investors</h2>
       <div className="small">
-        Management fees: {calc.mgmtFeePct}% on investor base profit shares | Entry fees: {calc.entryFeePct}% on contributions
+        Management fees: {settings.mgmtFeePct}% on investor base profit shares | Entry fees: {settings.entryFeePct}% on contributions
       </div>
       <div className="tablewrap">
         <table>
@@ -227,7 +227,7 @@ export default function FeesByClass() {
         </table>
       </div>
       <div className="small">
-        Founders receive investor fees; investors pay {calc.mgmtFeePct}% of positive base shares; no fee on moonbag.
+        Founders receive investor fees; investors pay {settings.mgmtFeePct}% of positive base shares; no fee on moonbag.
         {feesByClass.length > 0 && (
           <>
             <br />

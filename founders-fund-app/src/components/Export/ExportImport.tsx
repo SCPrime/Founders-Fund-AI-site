@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 
 interface SnapshotData {
   timestamp: string;
@@ -31,28 +31,28 @@ export default function ExportImport() {
   const [snapshots, setSnapshots] = useState<SnapshotData[]>([]);
   const [importData, setImportData] = useState('');
   const [message, setMessage] = useState('');
-  const calc = useCalculator();
+  const { settings, updateSettings } = useFundStore();
 
   const createSnapshot = () => {
     const snapshot: SnapshotData = {
       timestamp: new Date().toISOString(),
       settings: {
-        view: calc.view,
-        winStart: calc.winStart,
-        winEnd: calc.winEnd,
-        walletSize: calc.walletSize,
-        realizedProfit: calc.realizedProfit,
-        moonbagReal: calc.moonbagReal,
-        moonbagUnreal: calc.moonbagUnreal,
-        includeUnreal: calc.includeUnreal,
-        moonbagFounderPct: calc.moonbagFounderPct,
-        mgmtFeePct: calc.mgmtFeePct,
-        entryFeePct: calc.entryFeePct,
-        feeReducesInvestor: calc.feeReducesInvestor,
-        founderCount: calc.founderCount,
-        drawPerFounder: calc.drawPerFounder,
-        applyDraws: calc.applyDraws,
-        domLeadPct: calc.domLeadPct,
+        view: settings.view,
+        winStart: settings.winStart,
+        winEnd: settings.winEnd,
+        walletSize: settings.walletSize,
+        realizedProfit: settings.realizedProfit,
+        moonbagReal: settings.moonbagReal,
+        moonbagUnreal: settings.moonbagUnreal,
+        includeUnreal: settings.includeUnreal,
+        moonbagFounderPct: settings.moonbagFounderPct,
+        mgmtFeePct: settings.mgmtFeePct,
+        entryFeePct: settings.entryFeePct,
+        feeReducesInvestor: settings.feeReducesInvestor,
+        founderCount: settings.founderCount,
+        drawPerFounder: settings.drawPerFounder,
+        applyDraws: settings.applyDraws,
+        domLeadPct: settings.domLeadPct,
       }
     };
 
@@ -68,22 +68,24 @@ export default function ExportImport() {
 
   const loadSnapshot = (snapshot: SnapshotData) => {
     const s = snapshot.settings;
-    calc.setView(s.view as 'week' | 'max');
-    calc.setWinStart(s.winStart);
-    calc.setWinEnd(s.winEnd);
-    calc.setWalletSize(s.walletSize);
-    calc.setRealizedProfit(s.realizedProfit);
-    calc.setMoonbagReal(s.moonbagReal);
-    calc.setMoonbagUnreal(s.moonbagUnreal);
-    calc.setIncludeUnreal(s.includeUnreal as 'yes' | 'no');
-    calc.setMoonbagFounderPct(s.moonbagFounderPct);
-    calc.setMgmtFeePct(s.mgmtFeePct);
-    calc.setEntryFeePct(s.entryFeePct);
-    calc.setFeeReducesInvestor(s.feeReducesInvestor as 'yes' | 'no');
-    calc.setFounderCount(s.founderCount);
-    calc.setDrawPerFounder(s.drawPerFounder);
-    calc.setApplyDraws(s.applyDraws as 'yes' | 'no');
-    calc.setDomLeadPct(s.domLeadPct);
+    updateSettings({
+      view: s.view as 'week' | 'max',
+      winStart: s.winStart,
+      winEnd: s.winEnd,
+      walletSize: s.walletSize,
+      realizedProfit: s.realizedProfit,
+      moonbagReal: s.moonbagReal,
+      moonbagUnreal: s.moonbagUnreal,
+      includeUnreal: s.includeUnreal as 'yes' | 'no',
+      moonbagFounderPct: s.moonbagFounderPct,
+      mgmtFeePct: s.mgmtFeePct,
+      entryFeePct: s.entryFeePct,
+      feeReducesInvestor: s.feeReducesInvestor as 'yes' | 'no',
+      founderCount: s.founderCount,
+      drawPerFounder: s.drawPerFounder,
+      applyDraws: s.applyDraws as 'yes' | 'no',
+      domLeadPct: s.domLeadPct,
+    });
 
     setMessage(`✅ Loaded snapshot from ${new Date(snapshot.timestamp).toLocaleString()}`);
     setTimeout(() => setMessage(''), 3000);
@@ -153,16 +155,16 @@ export default function ExportImport() {
 
       // Settings table
       const settingsData = [
-        ['View Mode', calc.view],
-        ['Window Start', calc.winStart || 'Not set'],
-        ['Window End', calc.winEnd || 'Not set'],
-        ['Total Wallet Size', `$${calc.walletSize.toLocaleString()}`],
-        ['Realized Profit', `$${calc.realizedProfit.toLocaleString()}`],
-        ['Moonbag Real', `$${calc.moonbagReal.toLocaleString()}`],
-        ['Moonbag Unrealized', `$${calc.moonbagUnreal.toLocaleString()}`],
-        ['Management Fee', `${calc.mgmtFeePct}%`],
-        ['Entry Fee', `${calc.entryFeePct}%`],
-        ['Founder Count', calc.founderCount.toString()],
+        ['View Mode', settings.view],
+        ['Window Start', settings.winStart || 'Not set'],
+        ['Window End', settings.winEnd || 'Not set'],
+        ['Total Wallet Size', `$${settings.walletSize.toLocaleString()}`],
+        ['Realized Profit', `$${settings.realizedProfit.toLocaleString()}`],
+        ['Moonbag Real', `$${settings.moonbagReal.toLocaleString()}`],
+        ['Moonbag Unrealized', `$${settings.moonbagUnreal.toLocaleString()}`],
+        ['Management Fee', `${settings.mgmtFeePct}%`],
+        ['Entry Fee', `${settings.entryFeePct}%`],
+        ['Founder Count', settings.founderCount.toString()],
       ];
 
       autoTable(doc, {

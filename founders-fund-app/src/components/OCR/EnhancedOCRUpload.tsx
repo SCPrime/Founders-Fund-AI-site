@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 import { preprocessImageForOCR, type ProcessingResult } from '@/utils/imagePreprocessor';
 
 interface ExtractedFields {
@@ -54,7 +54,7 @@ export default function EnhancedOCRUpload() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const calculator = useCalculator();
+  const { updateSettings } = useFundStore();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -170,22 +170,28 @@ export default function EnhancedOCRUpload() {
   };
 
   const applyExtractedFields = (fields: ExtractedFields) => {
-    // Apply extracted fields to calculator context
-    if (fields.winStart) calculator.setWinStart(fields.winStart);
-    if (fields.winEnd) calculator.setWinEnd(fields.winEnd);
-    if (fields.walletSize !== undefined) calculator.setWalletSize(fields.walletSize);
-    if (fields.realizedProfit !== undefined) calculator.setRealizedProfit(fields.realizedProfit);
-    if (fields.moonbagReal !== undefined) calculator.setMoonbagReal(fields.moonbagReal);
-    if (fields.moonbagUnreal !== undefined) calculator.setMoonbagUnreal(fields.moonbagUnreal);
-    if (fields.includeUnreal) calculator.setIncludeUnreal(fields.includeUnreal);
-    if (fields.moonbagFounderPct !== undefined) calculator.setMoonbagFounderPct(fields.moonbagFounderPct);
-    if (fields.mgmtFeePct !== undefined) calculator.setMgmtFeePct(fields.mgmtFeePct);
-    if (fields.entryFeePct !== undefined) calculator.setEntryFeePct(fields.entryFeePct);
-    if (fields.feeReducesInvestor) calculator.setFeeReducesInvestor(fields.feeReducesInvestor);
-    if (fields.founderCount !== undefined) calculator.setFounderCount(fields.founderCount);
-    if (fields.drawPerFounder !== undefined) calculator.setDrawPerFounder(fields.drawPerFounder);
-    if (fields.applyDraws) calculator.setApplyDraws(fields.applyDraws);
-    if (fields.domLeadPct !== undefined) calculator.setDomLeadPct(fields.domLeadPct);
+    // Apply extracted fields to fund store
+    const updates: Record<string, unknown> = {};
+
+    if (fields.winStart) updates.winStart = fields.winStart;
+    if (fields.winEnd) updates.winEnd = fields.winEnd;
+    if (fields.walletSize !== undefined) updates.walletSize = fields.walletSize;
+    if (fields.realizedProfit !== undefined) updates.realizedProfit = fields.realizedProfit;
+    if (fields.moonbagReal !== undefined) updates.moonbagReal = fields.moonbagReal;
+    if (fields.moonbagUnreal !== undefined) updates.moonbagUnreal = fields.moonbagUnreal;
+    if (fields.includeUnreal) updates.includeUnreal = fields.includeUnreal;
+    if (fields.moonbagFounderPct !== undefined) updates.moonbagFounderPct = fields.moonbagFounderPct;
+    if (fields.mgmtFeePct !== undefined) updates.mgmtFeePct = fields.mgmtFeePct;
+    if (fields.entryFeePct !== undefined) updates.entryFeePct = fields.entryFeePct;
+    if (fields.feeReducesInvestor) updates.feeReducesInvestor = fields.feeReducesInvestor;
+    if (fields.founderCount !== undefined) updates.founderCount = fields.founderCount;
+    if (fields.drawPerFounder !== undefined) updates.drawPerFounder = fields.drawPerFounder;
+    if (fields.applyDraws) updates.applyDraws = fields.applyDraws;
+    if (fields.domLeadPct !== undefined) updates.domLeadPct = fields.domLeadPct;
+
+    if (Object.keys(updates).length > 0) {
+      updateSettings(updates);
+    }
   };
 
   return (

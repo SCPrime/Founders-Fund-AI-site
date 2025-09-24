@@ -17,6 +17,7 @@ import ValidationPanel from '@/components/ValidationPanel';
 import CacheBuster from '@/components/CacheBuster';
 import AllocationDashboard from '@/components/Allocation/AllocationDashboard';
 import AppInitializer from '@/components/AppInitializer';
+import StoreSynchronizer from '@/components/StoreSynchronizer';
 import { CalculatorProvider } from '@/context/CalculatorContext';
 import { OCRProvider } from '@/context/OCRContext';
 
@@ -28,6 +29,7 @@ export default function Home() {
     <CalculatorProvider>
       <OCRProvider>
         <AppInitializer />
+        <StoreSynchronizer />
         <CacheBuster />
       <div className="wrap">
         <StatusBar />

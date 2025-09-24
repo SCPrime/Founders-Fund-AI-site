@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCalculator } from '@/context/CalculatorContext';
+import { useFundStore } from '@/store/fundStore';
 
 interface ValidationIssue {
   severity: 'error' | 'warning' | 'info';
@@ -13,14 +13,14 @@ interface ValidationIssue {
 export default function SmartValidation() {
   const [issues, setIssues] = useState<ValidationIssue[]>([]);
   const [isValidating, setIsValidating] = useState(false);
-  const calc = useCalculator();
+  const { settings, updateSettings } = useFundStore();
 
   const validateData = async () => {
     setIsValidating(true);
     const validationIssues: ValidationIssue[] = [];
 
     // Basic validation rules
-    if (calc.walletSize <= 0) {
+    if (settings.walletSize <= 0) {
       validationIssues.push({
         severity: 'error',
         field: 'walletSize',
@@ -29,7 +29,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.walletSize < 1000 && calc.walletSize > 0) {
+    if (settings.walletSize < 1000 && settings.walletSize > 0) {
       validationIssues.push({
         severity: 'warning',
         field: 'walletSize',
@@ -38,7 +38,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.mgmtFeePct > 30) {
+    if (settings.mgmtFeePct > 30) {
       validationIssues.push({
         severity: 'warning',
         field: 'mgmtFeePct',
@@ -47,7 +47,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.entryFeePct > 20) {
+    if (settings.entryFeePct > 20) {
       validationIssues.push({
         severity: 'warning',
         field: 'entryFeePct',
@@ -56,7 +56,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.mgmtFeePct + calc.entryFeePct > 40) {
+    if (settings.mgmtFeePct + settings.entryFeePct > 40) {
       validationIssues.push({
         severity: 'error',
         field: 'totalFees',
@@ -65,7 +65,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.founderCount <= 0) {
+    if (settings.founderCount <= 0) {
       validationIssues.push({
         severity: 'error',
         field: 'founderCount',
@@ -74,7 +74,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.founderCount > 10) {
+    if (settings.founderCount > 10) {
       validationIssues.push({
         severity: 'warning',
         field: 'founderCount',
@@ -83,7 +83,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.realizedProfit < 0) {
+    if (settings.realizedProfit < 0) {
       validationIssues.push({
         severity: 'info',
         field: 'realizedProfit',
@@ -92,7 +92,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.moonbagUnreal > calc.moonbagReal * 5 && calc.moonbagReal > 0) {
+    if (settings.moonbagUnreal > settings.moonbagReal * 5 && settings.moonbagReal > 0) {
       validationIssues.push({
         severity: 'warning',
         field: 'moonbagUnreal',
@@ -101,7 +101,7 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.drawPerFounder > calc.walletSize / calc.founderCount * 0.5 && calc.walletSize > 0) {
+    if (settings.drawPerFounder > settings.walletSize / settings.founderCount * 0.5 && settings.walletSize > 0) {
       validationIssues.push({
         severity: 'warning',
         field: 'drawPerFounder',
@@ -111,7 +111,7 @@ export default function SmartValidation() {
     }
 
     // Date validation
-    if (calc.winStart && calc.winEnd && new Date(calc.winStart) >= new Date(calc.winEnd)) {
+    if (settings.winStart && settings.winEnd && new Date(settings.winStart) >= new Date(settings.winEnd)) {
       validationIssues.push({
         severity: 'error',
         field: 'dateRange',
@@ -121,8 +121,8 @@ export default function SmartValidation() {
     }
 
     // Enhanced rule-based validation
-    const totalAssets = calc.walletSize + calc.moonbagReal + calc.moonbagUnreal;
-    const profitRatio = totalAssets > 0 ? (calc.realizedProfit / totalAssets) : 0;
+    const totalAssets = settings.walletSize + settings.moonbagReal + settings.moonbagUnreal;
+    const profitRatio = totalAssets > 0 ? (settings.realizedProfit / totalAssets) : 0;
 
     if (profitRatio > 2) {
       validationIssues.push({
@@ -140,8 +140,8 @@ export default function SmartValidation() {
       });
     }
 
-    if (calc.walletSize > 0 && calc.realizedProfit > 0) {
-      const feeImpact = (calc.mgmtFeePct + calc.entryFeePct) / 100;
+    if (settings.walletSize > 0 && settings.realizedProfit > 0) {
+      const feeImpact = (settings.mgmtFeePct + settings.entryFeePct) / 100;
       const netReturn = profitRatio * (1 - feeImpact);
 
       if (netReturn < 0.1 && profitRatio > 0.1) {
@@ -177,15 +177,15 @@ export default function SmartValidation() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    calc.walletSize,
-    calc.mgmtFeePct,
-    calc.entryFeePct,
-    calc.founderCount,
-    calc.realizedProfit,
-    calc.moonbagReal,
-    calc.moonbagUnreal,
-    calc.winStart,
-    calc.winEnd
+    settings.walletSize,
+    settings.mgmtFeePct,
+    settings.entryFeePct,
+    settings.founderCount,
+    settings.realizedProfit,
+    settings.moonbagReal,
+    settings.moonbagUnreal,
+    settings.winStart,
+    settings.winEnd
   ]);
 
   const getSeverityColor = (severity: string) => {
@@ -209,25 +209,25 @@ export default function SmartValidation() {
   const applyQuickFix = (issue: ValidationIssue) => {
     switch (issue.field) {
       case 'walletSize':
-        if (calc.walletSize <= 0) {
-          calc.setWalletSize(10000);
+        if (settings.walletSize <= 0) {
+          updateSettings({ walletSize: 10000 });
         }
         break;
       case 'mgmtFeePct':
-        if (calc.mgmtFeePct > 30) {
-          calc.setMgmtFeePct(20);
+        if (settings.mgmtFeePct > 30) {
+          updateSettings({ mgmtFeePct: 20 });
         }
         break;
       case 'entryFeePct':
-        if (calc.entryFeePct > 20) {
-          calc.setEntryFeePct(10);
+        if (settings.entryFeePct > 20) {
+          updateSettings({ entryFeePct: 10 });
         }
         break;
       case 'founderCount':
-        if (calc.founderCount <= 0) {
-          calc.setFounderCount(1);
-        } else if (calc.founderCount > 10) {
-          calc.setFounderCount(5);
+        if (settings.founderCount <= 0) {
+          updateSettings({ founderCount: 1 });
+        } else if (settings.founderCount > 10) {
+          updateSettings({ founderCount: 5 });
         }
         break;
     }
