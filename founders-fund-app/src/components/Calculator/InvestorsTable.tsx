@@ -131,6 +131,7 @@ export default function InvestorsTable() {
                       onChange={(e) => updateRow(contrib.id, 'name', e.target.value)}
                       placeholder="Enter name"
                       style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)' }}
+                      aria-label="Founder name"
                     />
                   </td>
                   <td>
@@ -138,6 +139,7 @@ export default function InvestorsTable() {
                       value="founder"
                       disabled
                       style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)' }}
+                      aria-label="Contributor class - founder"
                     >
                       <option value="founder">Founder</option>
                     </select>
@@ -147,6 +149,7 @@ export default function InvestorsTable() {
                       type="date"
                       value={contrib.ts}
                       onChange={(e) => updateRow(contrib.id, 'date', e.target.value)}
+                      aria-label="Founder contribution date"
                     />
                   </td>
                   <td>
@@ -155,6 +158,7 @@ export default function InvestorsTable() {
                       step="100"
                       value={contrib.amount}
                       onChange={(e) => updateRow(contrib.id, 'amount', Number(e.target.value) || 0)}
+                      aria-label="Founder contribution amount in dollars"
                     />
                   </td>
                   <td>
@@ -162,6 +166,7 @@ export default function InvestorsTable() {
                       value="gross"
                       disabled
                       style={{ backgroundColor: 'rgba(255, 193, 7, 0.1)' }}
+                      aria-label="Net rule - gross (no entry fee on founders)"
                     >
                       <option value="gross">Gross</option>
                     </select>
@@ -205,12 +210,14 @@ export default function InvestorsTable() {
                       value={contrib.name}
                       onChange={(e) => updateRow(contrib.id, 'name', e.target.value)}
                       placeholder="Enter name"
+                      aria-label="Investor name"
                     />
                   </td>
                   <td>
                     <select
                       value="investor"
                       onChange={(e) => updateRow(contrib.id, 'cls', e.target.value)}
+                      aria-label="Contributor class"
                     >
                       <option value="investor">Investor</option>
                       <option value="founder">Founder</option>
@@ -221,6 +228,7 @@ export default function InvestorsTable() {
                       type="date"
                       value={contrib.ts}
                       onChange={(e) => updateRow(contrib.id, 'date', e.target.value)}
+                      aria-label="Investor contribution date"
                     />
                   </td>
                   <td>
@@ -229,10 +237,11 @@ export default function InvestorsTable() {
                       step="100"
                       value={contrib.amount}
                       onChange={(e) => updateRow(contrib.id, 'amount', Number(e.target.value) || 0)}
+                      aria-label="Investor contribution amount in dollars"
                     />
                   </td>
                   <td>
-                    <select value="net-of-fee" disabled>
+                    <select value="net-of-fee" disabled aria-label="Net rule - net of fee with entry fee to founders">
                       <option value="net-of-fee">Net of fee</option>
                     </select>
                     <small style={{ display: 'block', color: 'var(--muted)', fontSize: '11px' }}>

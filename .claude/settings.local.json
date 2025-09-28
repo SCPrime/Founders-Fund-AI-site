@@ -41,7 +41,20 @@
       "WebFetch(domain:founders-fund-6nx7r356l-scprimes-projects.vercel.app)",
       "WebFetch(domain:founders-fund-5p9uohkwk-scprimes-projects.vercel.app)",
       "Bash(curl:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(dir)",
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Read(//c/Users/SSaint-Cyr/Documents/source/**)",
+      "Bash(git clone:*)",
+      "Bash(code .)",
+      "Bash(npm start)",
+      "Bash(dir pages)",
+      "Bash(dir app)",
+      "Bash(dir src)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh repo edit:*)",
+      "Bash(gh:*)"
     ],
     "deny": [],
     "ask": []

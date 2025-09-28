@@ -121,6 +121,7 @@ export default function FoundersTable() {
                     type="date"
                     value={contribution.ts}
                     onChange={(e) => updateRow(contribution.id, 'date', e.target.value)}
+                    aria-label="Contribution date"
                   />
                 </td>
                 <td>
@@ -129,6 +130,7 @@ export default function FoundersTable() {
                     step="0.01"
                     value={contribution.amount}
                     onChange={(e) => updateRow(contribution.id, 'amount', Number(e.target.value))}
+                    aria-label="Contribution amount in dollars"
                   />
                 </td>
                 <td>

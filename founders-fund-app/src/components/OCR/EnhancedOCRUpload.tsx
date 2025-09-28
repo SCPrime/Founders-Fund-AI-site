@@ -207,6 +207,7 @@ export default function EnhancedOCRUpload() {
           disabled={isProcessing}
           ref={fileInputRef}
           className="file-input"
+          aria-label="Upload financial document image for OCR processing"
         />
 
         {imagePreview && (
