@@ -46,7 +46,7 @@ export default function AIAssistant() {
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
     const newMessage: Message = {
-      id: `${role}-${messages.length}-${Date.now()}`,
+      id: `${role}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role,
       content,
       timestamp: new Date()

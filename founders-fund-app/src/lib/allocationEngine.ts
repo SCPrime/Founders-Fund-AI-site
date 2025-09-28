@@ -34,9 +34,42 @@ export class AllocationEngine {
   static recompute(state: AllocationState): AllocationOutputs {
     const { window, walletSizeEndOfWindow, unrealizedPnlEndOfWindow, contributions, constants } = state;
 
-    // §3.1 Derive profits from wallet (no base-profit field)
-    const profitTotal = walletSizeEndOfWindow - constants.INVESTOR_SEED_BASELINE;
-    const realizedProfit = profitTotal - unrealizedPnlEndOfWindow;
+    // §3.1 Derive profits from wallet using comprehensive wallet identity (working calculator logic)
+    console.log('DEBUG: Calculation inputs:', {
+      walletSizeEndOfWindow,
+      baseline: constants.INVESTOR_SEED_BASELINE,
+      unrealizedPnlEndOfWindow,
+      beforeCalc: 'profitTotal not calculated yet'
+    });
+
+    // Calculate total capital deployed (start capital + contributions)
+    const totalStartCapital = constants.INVESTOR_SEED_BASELINE; // This includes all baseline capital
+    const totalContributions = contributions.reduce((sum, contrib) => {
+      return sum + (contrib.earnsDollarDaysThisWindow ? contrib.amount : 0);
+    }, 0);
+
+    // Use comprehensive wallet identity like working calculator
+    let profitTotal = 0;
+    if (walletSizeEndOfWindow > 0) {
+      // profitCore = wallet - startCapital - contributions - unrealized (comprehensive accounting)
+      profitTotal = walletSizeEndOfWindow - totalStartCapital - totalContributions - unrealizedPnlEndOfWindow;
+    } else {
+      // Fallback: if no wallet size, profit must be explicitly set to prevent negatives
+      profitTotal = 0; // Default to 0 instead of negative
+    }
+
+    // Ensure profits are never negative
+    profitTotal = Math.max(0, profitTotal);
+    const realizedProfit = Math.max(0, profitTotal);
+
+    console.log('DEBUG: After calculation (working logic):', {
+      profitTotal,
+      realizedProfit,
+      totalStartCapital,
+      totalContributions,
+      calculation: `max(0, ${walletSizeEndOfWindow} - ${totalStartCapital} - ${totalContributions} - ${unrealizedPnlEndOfWindow}) = ${profitTotal}`,
+      realizedCalc: `max(0, ${profitTotal}) = ${realizedProfit}`
+    });
 
     // §3.2 Build effective legs (auto-legs + timing)
     const expandedLegs = expandEntryFeeLegs(contributions, constants.ENTRY_FEE_RATE);

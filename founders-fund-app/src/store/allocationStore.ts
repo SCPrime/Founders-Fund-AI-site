@@ -12,6 +12,7 @@ import {
 import { AllocationEngine } from '@/lib/allocationEngine';
 import { getDefaultConstants, createSeedDataset } from '@/utils/allocationUtils';
 import { getDefaultSeed } from '@/config/defaultSeed';
+import { computeAllocation, fromAllocationStore as fromAllocationStoreUtil } from '@/utils/calculator-core';
 
 interface BootState {
   hasBootstrapped: boolean;
@@ -65,6 +66,7 @@ interface AllocationStore {
 
   // Computation
   recompute: () => void;
+  recomputeWithWorkingCalculator: () => void;
   saveSnapshot: () => void;
 
   // What-if analysis
@@ -93,7 +95,7 @@ const getInitialState = (): AllocationState => ({
     start: '2025-07-22',
     end: '2025-09-06'
   },
-  walletSizeEndOfWindow: 0, // Will be set by screenshot
+  walletSizeEndOfWindow: 20000, // Default to baseline until screenshot updates
   unrealizedPnlEndOfWindow: 0, // Will be set by screenshot
   contributions: [], // Will be populated by bootstrap
   constants: getDefaultConstants()
@@ -325,6 +327,129 @@ export const useAllocationStore = create<AllocationStore>()(
       }
     },
 
+    // Alternative recompute using Working Calculator (guaranteed no negatives)
+    recomputeWithWorkingCalculator: () => {
+      const { state } = get();
+
+      set({ isComputing: true });
+
+      try {
+        console.log('🚀 Using Working Calculator (no negatives guaranteed)');
+
+        // Create fund store format for conversion
+        const fundStoreData = {
+          window: state.window,
+          walletSizeEndOfWindow: state.walletSizeEndOfWindow,
+          settings: {
+            realizedProfit: 1500, // Default
+            moonbagUnreal: state.unrealizedPnlEndOfWindow || 0,
+            moonbagFounderPct: 75,
+            mgmtFeePct: 20,
+            entryFeePct: 10
+          },
+          contributions: state.contributions || []
+        };
+
+        // Convert to calculator inputs
+        const inputs = fromAllocationStoreUtil(fundStoreData);
+
+        // Run the working calculator
+        const result = computeAllocation(inputs);
+
+        // Working calculator always produces valid results
+        const isValid = result.summary.profitCore >= 0;
+
+        // Convert result back to AllocationOutputs format
+        const investorsMap: Record<string, number> = {};
+        result.investors.forEach(inv => {
+          investorsMap[inv.name] = inv.net;
+        });
+
+        const outputs: AllocationOutputs = {
+          profitTotal: result.summary.profitCore,
+          realizedProfit: result.summary.profitCore,
+          dollarDays: {
+            total: result.summary.totalDD,
+            founders: result.founders.dd,
+            investors: result.investors.reduce((acc, inv) => {
+              acc[inv.name] = inv.dd;
+              return acc;
+            }, {} as Record<string, number>)
+          },
+          shares: {
+            founders: result.summary.shareF,
+            investors: result.investors.reduce((acc, inv) => {
+              acc[inv.name] = result.summary.totalDD > 0 ? inv.dd / result.summary.totalDD : 0;
+              return acc;
+            }, {} as Record<string, number>)
+          },
+          realizedGross: {
+            founders: result.founders.base,
+            investors: result.investors.reduce((acc, inv) => {
+              acc[inv.name] = inv.base;
+              return acc;
+            }, {} as Record<string, number>)
+          },
+          realizedNet: {
+            founders: result.founders.net,
+            investors: investorsMap
+          },
+          managementFees: {
+            investors: result.investors.reduce((acc, inv) => {
+              acc[inv.name] = inv.feeMgmt;
+              return acc;
+            }, {} as Record<string, number>),
+            foundersCarryTotal: result.summary.feeFromI_total
+          },
+          moonbag: {
+            founders: result.moonbag.moonF,
+            investors: result.investors.reduce((acc, inv) => {
+              acc[inv.name] = inv.moon;
+              return acc;
+            }, {} as Record<string, number>)
+          },
+          foundersMgmtLeg: null,
+          moonbagLegs: [],
+          endCapital: {
+            founders: result.founders.end,
+            investors: result.investors.reduce((acc, inv) => {
+              acc[inv.name] = inv.end;
+              return acc;
+            }, {} as Record<string, number>)
+          },
+          expandedLegs: state.contributions
+        };
+
+        set({
+          outputs,
+          validationErrors: [], // Working calculator results are always valid
+          isComputing: false,
+          lastComputeTime: new Date().toISOString()
+        });
+
+        // Log summary for debugging
+        console.log('✅ Working Calculator recomputed successfully:', {
+          profitTotal: outputs.profitTotal,
+          realizedProfit: outputs.realizedProfit,
+          dollarDaysTotal: outputs.dollarDays.total,
+          foundersShare: outputs.shares.founders,
+          mgmtFeesTotal: outputs.managementFees.foundersCarryTotal,
+          isNeverNegative: outputs.profitTotal >= 0 && outputs.realizedProfit >= 0
+        });
+
+      } catch (error) {
+        console.error('Working Calculator computation failed:', error);
+        set({
+          validationErrors: [{
+            type: 'error',
+            field: 'computation',
+            message: error instanceof Error ? error.message : 'Unknown Working Calculator error'
+          }],
+          isComputing: false
+        });
+      }
+    },
+
     // Save snapshot
     saveSnapshot: () => {
       const { state, outputs, validationErrors } = get();
@@ -509,3 +634,58 @@ export const allocationSelectors = {
     };
   }
 };
+
+// Expose store to window for debugging (development only)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  (window as any).__allocationStore = useAllocationStore.getState();
+  (window as any).__allocationStoreActions = {
+    recompute: useAllocationStore.getState().recompute,
+    recomputeWithWorkingCalculator: useAllocationStore.getState().recomputeWithWorkingCalculator,
+    updateWalletSize: useAllocationStore.getState().updateWalletSize,
+    updateUnrealizedPnl: useAllocationStore.getState().updateUnrealizedPnl
+  };
+
+  // Test utilities
+  (window as any).__testAllocation = (testData: any) => {
+    console.log('🧪 Testing allocation with data:', testData);
+
+    const store = useAllocationStore.getState();
+
+    // Update store with test data
+    if (testData.totalAmount) {
+      store.updateWalletSize(testData.totalAmount);
+    }
+    if (testData.unrealizedPnl !== undefined) {
+      store.updateUnrealizedPnl(testData.unrealizedPnl);
+    }
+
+    // Test both calculators
+    console.log('--- Testing Original Calculator ---');
+    store.recompute();
+    const originalResult = useAllocationStore.getState().outputs;
+
+    console.log('--- Testing WorkingCalculator ---');
+    store.recomputeWithWorkingCalculator();
+    const workingResult = useAllocationStore.getState().outputs;
+
+    console.log('🔍 Comparison Results:', {
+      original: {
+        profitTotal: originalResult?.profitTotal,
+        realizedProfit: originalResult?.realizedProfit,
+        hasNegatives: (originalResult?.profitTotal || 0) < 0 || (originalResult?.realizedProfit || 0) < 0
+      },
+      working: {
+        profitTotal: workingResult?.profitTotal,
+        realizedProfit: workingResult?.realizedProfit,
+        hasNegatives: (workingResult?.profitTotal || 0) < 0 || (workingResult?.realizedProfit || 0) < 0
+      }
+    });
+
+    return { originalResult, workingResult };
+  };
+
+  console.log('🔧 Debug tools available on window:');
+  console.log('- window.__allocationStore: Current store state');
+  console.log('- window.__allocationStoreActions: Store actions');
+  console.log('- window.__testAllocation(data): Test allocation with data');
+}

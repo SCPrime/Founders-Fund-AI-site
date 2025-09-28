@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DebugOCR from '@/components/OCR/DebugOCR';
+import WorkingCalculatorTest from '@/components/WorkingCalculatorTest';
 import { CalculatorProvider } from '@/context/CalculatorContext';
 import { OCRProvider } from '@/context/OCRContext';
 
@@ -20,7 +21,14 @@ export default function DebugPage() {
     <CalculatorProvider>
       <OCRProvider>
         <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ color: '#4CAF50', marginBottom: '20px' }}>🔍 OCR Debug System</h1>
+      <h1 style={{ color: '#4CAF50', marginBottom: '20px' }}>🔍 Debug System</h1>
+
+      {/* Working Calculator Test */}
+      <div style={{ marginBottom: '30px' }}>
+        <WorkingCalculatorTest />
+      </div>
+
+      <h2 style={{ color: '#4CAF50', marginBottom: '20px' }}>📸 OCR Debug System</h2>
 
       <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f0f8ff', borderRadius: '8px' }}>
         <h2>How to Use This Debug System:</h2>
