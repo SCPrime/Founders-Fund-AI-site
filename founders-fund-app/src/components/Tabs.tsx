@@ -8,6 +8,7 @@ interface TabsProps {
 const TAB_LABELS = [
   { key: 'calc', label: 'Calculator' },
   { key: 'allocation', label: 'Allocation Engine' },
+  { key: 'ocr', label: 'OCR Upload' },
   { key: 'history', label: 'History' },
   { key: 'charts', label: 'Charts' },
   { key: 'audit', label: 'Founders Audit' },

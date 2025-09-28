@@ -13,6 +13,7 @@ import History from '@/components/History';
 import Charts from '@/components/Charts';
 import Audit from '@/components/Audit';
 import DebugOCR from '@/components/OCR/DebugOCR';
+import SimpleOCRUpload from '@/components/OCR/SimpleOCRUpload';
 import ValidationPanel from '@/components/ValidationPanel';
 import CacheBuster from '@/components/CacheBuster';
 import AllocationDashboard from '@/components/Allocation/AllocationDashboard';
@@ -56,6 +57,7 @@ export default function Home() {
           </>
         )}
         {tab === 'allocation' && <AllocationDashboard />}
+        {tab === 'ocr' && <SimpleOCRUpload />}
         {tab === 'history' && <History />}
         {tab === 'charts' && <Charts />}
         {tab === 'audit' && <Audit />}

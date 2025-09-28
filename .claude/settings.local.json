@@ -54,7 +54,15 @@
       "Bash(dir src)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh repo edit:*)",
-      "Bash(gh:*)"
+      "Bash(gh:*)",
+      "Bash(npx prisma:*)",
+      "Bash(dir:*)",
+      "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"yes\" npx prisma migrate reset --force)",
+      "Bash(start http://localhost:3003)",
+      "Bash(node:*)",
+      "Bash(where magick)",
+      "Bash(findstr:*)",
+      "Bash(start http://localhost:3004)"
     ],
     "deny": [],
     "ask": []

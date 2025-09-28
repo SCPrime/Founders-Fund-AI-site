@@ -86,6 +86,9 @@ interface AllocationStore {
   exportData: () => string;
   importData: (data: string) => void;
 
+  // Window management
+  advanceWindow: () => void;
+
   // Reset
   reset: () => void;
 }
@@ -554,6 +557,48 @@ export const useAllocationStore = create<AllocationStore>()(
         console.error('Import failed:', error);
         throw new Error('Failed to import data: ' + (error instanceof Error ? error.message : 'Unknown error'));
       }
+    },
+
+    // consider add: define action to move to the next window period
+    advanceWindow: () => {
+      const { state, snapshots } = get();
+      if (snapshots.length === 0) {
+        console.warn('No snapshot available to advance window.');
+        return;
+      }
+      // Use the last snapshot as reference for transition
+      const lastSnap = snapshots[snapshots.length - 1];
+      const lastEndDate = new Date(lastSnap.state.window.end);
+      const nextStartDate = new Date(lastEndDate.getTime() + 24 * 60 * 60 * 1000); // next day
+      // Default next window end as same duration as last window
+      const lastDurationMs = new Date(lastSnap.state.window.end).getTime() - new Date(lastSnap.state.window.start).getTime();
+      const nextEndDate = new Date(nextStartDate.getTime() + lastDurationMs);
+      // Update baseline: sum of investor end capitals from last snapshot
+      const investorEndTotals = Object.values(lastSnap.outputs.endCapital.investors).reduce((sum, val) => sum + val, 0);
+      const newBaseline = investorEndTotals;
+      // Mark old contributions as no longer earning in this new window
+      const updatedContribs = state.contributions.map(leg => ({
+        ...leg,
+        earnsDollarDaysThisWindow: false
+      }));
+      // Set the new state for next window
+      set((current) => ({
+        state: {
+          ...current.state,
+          window: {
+            start: nextStartDate.toISOString().split('T')[0],
+            end: nextEndDate.toISOString().split('T')[0]
+          },
+          contributions: updatedContribs,
+          constants: {
+            ...current.state.constants,
+            INVESTOR_SEED_BASELINE: newBaseline
+          }
+        },
+        outputs: null,
+        validationErrors: []
+      }));
+      console.log(`Advanced to new window: ${nextStartDate.toDateString()} - ${nextEndDate.toDateString()}, baseline updated to ${newBaseline}`);
     },
 
     // Reset to initial state
