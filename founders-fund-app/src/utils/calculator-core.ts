@@ -3,6 +3,9 @@
  * This implements the exact calculation logic from https://scprime.github.io/figment-splits-site/
  */
 
+import { CashflowLeg, AllocationConstants } from '@/types/allocation';
+import { Contribution, FundSettings } from '@/types/fund';
+
 export interface CalculatorInputs {
   winStart: string;
   winEnd: string;
@@ -29,6 +32,20 @@ export interface CalculatorInputs {
     amount: number;
     rule: 'default' | 'yes' | 'no';
   }>;
+}
+
+export interface FundStoreData {
+  window?: { start?: string; end?: string };
+  walletSizeEndOfWindow?: number;
+  constants?: AllocationConstants;
+  settings?: {
+    realizedProfit?: number;
+    moonbagUnreal?: number;
+    moonbagFounderPct?: number;
+    mgmtFeePct?: number;
+    entryFeePct?: number;
+  };
+  contributions?: CashflowLeg[];
 }
 
 export interface CalculatorOutputs {
@@ -91,7 +108,7 @@ function daysBetweenInclusive(start: string, end: string): number {
   return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
 
-function parseNum(value: any): number {
+function parseNum(value: number | string): number {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
     const cleaned = value.replace(/[$,]/g, '');
@@ -158,7 +175,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
   const domLead = domLeadPct / 100.0;
 
   // Gather founders data
-  let f = gatherFounders(founders, start, end);
+  const f = gatherFounders(founders, start, end);
 
   // Process investors
   const invMap = new Map();
@@ -340,34 +357,72 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
 /**
  * Convert from the current allocationStore format to calculator inputs
  */
-export function fromAllocationStore(store: any): CalculatorInputs {
+/**
+ * Convert from fund store format to calculator inputs
+ */
+export function fromFundStore(store: {
+  contributions: Contribution[];
+  settings: FundSettings;
+}): CalculatorInputs {
+  const today = new Date().toISOString().split('T')[0];
+
+  return {
+    winStart: store.settings.winStart || '2025-08-30',
+    winEnd: store.settings.winEnd || today,
+    walletSize: store.settings.walletSize || 0,
+    realizedProfit: store.settings.realizedProfit || 1500,
+    moonbagReal: store.settings.moonbagReal || 0,
+    moonbagUnreal: store.settings.moonbagUnreal || 0,
+    includeUnreal: store.settings.includeUnreal === 'yes',
+    moonbagFounderPct: store.settings.moonbagFounderPct || 75,
+    mgmtFeePct: store.settings.mgmtFeePct || 20,
+    entryFeePct: store.settings.entryFeePct || 10,
+    feeReducesInvestor: true,
+    founderCount: 2,
+    drawPerFounder: 0,
+    applyDraws: false,
+    domLeadPct: 0,
+    founders: store.contributions?.filter((c) => c.cls === 'founder').map((c) => ({
+      date: c.date,
+      amount: c.amount
+    })) || [],
+    investors: store.contributions?.filter((c) => c.cls === 'investor').map((c) => ({
+      name: c.name,
+      date: c.date,
+      amount: c.amount,
+      rule: 'default' as 'default' | 'yes' | 'no'
+    })) || []
+  };
+}
+
+export function fromAllocationStore(store: FundStoreData): CalculatorInputs {
   const today = new Date().toISOString().split('T')[0];
 
   return {
     winStart: store.window?.start || '2025-08-30',
     winEnd: store.window?.end || today,
     walletSize: store.walletSizeEndOfWindow || 0,
-    realizedProfit: store.settings?.realizedProfit || 1500,
+    realizedProfit: store.settings?.realizedProfit || 0,
     moonbagReal: 0,
     moonbagUnreal: store.settings?.moonbagUnreal || 0,
     includeUnreal: false,
-    moonbagFounderPct: store.settings?.moonbagFounderPct || 75,
-    mgmtFeePct: store.settings?.mgmtFeePct || 20,
-    entryFeePct: store.settings?.entryFeePct || 10,
-    feeReducesInvestor: true,
-    founderCount: 2,
+    moonbagFounderPct: store.settings?.moonbagFounderPct || (store.constants?.FOUNDERS_MOONBAG_PCT ? store.constants.FOUNDERS_MOONBAG_PCT * 100 : 75),
+    mgmtFeePct: store.settings?.mgmtFeePct || (store.constants?.MGMT_FEE_RATE ? store.constants.MGMT_FEE_RATE * 100 : 20),
+    entryFeePct: store.settings?.entryFeePct || (store.constants?.ENTRY_FEE_RATE ? store.constants.ENTRY_FEE_RATE * 100 : 10),
+    feeReducesInvestor: store.constants?.ENTRY_FEE_REDUCES_INVESTOR_CREDIT ?? true,
+    founderCount: store.constants?.FOUNDERS_COUNT || 2,
     drawPerFounder: 0,
     applyDraws: false,
     domLeadPct: 0,
-    founders: store.contributions?.filter((c: any) => c.cls === 'founder').map((c: any) => ({
-      date: c.date,
+    founders: store.contributions?.filter((c) => c.owner === 'founders').map((c) => ({
+      date: c.ts,
       amount: c.amount
     })) || [],
-    investors: store.contributions?.filter((c: any) => c.cls === 'investor').map((c: any) => ({
-      name: c.name || 'Investor',
-      date: c.date,
+    investors: store.contributions?.filter((c) => c.owner === 'investor').map((c) => ({
+      name: c.name,
+      date: c.ts,
       amount: c.amount,
-      rule: c.rule || 'default'
+      rule: 'default' as 'default' | 'yes' | 'no'
     })) || []
   };
 }

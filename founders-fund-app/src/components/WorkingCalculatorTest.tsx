@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { computeAllocation, fromAllocationStore, CalculatorInputs, CalculatorOutputs } from '@/utils/calculator-core';
+import { computeAllocation, fromFundStore, CalculatorInputs, CalculatorOutputs } from '@/utils/calculator-core';
 import { useFundStore } from '@/store/fundStore';
 
 export default function WorkingCalculatorTest() {
@@ -12,7 +12,7 @@ export default function WorkingCalculatorTest() {
     console.log('🧪 Testing Working Calculator with current fund store data...');
 
     // Get inputs from current store
-    const inputs = fromAllocationStore(fundStore);
+    const inputs = fromFundStore(fundStore);
     console.log('📥 Calculator inputs:', inputs);
 
     // Run calculation

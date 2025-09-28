@@ -62,13 +62,14 @@ export class AllocationEngine {
     profitTotal = Math.max(0, profitTotal);
     const realizedProfit = Math.max(0, profitTotal);
 
-    console.log('DEBUG: After calculation (working logic):', {
+    console.log('DEBUG: After calculation (no negative profits):', {
       profitTotal,
       realizedProfit,
       totalStartCapital,
       totalContributions,
       calculation: `max(0, ${walletSizeEndOfWindow} - ${totalStartCapital} - ${totalContributions} - ${unrealizedPnlEndOfWindow}) = ${profitTotal}`,
-      realizedCalc: `max(0, ${profitTotal}) = ${realizedProfit}`
+      realizedCalc: `max(0, ${profitTotal}) = ${realizedProfit}`,
+      clamped: profitTotal === 0 && (walletSizeEndOfWindow - totalStartCapital - totalContributions - unrealizedPnlEndOfWindow) < 0
     });
 
     // §3.2 Build effective legs (auto-legs + timing)

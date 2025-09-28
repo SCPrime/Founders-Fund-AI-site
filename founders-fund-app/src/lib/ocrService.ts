@@ -486,11 +486,11 @@ Extract all financial entries, dates, amounts, names, and settings from the imag
           amount: entry.amount || 5000,
           cls: 'founder'
         });
-      } else if (entry.type === 'investor' || entry.amount > 0) {
+      } else if (entry.type === 'investor' || (entry.amount && entry.amount > 0)) {
         extractedData.investors?.push({
           name: entry.name || `Entry ${extractedData.investors?.length + 1}`,
           date: entry.date || new Date().toISOString().split('T')[0],
-          amount: entry.amount,
+          amount: entry.amount || 0,
           rule: 'net',
           cls: 'investor'
         });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+// import { PNLExtractRequest, PNLExtractResponse } from '@/types/api'; // Future use
 
 interface PNLData {
   realizedPNL?: number;
@@ -12,6 +13,8 @@ interface PNLData {
   losses?: number;
   winRate?: number;
   timestamp?: string;
+  totalValue?: number;
+  availableBalance?: number;
 }
 
 export async function POST(request: NextRequest) {

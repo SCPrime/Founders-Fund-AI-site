@@ -2,6 +2,7 @@
 
 import { useFundStore } from '@/store/fundStore';
 import { useAllocationStore } from '@/store/allocationStore';
+// import { ValidationIssue } from '@/types/validation'; // Future use
 
 export default function ValidationPanel() {
   // Use AllocationStore as primary, FundStore as fallback
@@ -38,7 +39,7 @@ export default function ValidationPanel() {
   const lastCalculated = allocationLastCompute ? new Date(allocationLastCompute) : fundLastCalculated;
   const isCalculating = allocationIsComputing || fundIsCalculating;
 
-  const hasErrors = validationIssues.some((issue: Record<string, unknown>) => issue.type === 'error');
+  const hasErrors = validationIssues.some((issue) => issue.type === 'error');
 
   return (
     <div className="panel">
@@ -162,7 +163,7 @@ export default function ValidationPanel() {
                     </div>
                     <div style={{ color: 'var(--text)' }}>{issue.message}</div>
                   </div>
-                  {issue.quickFix && (
+                  {'quickFix' in issue && issue.quickFix && (
                     <button
                       onClick={issue.quickFix}
                       style={{
@@ -176,7 +177,7 @@ export default function ValidationPanel() {
                         marginLeft: '8px'
                       }}
                     >
-                      {issue.quickFixLabel || 'Quick Fix'}
+                      {'quickFixLabel' in issue ? issue.quickFixLabel || 'Quick Fix' : 'Quick Fix'}
                     </button>
                   )}
                 </div>

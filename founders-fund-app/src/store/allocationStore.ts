@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import { subscribeWithSelector, persist } from 'zustand/middleware';
 import {
   AllocationState,
   AllocationOutputs,
@@ -115,17 +115,18 @@ const getInitialWalletState = (): WalletCapture => ({
 });
 
 export const useAllocationStore = create<AllocationStore>()(
-  subscribeWithSelector((set, get) => ({
-    // Initial state
-    state: getInitialState(),
-    outputs: null,
-    validationErrors: [],
-    trendRows: [],
-    snapshots: [],
-    boot: getInitialBootState(),
-    wallet: getInitialWalletState(),
-    isComputing: false,
-    lastComputeTime: null,
+  persist(
+    subscribeWithSelector<AllocationStore>((set, get) => ({
+      // Initial state
+      state: getInitialState(),
+      outputs: null,
+      validationErrors: [],
+      trendRows: [],
+      snapshots: [],
+      boot: getInitialBootState(),
+      wallet: getInitialWalletState(),
+      isComputing: false,
+      lastComputeTime: null,
 
     // Update window
     updateWindow: (window) => {
@@ -336,16 +337,21 @@ export const useAllocationStore = create<AllocationStore>()(
       try {
         console.log('🚀 Using Working Calculator (no negatives guaranteed)');
 
-        // Create fund store format for conversion
+        // Use AllocationEngine to estimate realizedProfit for this state
+        const preliminaryOutputs = AllocationEngine.recompute(state);
+
+        // Create fund store format for conversion, using current state
         const fundStoreData = {
           window: state.window,
           walletSizeEndOfWindow: state.walletSizeEndOfWindow,
+          constants: state.constants,
+          // Provide an initial settings object
           settings: {
-            realizedProfit: 1500, // Default
+            realizedProfit: preliminaryOutputs.realizedProfit,
             moonbagUnreal: state.unrealizedPnlEndOfWindow || 0,
-            moonbagFounderPct: 75,
-            mgmtFeePct: 20,
-            entryFeePct: 10
+            moonbagFounderPct: state.constants.FOUNDERS_MOONBAG_PCT * 100, // expecting percentage (0.75 -> 75%)
+            mgmtFeePct: state.constants.MGMT_FEE_RATE * 100,             // e.g., 0.20 -> 20
+            entryFeePct: state.constants.ENTRY_FEE_RATE * 100            // e.g., 0.10 -> 10
           },
           contributions: state.contributions || []
         };
@@ -357,7 +363,7 @@ export const useAllocationStore = create<AllocationStore>()(
         const result = computeAllocation(inputs);
 
         // Working calculator always produces valid results
-        const isValid = result.summary.profitCore >= 0;
+        // Validation check omitted as result is always valid
 
         // Convert result back to AllocationOutputs format
         const investorsMap: Record<string, number> = {};
@@ -565,7 +571,26 @@ export const useAllocationStore = create<AllocationStore>()(
       });
       get().recompute();
     }
-  }))
+  })),
+  {
+    name: 'allocation-storage', // key for localStorage
+    partialize: (storeState) => ({
+      // Persist only the core state and relevant data, not ephemeral fields
+      state: storeState.state,
+      wallet: storeState.wallet,
+      snapshots: storeState.snapshots,
+      trendRows: storeState.trendRows,
+      boot: storeState.boot
+    }),
+    onRehydrateStorage: () => (state) => {
+      if (state) {
+        // After rehydration, recompute outputs for consistency
+        console.log('State rehydrated, triggering recompute');
+        useAllocationStore.getState().recompute();
+      }
+    }
+  }
+  )
 );
 
 // Auto-recompute when certain state changes occur
@@ -637,7 +662,9 @@ export const allocationSelectors = {
 
 // Expose store to window for debugging (development only)
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).__allocationStore = useAllocationStore.getState();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).__allocationStoreActions = {
     recompute: useAllocationStore.getState().recompute,
     recomputeWithWorkingCalculator: useAllocationStore.getState().recomputeWithWorkingCalculator,
@@ -646,16 +673,17 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   };
 
   // Test utilities
-  (window as any).__testAllocation = (testData: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).__testAllocation = (testData: Record<string, unknown>) => {
     console.log('🧪 Testing allocation with data:', testData);
 
     const store = useAllocationStore.getState();
 
     // Update store with test data
-    if (testData.totalAmount) {
+    if (typeof testData.totalAmount === 'number') {
       store.updateWalletSize(testData.totalAmount);
     }
-    if (testData.unrealizedPnl !== undefined) {
+    if (typeof testData.unrealizedPnl === 'number') {
       store.updateUnrealizedPnl(testData.unrealizedPnl);
     }
 

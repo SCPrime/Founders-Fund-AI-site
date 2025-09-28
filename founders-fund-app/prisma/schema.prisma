@@ -1,15 +1,58 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// Prisma Schema for Founders Fund Allocation System
+// Simplified schema focusing on core Portfolio, Contribution, and Snapshot models
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Analysis {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  analysis  Json
-  userId    String?
+datasource db {
+  provider = "sqlite"  // or "postgresql" / "mysql" in production
+  url      = env("DATABASE_URL")
 }
+
+// Portfolio model: one per saved scenario or user session
+model Portfolio {
+  id            String         @id @default(cuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  contributions Contribution[] @relation("PortfolioContributions")
+  snapshots     Snapshot[]     @relation("PortfolioSnapshots")
+}
+
+// Contribution model: records an investment or cashflow leg
+model Contribution {
+  id         String   @id @default(cuid())
+  portfolio  Portfolio @relation("PortfolioContributions", fields: [portfolioId], references: [id])
+  portfolioId String
+  owner      String   // "founders" or "investor"
+  name       String   // investor name or "Founders"
+  type       LegType
+  amount     Float
+  ts         DateTime
+  earnsDollarDaysThisWindow Boolean
+}
+
+// Snapshot model: optional, store end-of-window results
+model Snapshot {
+  id         String    @id @default(cuid())
+  portfolio  Portfolio @relation("PortfolioSnapshots", fields: [portfolioId], references: [id])
+  portfolioId String
+  timestamp  DateTime  @default(now())
+  windowStart DateTime
+  windowEnd   DateTime
+  profitTotal Float
+  realizedProfit Float
+  unrealizedPnl Float
+  // ... you can store summary metrics or JSON if needed for full outputs
+}
+
+enum LegType {
+  seed
+  investor_contribution
+  founders_entry_fee
+  founders_mgmt_fee
+  moonbag_founders
+  moonbag_investor
+  draw
+}
+

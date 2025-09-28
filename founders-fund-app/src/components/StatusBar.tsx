@@ -152,7 +152,7 @@ export default function StatusBar() {
       <span className="small">{calcTime}</span>
       {analysis && (
         <div className="analysis-preview">
-          <pre>{JSON.stringify(analysis, null, 2)}</pre>
+          <pre>{JSON.stringify(analysis, null, 2) as string}</pre>
           <button className="btn" onClick={handleConfirmSave}>
             Save Analysis
           </button>
