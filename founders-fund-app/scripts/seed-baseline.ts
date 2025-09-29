@@ -1,157 +1,87 @@
 #!/usr/bin/env -S npx tsx
-// Baseline seeder for July-August Figment Splits investor deposits
-// This script is idempotent and can be run multiple times safely
+// Idempotent baseline seeder for July–August Figment Splits deposits.
+// Seeds investor contributions (Laura/Damon) + 10% entry fee to Founders.
+// Uses BASELINE_PORTFOLIO_ID to tag rows so API can scope baseline cleanly.
 
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../src/lib/prisma';
+import { BASELINE_PORTFOLIO_ID, ENTRY_FEE_RATE, BASELINE_WINDOW } from '../src/lib/constants';
 
-const prisma = new PrismaClient();
+type Deposit = { name: string; ts: string; gross: number; };
 
-const BASELINE_PORTFOLIO_ID = 'baseline-figment-splits-2024';
-
-// July-August Figment Splits baseline data
-const baselineContributions = [
-  // Laura's $50,000 investment on July 15, 2024
-  {
-    owner: 'investor',
-    name: 'Laura',
-    type: 'investor_contribution' as const,
-    amount: 50000,
-    ts: new Date('2024-07-15T09:00:00Z'),
-    earnsDollarDaysThisWindow: true,
-  },
-
-  // Damon's $25,000 investment on August 1, 2024
-  {
-    owner: 'investor',
-    name: 'Damon',
-    type: 'investor_contribution' as const,
-    amount: 25000,
-    ts: new Date('2024-08-01T10:00:00Z'),
-    earnsDollarDaysThisWindow: true,
-  },
-
-  // Founders 10% entry fee on Laura's contribution
-  {
-    owner: 'founders',
-    name: 'Founders',
-    type: 'founders_entry_fee' as const,
-    amount: 5000, // 10% of $50,000
-    ts: new Date('2024-07-15T09:01:00Z'),
-    earnsDollarDaysThisWindow: true,
-  },
-
-  // Founders 10% entry fee on Damon's contribution
-  {
-    owner: 'founders',
-    name: 'Founders',
-    type: 'founders_entry_fee' as const,
-    amount: 2500, // 10% of $25,000
-    ts: new Date('2024-08-01T10:01:00Z'),
-    earnsDollarDaysThisWindow: true,
-  },
+const investorDeposits: Deposit[] = [
+  { name: 'Laura', ts: '2024-07-15', gross: 50000 },
+  { name: 'Damon', ts: '2024-08-01', gross: 25000 },
 ];
 
-async function seedBaseline() {
-  console.log('🌱 Starting baseline seeding for Figment Splits July-August data...');
+function withinBaseline(ts: Date) {
+  const start = new Date(`${BASELINE_WINDOW.start}T00:00:00Z`);
+  const end   = new Date(`${BASELINE_WINDOW.end}T23:59:59Z`);
+  return ts >= start && ts <= end;
+}
 
-  try {
-    // Check if baseline portfolio exists
-    let portfolio = await prisma.portfolio.findUnique({
-      where: { id: BASELINE_PORTFOLIO_ID },
+async function main() {
+  let created = 0;
+  for (const row of investorDeposits) {
+    const ts = new Date(`${row.ts}T00:00:00Z`);
+    if (!withinBaseline(ts)) continue;
+
+    const fee = +(row.gross * ENTRY_FEE_RATE).toFixed(2);
+
+    // Idempotent: check investor row
+    const inv = await prisma.contribution.findFirst({
+      where: {
+        portfolioId: BASELINE_PORTFOLIO_ID,
+        owner: 'investor',
+        name: row.name,
+        type: 'investor_contribution',
+        amount: row.gross,
+        ts,
+      },
     });
-
-    if (!portfolio) {
-      console.log('📁 Creating baseline portfolio...');
-      portfolio = await prisma.portfolio.create({
+    if (!inv) {
+      await prisma.contribution.create({
         data: {
-          id: BASELINE_PORTFOLIO_ID,
-          name: 'Figment Splits Baseline (July-August 2024)',
-          totalValue: 82500, // $75k invested + $7.5k fees
-          targetReturn: 0.20, // 20% target return
+          portfolioId: BASELINE_PORTFOLIO_ID,
+          owner: 'investor',
+          name: row.name,
+          type: 'investor_contribution',
+          amount: row.gross,
+          ts,
+          earnsDollarDaysThisWindow: true,
         },
       });
-      console.log(`✅ Created portfolio: ${portfolio.name}`);
-    } else {
-      console.log(`📁 Using existing portfolio: ${portfolio.name}`);
+      created++;
     }
 
-    // Check existing contributions to avoid duplicates
-    const existingContributions = await prisma.contribution.findMany({
-      where: { portfolioId: portfolio.id },
+    // Idempotent: check founders entry fee row
+    const feeRow = await prisma.contribution.findFirst({
+      where: {
+        portfolioId: BASELINE_PORTFOLIO_ID,
+        owner: 'founders',
+        name: 'Founders',
+        type: 'entry_fee',
+        amount: fee,
+        ts,
+      },
     });
-
-    console.log(`📊 Found ${existingContributions.length} existing contributions`);
-
-    // Seed contributions (idempotent)
-    let addedCount = 0;
-    for (const contrib of baselineContributions) {
-      // Check if this contribution already exists
-      const existing = existingContributions.find(
-        (e) =>
-          e.owner === contrib.owner &&
-          e.name === contrib.name &&
-          e.type === contrib.type &&
-          e.amount.toString() === contrib.amount.toString() &&
-          Math.abs(e.ts.getTime() - contrib.ts.getTime()) < 60000 // within 1 minute
-      );
-
-      if (!existing) {
-        await prisma.contribution.create({
-          data: {
-            portfolioId: portfolio.id,
-            ...contrib,
-          },
-        });
-        console.log(`💰 Added: ${contrib.name} ${contrib.type} $${contrib.amount.toLocaleString()}`);
-        addedCount++;
-      } else {
-        console.log(`⏭️  Skipped existing: ${contrib.name} ${contrib.type} $${contrib.amount.toLocaleString()}`);
-      }
+    if (!feeRow) {
+      await prisma.contribution.create({
+        data: {
+          portfolioId: BASELINE_PORTFOLIO_ID,
+          owner: 'founders',
+          name: 'Founders',
+          type: 'entry_fee',
+          amount: fee,
+          ts,
+          earnsDollarDaysThisWindow: true,
+        },
+      });
+      created++;
     }
-
-    // Summary
-    const totalContributions = await prisma.contribution.count({
-      where: { portfolioId: portfolio.id },
-    });
-
-    console.log('\n📈 Baseline seeding complete!');
-    console.log(`   Portfolio: ${portfolio.name}`);
-    console.log(`   Total contributions: ${totalContributions}`);
-    console.log(`   Newly added: ${addedCount}`);
-    console.log(`   Portfolio ID: ${portfolio.id}`);
-
-    // Verify totals
-    const contributionSums = await prisma.contribution.groupBy({
-      by: ['owner', 'type'],
-      where: { portfolioId: portfolio.id },
-      _sum: { amount: true },
-    });
-
-    console.log('\n💹 Contribution breakdown:');
-    contributionSums.forEach((sum) => {
-      console.log(`   ${sum.owner} ${sum.type}: $${Number(sum._sum.amount).toLocaleString()}`);
-    });
-
-  } catch (error) {
-    console.error('❌ Baseline seeding failed:', error);
-    throw error;
-  } finally {
-    await prisma.$disconnect();
   }
+  console.log(`Baseline seed complete. New rows created: ${created}`);
 }
 
-// Export for use in other scripts
-export { BASELINE_PORTFOLIO_ID, baselineContributions };
-
-// Run if called directly
-if (require.main === module) {
-  seedBaseline()
-    .then(() => {
-      console.log('✅ Baseline seeding completed successfully');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Baseline seeding failed:', error);
-      process.exit(1);
-    });
-}
+main()
+  .catch((e) => { console.error(e); process.exit(1); })
+  .finally(async () => { await prisma.$disconnect(); });

@@ -26,19 +26,20 @@ model Portfolio {
 
 // Contribution model: records an investment or cashflow leg
 model Contribution {
-  id                        String    @id @default(cuid())
-  portfolioId               String
-  portfolio                 Portfolio @relation("PortfolioContributions", fields: [portfolioId], references: [id], onDelete: Cascade)
-  owner                     String // "founders" or "investor"
-  name                      String // investor name or "Founders"
+  id                        String     @id @default(cuid())
+  portfolioId               String?    // optional to allow baseline data
+  portfolio                 Portfolio? @relation("PortfolioContributions", fields: [portfolioId], references: [id], onDelete: Cascade)
+  owner                     String     // "founders" or "investor"
+  name                      String     // investor name or "Founders"
   type                      LegType
-  amount                    Decimal   @db.Decimal(18, 2)
-  ts                        DateTime  @db.Timestamptz(6) // timezone-aware
+  amount                    Decimal    @db.Decimal(18, 2)
+  ts                        DateTime   @db.Timestamptz(6) // timezone-aware
   earnsDollarDaysThisWindow Boolean
 
   @@index([portfolioId])
   @@index([ts])
   @@index([owner, type])
+  @@index([portfolioId, ts])
 }
 
 // Snapshot model: optional, store end-of-window results
@@ -62,6 +63,7 @@ enum LegType {
   seed
   investor_contribution
   founders_entry_fee
+  entry_fee
   founders_mgmt_fee
   moonbag_founders
   moonbag_investor
