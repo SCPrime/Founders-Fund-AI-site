@@ -59,6 +59,20 @@ model Snapshot {
   @@index([timestamp])
 }
 
+// Scan model: records OCR scan history with image + parsed data + contributions
+model Scan {
+  id             String   @id @default(cuid())
+  portfolioId    String?  // can be your baseline or any future portfolio
+  imageUrl       String?  // optional: set when Vercel Blob enabled
+  ocrText        String?
+  ai             Json?    // raw AI parse result
+  contributions  Json?    // contributions we committed from this scan
+  userLabel      String?  // optional: "Binance Aug 01", etc.
+  createdAt      DateTime @default(now())
+
+  @@index([portfolioId, createdAt])
+}
+
 enum LegType {
   seed
   investor_contribution
