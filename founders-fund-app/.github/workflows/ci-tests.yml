@@ -1,23 +1,46 @@
-name: CI - Tests
+name: CI - Quality Gates
 
 on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main ]
+    branches: [ main, release/** ]
 
 jobs:
-  test:
+  quality:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./founders-fund-app
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: founders-fund-app/package-lock.json
+
       - name: Install dependencies
         run: npm ci
-      - name: Run lint
-        run: npm run lint || true
-      - name: Run tests
+
+      - name: Check for secrets
+        run: npm run check-secrets
+
+      - name: Run ESLint
+        run: npm run lint:warn
+
+      - name: TypeScript Check
+        run: npm run typecheck
+
+      - name: Run Tests
         run: npx vitest --run
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Bundle Analysis (Optional)
+        run: |
+          echo "Bundle analysis (optional):"
+          ANALYZE=true npm run build || true

@@ -1,0 +1,57 @@
+# Gitleaks configuration for secret detection
+title = "Founders Fund AI Site - Secret Detection"
+
+[[rules]]
+id = "api-keys"
+description = "Generic API Keys"
+regex = '''(?i)(api[_-]?key|apikey)\s*[:=]\s*['"]?([a-f0-9]{32,}|[a-z0-9_-]{32,})['"]?'''
+keywords = ["api_key", "apikey", "api-key"]
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}'''
+keywords = ["sk-"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API Key"
+regex = '''sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{93}'''
+keywords = ["sk-ant"]
+
+[[rules]]
+id = "database-url"
+description = "Database URLs with credentials"
+regex = '''(?i)(database_url|db_url)\s*[:=]\s*['"]?(postgres|postgresql|mysql)://[^@\s]+:[^@\s]+@[^/\s]+/[^\s'"]+['"]?'''
+keywords = ["database_url", "db_url", "postgres://", "mysql://"]
+
+[[rules]]
+id = "jwt-secret"
+description = "JWT Secrets"
+regex = '''(?i)(jwt[_-]?secret|nextauth[_-]?secret)\s*[:=]\s*['"]?[a-z0-9_-]{32,}['"]?'''
+keywords = ["jwt_secret", "nextauth_secret", "jwt-secret"]
+
+[[rules]]
+id = "private-key"
+description = "Private Keys"
+regex = '''-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----'''
+keywords = ["PRIVATE KEY"]
+
+# Allowlist for known safe patterns
+[[rules.allowlist]]
+description = "Environment variable examples in documentation"
+files = ['''\.md$''', '''\.txt$''']
+regexes = [
+  '''OPENAI_API_KEY=sk-example''',
+  '''DATABASE_URL=postgresql://example''',
+  '''NEXTAUTH_SECRET=example'''
+]
+
+[[rules.allowlist]]
+description = "Test fixtures and examples"
+files = ['''test''', '''spec''', '''example''']
+regexes = [
+  '''sk-test''',
+  '''example-key''',
+  '''dummy-secret'''
+]
