@@ -1,3 +1,56 @@
 node_modules/
-
 figment-splits-site/
+
+# IDE and editor files
+.vscode/
+.vs/
+.idea/
+.settings/
+.project/
+.classpath/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Environment files (never commit real secrets)
+.env
+.env.*
+!.env.example
+
+# Next.js / build caches
+.next/
+out/
+.turbo/
+
+# Prisma local db files
+prisma/*.db
+prisma/*.db-journal
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.tsbuildinfo
+.cache/
+coverage/
+nul
+
+# Claude local settings
+.claude/settings.local.json
+
+# Static export artifacts
+404/
+*.html
+index.txt
+*.svg

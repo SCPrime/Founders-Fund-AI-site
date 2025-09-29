@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"  // or "postgresql" / "mysql" in production
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -14,36 +14,48 @@ datasource db {
 model Portfolio {
   id            String         @id @default(cuid())
   name          String
+  totalValue    Decimal?       @db.Decimal(18, 2) // currency precision
+  targetReturn  Decimal?       @db.Decimal(5, 2)
   createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   contributions Contribution[] @relation("PortfolioContributions")
   snapshots     Snapshot[]     @relation("PortfolioSnapshots")
+
+  @@index([name])
 }
 
 // Contribution model: records an investment or cashflow leg
 model Contribution {
-  id         String   @id @default(cuid())
-  portfolio  Portfolio @relation("PortfolioContributions", fields: [portfolioId], references: [id])
-  portfolioId String
-  owner      String   // "founders" or "investor"
-  name       String   // investor name or "Founders"
-  type       LegType
-  amount     Float
-  ts         DateTime
+  id                        String    @id @default(cuid())
+  portfolioId               String
+  portfolio                 Portfolio @relation("PortfolioContributions", fields: [portfolioId], references: [id], onDelete: Cascade)
+  owner                     String // "founders" or "investor"
+  name                      String // investor name or "Founders"
+  type                      LegType
+  amount                    Decimal   @db.Decimal(18, 2)
+  ts                        DateTime  @db.Timestamptz(6) // timezone-aware
   earnsDollarDaysThisWindow Boolean
+
+  @@index([portfolioId])
+  @@index([ts])
+  @@index([owner, type])
 }
 
 // Snapshot model: optional, store end-of-window results
 model Snapshot {
-  id         String    @id @default(cuid())
-  portfolio  Portfolio @relation("PortfolioSnapshots", fields: [portfolioId], references: [id])
-  portfolioId String
-  timestamp  DateTime  @default(now())
-  windowStart DateTime
-  windowEnd   DateTime
-  profitTotal Float
-  realizedProfit Float
-  unrealizedPnl Float
+  id             String    @id @default(cuid())
+  portfolioId    String
+  portfolio      Portfolio @relation("PortfolioSnapshots", fields: [portfolioId], references: [id], onDelete: Cascade)
+  timestamp      DateTime  @default(now()) @db.Timestamptz(6)
+  windowStart    DateTime  @db.Timestamptz(6)
+  windowEnd      DateTime  @db.Timestamptz(6)
+  profitTotal    Decimal   @db.Decimal(18, 2)
+  realizedProfit Decimal   @db.Decimal(18, 2)
+  unrealizedPnl  Decimal   @db.Decimal(18, 2)
   // ... you can store summary metrics or JSON if needed for full outputs
+
+  @@index([portfolioId])
+  @@index([timestamp])
 }
 
 enum LegType {
@@ -55,4 +67,3 @@ enum LegType {
   moonbag_investor
   draw
 }
-

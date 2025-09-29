@@ -2,9 +2,9 @@ name: CI - Tests
 
 on:
   pull_request:
-    branches: [ main, master, vercelwork, tests/component-presets, '**' ]
+    branches: [ main ]
   push:
-    branches: [ tests/component-presets, vercelwork, main ]
+    branches: [ main ]
 
 jobs:
   test:

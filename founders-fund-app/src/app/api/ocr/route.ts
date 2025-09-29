@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import formidable from 'formidable';
-import { createWorker } from 'tesseract.js';
-import OpenAI from 'openai';
-import { Readable } from 'stream';
+import logger from '@/lib/logger';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Ensure Node.js runtime for better performance with heavy operations
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,22 +17,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('OCR: Processing file:', file.name, 'Size:', file.size);
+    logger.api('POST', '/api/ocr', { filename: file.name, size: file.size });
 
     // Convert File to Buffer for processing
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Perform OCR using Tesseract
-    console.log('OCR: Starting text recognition...');
+    // Dynamic import of heavy dependencies to improve cold start performance
+    logger.debug('Starting OCR text recognition');
+    const { createWorker } = await import('tesseract.js');
     const worker = await createWorker('eng');
 
     try {
       const { data: { text: ocrText } } = await worker.recognize(buffer);
-      console.log('OCR text extracted:', ocrText.substring(0, 200) + '...');
+      logger.ocrResult(ocrText);
 
       // Use OpenAI to extract the numbers from the OCR text
-      console.log('AI: Processing OCR text for financial data extraction...');
+      logger.debug('Processing OCR text with AI for financial data extraction');
+
+      // Dynamic import OpenAI to reduce cold start time
+      const OpenAI = await import('openai');
+      const openai = new OpenAI.default({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
       const prompt = `The following text is from a financial account statement or trading dashboard. Extract the current total portfolio value and the unrealized P/L (profit/loss).
 
 Reply in JSON format with "wallet" and "unrealized" fields. Use numbers only (no currency symbols).
@@ -66,7 +69,7 @@ Text to analyze:
       });
 
       const aiText = aiResponse.choices[0]?.message?.content?.trim();
-      console.log('OpenAI response:', aiText);
+      logger.aiResponse(aiText);
 
       // Parse OpenAI response
       let walletSize = 0;
@@ -79,7 +82,7 @@ Text to analyze:
           unrealized = parseFloat(parsed.unrealized) || 0;
         } else {
           // Fallback: extract numbers from aiText if not JSON
-          console.log('Fallback: extracting numbers from non-JSON response');
+          logger.debug('Fallback: extracting numbers from non-JSON response');
           const nums = aiText?.match(/-?[\d,.]+/g);
           if (nums && nums.length >= 1) {
             walletSize = parseFloat(nums[0].replace(/,/g, '')) || 0;
@@ -89,7 +92,7 @@ Text to analyze:
           }
         }
       } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError);
+        logger.error('Failed to parse AI response', parseError);
         // Last resort: try to find any numbers in the text
         const nums = aiText?.match(/-?[\d,.]+/g);
         if (nums && nums.length >= 1) {
@@ -100,21 +103,25 @@ Text to analyze:
         }
       }
 
-      console.log('Extracted values - Wallet:', walletSize, 'Unrealized:', unrealized);
+      logger.info('Financial data extracted successfully', { walletSize, unrealized });
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         walletSize,
         unrealized,
         ocrText: ocrText.substring(0, 500), // Include first 500 chars for debugging
         aiResponse: aiText
       });
 
+      // Prevent caching of sensitive OCR data
+      response.headers.set('Cache-Control', 'no-store, max-age=0');
+      return response;
+
     } finally {
       await worker.terminate();
     }
 
   } catch (error) {
-    console.error('OCR processing failed:', error);
+    logger.error('OCR processing failed', error);
     return NextResponse.json(
       {
         error: 'OCR processing failed',

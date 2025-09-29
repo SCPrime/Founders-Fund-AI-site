@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
 
     const outputs: AllocationOutputs = AllocationEngine.recompute(state);
 
-    return NextResponse.json(outputs);
+    const response = NextResponse.json(outputs);
+    // Prevent caching of sensitive calculation data
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    return response;
   } catch (error: unknown) {
     console.error('Calculation failed:', error);
     return NextResponse.json(
