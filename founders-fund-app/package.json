@@ -25,8 +25,12 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
+    "seed-baseline": "npx tsx scripts/seed-baseline.ts",
     "postinstall": "prisma generate",
     "prepare": "husky"
+  },
+  "prisma": {
+    "seed": "npx tsx scripts/seed-baseline.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

@@ -2,7 +2,62 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { rateLimit } from '@/lib/rateLimit';
 import { AllocationEngine } from '@/lib/allocationEngine';
-import type { AllocationState, AllocationOutputs } from '@/types/allocation';
+import { PrismaClient, type Contribution } from '@prisma/client';
+import { BASELINE_PORTFOLIO_ID } from '../../../../scripts/seed-baseline';
+import type { AllocationState, AllocationOutputs, Leg } from '@/types/allocation';
+
+const prisma = new PrismaClient();
+
+// Convert Prisma Contribution to AllocationState Leg format
+function contributionToLeg(contrib: Contribution): Leg {
+  return {
+    id: contrib.id,
+    owner: contrib.owner,
+    name: contrib.name,
+    type: contrib.type,
+    amount: Number(contrib.amount),
+    ts: contrib.ts.toISOString(),
+    earnsDollarDaysThisWindow: contrib.earnsDollarDaysThisWindow,
+  };
+}
+
+// Auto-merge baseline data with client contributions
+async function mergeWithBaseline(clientState: AllocationState): Promise<AllocationState> {
+  try {
+    // Fetch baseline contributions from database
+    const baselineContributions = await prisma.contribution.findMany({
+      where: { portfolioId: BASELINE_PORTFOLIO_ID },
+      orderBy: { ts: 'asc' },
+    });
+
+    if (baselineContributions.length === 0) {
+      console.log('No baseline contributions found, using client state as-is');
+      return clientState;
+    }
+
+    // Convert to Leg format
+    const baselineLegs = baselineContributions.map(contributionToLeg);
+
+    // Merge baseline with client legs, avoiding duplicates by ID
+    const clientLegIds = new Set(clientState.legs.map(leg => leg.id));
+    const uniqueBaselineLegs = baselineLegs.filter(leg => !clientLegIds.has(leg.id));
+
+    // Combine and sort by timestamp
+    const mergedLegs = [...uniqueBaselineLegs, ...clientState.legs]
+      .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+    console.log(`Merged ${uniqueBaselineLegs.length} baseline legs with ${clientState.legs.length} client legs`);
+
+    return {
+      ...clientState,
+      legs: mergedLegs,
+    };
+  } catch (error) {
+    console.error('Failed to merge baseline data:', error);
+    // Return original state if baseline merge fails
+    return clientState;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +105,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const outputs: AllocationOutputs = AllocationEngine.recompute(state);
+    // Auto-merge baseline data with client contributions
+    const mergedState = await mergeWithBaseline(state);
+
+    const outputs: AllocationOutputs = AllocationEngine.recompute(mergedState);
 
     const response = NextResponse.json(outputs);
 
