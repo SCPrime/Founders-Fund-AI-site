@@ -32,6 +32,8 @@ desktop.ini
 .next/
 out/
 .turbo/
+.vercel/
+build/
 
 # Prisma local db files
 prisma/*.db
