@@ -20,6 +20,16 @@ function withinBaseline(ts: Date) {
 }
 
 async function main() {
+  // Ensure baseline portfolio exists
+  await prisma.portfolio.upsert({
+    where: { id: BASELINE_PORTFOLIO_ID },
+    update: {},
+    create: {
+      id: BASELINE_PORTFOLIO_ID,
+      name: 'Baseline: Figment Splits Jul-Aug 2024',
+    },
+  });
+
   let created = 0;
   for (const row of investorDeposits) {
     const ts = new Date(`${row.ts}T00:00:00Z`);
@@ -59,7 +69,7 @@ async function main() {
         portfolioId: BASELINE_PORTFOLIO_ID,
         owner: 'founders',
         name: 'Founders',
-        type: 'entry_fee',
+        type: 'founders_entry_fee',
         amount: fee,
         ts,
       },
@@ -70,7 +80,7 @@ async function main() {
           portfolioId: BASELINE_PORTFOLIO_ID,
           owner: 'founders',
           name: 'Founders',
-          type: 'entry_fee',
+          type: 'founders_entry_fee',
           amount: fee,
           ts,
           earnsDollarDaysThisWindow: true,
