@@ -6,6 +6,8 @@ import type { Contribution } from '@prisma/client';
 import type { AllocationState, AllocationOutputs, Leg } from '@/types/allocation';
 import { prisma } from '@/lib/prisma';
 import { BASELINE_PORTFOLIO_ID } from '@/lib/constants';
+import { ensureEntryFees } from '@/lib/fees';
+import { z } from 'zod';
 
 // Convert Prisma Contribution to AllocationState Leg format
 function contributionToLeg(r: Contribution): Leg {
@@ -20,6 +22,28 @@ function contributionToLeg(r: Contribution): Leg {
   };
 }
 
+// Minimal validator; expand to your full AllocationState as needed
+const LegSchema = z.object({
+  owner: z.enum(['investor','founders']),
+  name: z.string(),
+  type: z.string(),
+  amount: z.number(),
+  ts: z.string(),
+  earnsDollarDaysThisWindow: z.boolean().optional()
+}).passthrough();
+
+const StateSchema = z.object({
+  legs: z.array(LegSchema).min(1)
+}).passthrough();
+
+function setRLHeaders(resp: NextResponse, ll: number, rr: number, resetAt: number) {
+  resp.headers.set('X-RateLimit-Limit', String(ll));
+  resp.headers.set('X-RateLimit-Remaining', String(rr));
+  resp.headers.set('X-RateLimit-Reset', String(Math.floor(resetAt / 1000)));
+  resp.headers.set('Cache-Control', 'no-store, max-age=0');
+  resp.headers.set('Vary', 'x-forwarded-for');
+}
+
 // Auto-merge baseline data with client contributions
 async function mergeWithBaseline(clientState: AllocationState): Promise<AllocationState> {
   try {
@@ -30,13 +54,13 @@ async function mergeWithBaseline(clientState: AllocationState): Promise<Allocati
     if (!baselineRows.length) return clientState;
 
     const baselineLegs = baselineRows.map(contributionToLeg);
-    const clientIds = new Set(clientState.legs.map((l) => l.id));
+    const clientIds = new Set(clientState.contributions.map((l) => l.id).filter(Boolean));
     const uniqBaseline = baselineLegs.filter((l) => !clientIds.has(l.id));
 
-    const legs = [...uniqBaseline, ...clientState.legs].sort(
+    const contributions = [...uniqBaseline, ...clientState.contributions].sort(
       (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
     );
-    return { ...clientState, legs };
+    return { ...clientState, contributions };
   } catch (e) {
     console.error('Failed to merge baseline data:', e);
     return clientState;
@@ -46,71 +70,85 @@ async function mergeWithBaseline(clientState: AllocationState): Promise<Allocati
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting - 20 requests per minute per IP for calculations
-    const headersList = headers();
+    const headersList = await headers();
     const ip = headersList.get('x-forwarded-for')?.split(',')[0] ??
               headersList.get('x-real-ip') ??
               'unknown';
 
-    const rateLimitResult = rateLimit(`calc:${ip}`, 20, 60_000);
+    const rl = rateLimit(`calc:${ip}`, 20, 60_000);
 
-    // Prepare rate limit headers
-    const rateLimitHeaders = {
-      'X-RateLimit-Limit': rateLimitResult.limit.toString(),
-      'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-      'X-RateLimit-Reset': Math.floor(rateLimitResult.resetAt / 1000).toString(),
-    };
-
-    if (!rateLimitResult.ok) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
+    if (!rl.ok) {
+      const res = NextResponse.json(
+        { ok: false, error: 'Too many requests' },
         {
           status: 429,
           headers: {
-            ...rateLimitHeaders,
-            'Retry-After': Math.max(1, Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)).toString(),
+            'Retry-After': String(Math.max(1, Math.ceil((rl.resetAt - Date.now())/1000)))
           }
         }
       );
-    }
-    const state = (await request.json()) as AllocationState;
-
-    if (!state) {
-      return NextResponse.json(
-        { error: 'Missing allocation state in request body.' },
-        { status: 400 },
-      );
+      setRLHeaders(res, rl.limit, rl.remaining, rl.resetAt);
+      return res;
     }
 
-    // Validate required fields
-    if (!state.window || !state.constants) {
-      return NextResponse.json(
-        { error: 'Invalid allocation state: missing window or constants.' },
-        { status: 400 },
-      );
+    const json = await request.json().catch(() => null);
+    if (!json) {
+      const res = NextResponse.json({
+        ok: false,
+        error: 'Malformed JSON',
+        example: {
+          legs: [
+            { owner:'investor', name:'Laura', type:'investor_contribution', amount:50000, ts:'2024-07-15T00:00:00Z' }
+          ]
+        }
+      }, { status: 400 });
+      setRLHeaders(res, rl.limit, rl.remaining, rl.resetAt);
+      return res;
     }
+
+    const parsed = StateSchema.safeParse(json);
+    if (!parsed.success) {
+      const res = NextResponse.json({
+        ok: false,
+        error: 'Validation failed',
+        details: parsed.error.issues
+      }, { status: 400 });
+      setRLHeaders(res, rl.limit, rl.remaining, rl.resetAt);
+      return res;
+    }
+
+    // Ensure fee legs present to quiet 10% warnings
+    const rawData = parsed.data as { legs: Leg[]; window?: { start: string; end: string }; walletSizeEndOfWindow?: number; unrealizedPnlEndOfWindow?: number; constants?: object };
+    const legsWithFees = ensureEntryFees(rawData.legs);
+
+    // Build minimal AllocationState from legs (will be merged with baseline)
+    const state: AllocationState = {
+      ...rawData,
+      contributions: legsWithFees,
+      window: rawData.window || { start: '2024-01-01', end: '2024-12-31' },
+      walletSizeEndOfWindow: rawData.walletSizeEndOfWindow || 0,
+      unrealizedPnlEndOfWindow: rawData.unrealizedPnlEndOfWindow || 0,
+      constants: (rawData.constants as AllocationState['constants']) || {
+        INVESTOR_SEED_BASELINE: 20000,
+        ENTRY_FEE_RATE: 0.10,
+        MGMT_FEE_RATE: 0.20,
+        FOUNDERS_MOONBAG_PCT: 0.75,
+        FOUNDERS_COUNT: 2,
+        ENTRY_FEE_REDUCES_INVESTOR_CREDIT: true
+      }
+    };
 
     // Auto-merge baseline data with client contributions
     const mergedState = await mergeWithBaseline(state);
 
     const outputs: AllocationOutputs = AllocationEngine.recompute(mergedState);
 
-    const response = NextResponse.json(outputs);
-
-    // Set rate limiting headers
-    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
-      response.headers.set(key, value);
-    });
-
-    // Prevent caching of sensitive calculation data
-    response.headers.set('Cache-Control', 'no-store, max-age=0');
-    response.headers.set('Vary', 'x-forwarded-for');
-    return response;
-  } catch (error: unknown) {
-    console.error('Calculation failed:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Calculation error' },
-      { status: 500 },
-    );
+    const res = NextResponse.json(outputs, { status: 200 });
+    setRLHeaders(res, rl.limit, rl.remaining, rl.resetAt);
+    return res;
+  } catch (e: unknown) {
+    console.error('Calculate failed:', e);
+    return NextResponse.json({ ok:false, error:'Internal error' }, { status: 500 });
   }
 }
 

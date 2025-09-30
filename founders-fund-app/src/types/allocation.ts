@@ -40,7 +40,7 @@ export enum Owner {
 export type OwnerUnion = 'founders' | 'investor';
 
 export interface CashflowLeg {
-  id: string;
+  id?: string;
   owner: Owner | OwnerUnion; // Support both enum and legacy string union
   name: string; // investor name if owner='investor'; 'Founders' otherwise
   type: LegType | LegTypeUnion; // Support both enum and legacy string union
@@ -48,6 +48,11 @@ export interface CashflowLeg {
   ts: string; // ISO date string (YYYY-MM-DD format)
   earnsDollarDaysThisWindow: boolean;
 }
+
+/**
+ * Type alias for CashflowLeg - used in fees.ts and other utilities
+ */
+export type Leg = CashflowLeg;
 
 /**
  * Time window for allocation calculations
