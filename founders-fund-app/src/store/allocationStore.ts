@@ -68,6 +68,7 @@ interface AllocationStore {
   recompute: () => void;
   recomputeWithWorkingCalculator: () => void;
   saveSnapshot: () => void;
+  setServerOutputs: (outputs: AllocationOutputs) => void;
 
   // What-if analysis
   runWhatIf: (modifications: Partial<AllocationState>) => AllocationOutputs;
@@ -329,6 +330,16 @@ export const useAllocationStore = create<AllocationStore>()(
           isComputing: false
         });
       }
+    },
+
+    // Set outputs from server (e.g., after OCR → Calculator push)
+    setServerOutputs: (outputs: AllocationOutputs) => {
+      set({
+        outputs,
+        validationErrors: [],
+        lastComputeTime: new Date().toISOString()
+      });
+      console.log('Server outputs applied:', { profitTotal: outputs.profitTotal });
     },
 
     // Alternative recompute using Working Calculator (guaranteed no negatives)
