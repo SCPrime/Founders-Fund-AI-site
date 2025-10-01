@@ -7,6 +7,8 @@ import { aiTools, executeAITool } from '@/lib/aiTools';
 import PredictiveAnalytics from './PredictiveAnalytics';
 import SmartValidation from './SmartValidation';
 import OCRProcessor from './OCRProcessor';
+import OcrConfirmSave from '@/components/OcrConfirmSave';
+import ServerResultBinder from '@/components/ServerResultBinder';
 
 interface Message {
   id: string;
@@ -35,6 +37,19 @@ export default function AIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { settings, updateSettings, populateContributions } = useFundStore();
   const { ocrData } = useOCR();
+
+  // OCR confirmation state
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const [ocrText, setOcrText] = useState<string>('');
+  const [proposedContribs, setProposedContribs] = useState<Array<{
+    owner: 'investor' | 'founders';
+    name: string;
+    type: string;
+    amount: number;
+    ts: string;
+    earnsDollarDaysThisWindow?: boolean;
+  }>>([]);
+  const [serverResult, setServerResult] = useState<unknown>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -386,8 +401,16 @@ export default function AIAssistant() {
         onOCRComplete={(extractedData) => {
           addMessage('assistant', '🎯 OCR Processing Complete! Extracted financial data from your image.');
 
-          // Prepare contributions for fund store
+          // Prepare contributions for fund store AND for OcrConfirmSave
           const combinedData = [];
+          const proposedLegs: Array<{
+            owner: 'investor' | 'founders';
+            name: string;
+            type: string;
+            amount: number;
+            ts: string;
+            earnsDollarDaysThisWindow?: boolean;
+          }> = [];
 
           if (extractedData.founders && extractedData.founders.length > 0) {
             combinedData.push(...extractedData.founders.map((f: Contribution) => ({
@@ -396,6 +419,14 @@ export default function AIAssistant() {
               amount: f.amount,
               rule: f.rule || 'net',
               cls: 'founder'
+            })));
+            proposedLegs.push(...extractedData.founders.map((f: Contribution) => ({
+              owner: 'founders' as const,
+              name: f.name || 'Founders',
+              type: 'founders_contribution',
+              amount: f.amount,
+              ts: f.date || new Date().toISOString().split('T')[0],
+              earnsDollarDaysThisWindow: true
             })));
             addMessage('assistant', `✅ Processed ${extractedData.founders.length} founder entries!`);
           }
@@ -407,6 +438,14 @@ export default function AIAssistant() {
               amount: i.amount,
               rule: i.rule || 'net',
               cls: 'investor'
+            })));
+            proposedLegs.push(...extractedData.investors.map((i: Contribution) => ({
+              owner: 'investor' as const,
+              name: i.name || 'Investor',
+              type: 'investor_contribution',
+              amount: i.amount,
+              ts: i.date || new Date().toISOString().split('T')[0],
+              earnsDollarDaysThisWindow: true
             })));
             addMessage('assistant', `✅ Processed ${extractedData.investors.length} investor entries!`);
           }
@@ -477,11 +516,42 @@ export default function AIAssistant() {
           }
 
           addMessage('assistant', '🚀 **All Done!** Your financial document has been processed and the data has been automatically populated into the fund store with real-time calculations. Check the main Calculator tab to see the results.');
+
+          // Store OCR data for OcrConfirmSave
+          setProposedContribs(proposedLegs);
+          // Note: ocrFile would need to be captured from OCRProcessor if you want to save the actual file
         }}
         onError={(error) => {
           addMessage('assistant', `❌ OCR Error: ${error}`);
         }}
       />
+
+      {/* OCR Confirmation & Push to Calculator */}
+      {proposedContribs.length > 0 && (
+        <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--panel)', borderRadius: '8px' }}>
+          <h3>📋 Confirm & Save OCR Data</h3>
+          <p style={{ marginBottom: '12px', color: 'var(--muted)' }}>
+            {proposedContribs.length} contribution{proposedContribs.length !== 1 ? 's' : ''} extracted
+          </p>
+          <OcrConfirmSave
+            file={ocrFile}
+            ocrText={ocrText}
+            proposedContributions={proposedContribs}
+            portfolioId="baseline-figment-splits-2024"
+            userLabel="AI Assistant OCR Scan"
+            onSaved={(p) => {
+              addMessage('assistant', `✅ Saved to history: Scan ${p.scanId} (${p.committedCount} contributions)`);
+            }}
+            onPushed={(result) => {
+              setServerResult(result);
+              addMessage('assistant', '✅ Calculator updated with server results!');
+            }}
+          />
+        </div>
+      )}
+
+      {/* Bind server results to allocation store */}
+      <ServerResultBinder result={serverResult} />
 
       {/* Extracted Data Display */}
       {ocrData.extractedData && (
