@@ -1,8 +1,9 @@
 'use client';
 
 import { useAllocationStore } from '@/store/allocationStore';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useRef, useState, useEffect, type ChangeEvent } from 'react';
 import Image from 'next/image';
+import { API_ROUTES } from '@/lib/apiRoutes';
 
 export default function StatusBar() {
   const { recompute, saveSnapshot, lastComputeTime } = useAllocationStore();
@@ -14,6 +15,14 @@ export default function StatusBar() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [ocrText, setOcrText] = useState<string>('');
   const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [version, setVersion] = useState<{ commit: string; branch: string } | null>(null);
+
+  useEffect(() => {
+    fetch(API_ROUTES.VERSION)
+      .then(r => r.json())
+      .then(data => setVersion(data))
+      .catch(() => setVersion({ commit: 'unknown', branch: 'unknown' }));
+  }, []);
 
   const handleReseed = () => {
     console.log('Reseed defaults');
@@ -159,6 +168,11 @@ export default function StatusBar() {
         </div>
       )}
       {message && <span className="small">{message}</span>}
+      {version && (
+        <span className="small" style={{ marginLeft: 'auto', opacity: 0.5 }} title={`Branch: ${version.branch}`}>
+          v:{version.commit.substring(0, 7)}
+        </span>
+      )}
     </div>
   );
 }
