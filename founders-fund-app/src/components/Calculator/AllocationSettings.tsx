@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useAllocationStore } from '@/store/allocationStore';
+import { API_ROUTES } from '@/lib/apiRoutes';
 
 export default function AllocationSettings() {
-  const { state, wallet, snapshots, updateWindow, updateConstants, advanceWindow } = useAllocationStore();
+  const { state, wallet, snapshots, updateWindow, updateConstants, advanceWindow, setServerOutputs } = useAllocationStore();
   const [uploading, setUploading] = useState(false);
+  const [loadingBaseline, setLoadingBaseline] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -61,6 +63,42 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     alert('Image upload or processing failed. Please check console for details.');
   } finally {
     setUploading(false);
+  }
+};
+
+const loadBaselineFromDB = async () => {
+  setLoadingBaseline(true);
+  try {
+    // Call /api/calculate with minimal payload
+    // Server will merge baseline contributions from DB
+    const res = await fetch(API_ROUTES.CALCULATE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        legs: [{
+          owner: 'founders',
+          name: 'Founders',
+          type: 'founders_contribution',
+          amount: 0.01, // Tiny harmless amount
+          ts: '2024-01-01T00:00:00Z',
+          earnsDollarDaysThisWindow: false
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.error || `Failed: ${res.status}`);
+    }
+
+    const outputs = await res.json();
+    setServerOutputs(outputs);
+    console.log('✅ Baseline loaded from DB:', outputs);
+  } catch (err) {
+    console.error('Baseline load failed:', err);
+    alert(`Failed to load baseline: ${err instanceof Error ? err.message : 'Unknown error'}`);
+  } finally {
+    setLoadingBaseline(false);
   }
 };
 
@@ -148,6 +186,29 @@ const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             />
             {uploading && <p>Extracting data from image...</p>}
           </div>
+        </div>
+
+        {/* Load Baseline Button */}
+        <div style={{ gridColumn: 'span 6' }}>
+          <label style={{ marginBottom: '8px', display: 'block' }}>Load Seeded Baseline:</label>
+          <button
+            onClick={loadBaselineFromDB}
+            disabled={loadingBaseline}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: loadingBaseline ? 'var(--muted)' : 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loadingBaseline ? 'wait' : 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            {loadingBaseline ? '⏳ Loading...' : '📥 Load Baseline from DB'}
+          </button>
+          <small style={{ display: 'block', marginTop: '4px', color: 'var(--muted)', fontSize: '11px' }}>
+            Fetches seeded contributions (Laura, Damon) from database
+          </small>
         </div>
 
         {/* Realized Profit - Derived */}
