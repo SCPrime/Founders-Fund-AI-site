@@ -76,25 +76,24 @@ export const authOptions: AuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
-      // Initial sign in
+    async jwt({ token, user, account, trigger }) {
+      // Initial sign in - user object is available
       if (user) {
         token.role = user.role;
         token.id = user.id;
       }
 
-      // OAuth sign in - auto-assign INVESTOR role for new OAuth users
-      if (account && !token.role) {
+      // On every token refresh, fetch latest user data from DB to ensure role is current
+      // This is critical for account linking across providers
+      if (token.email && (trigger === 'signIn' || trigger === 'signUp')) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: token.email || '' }
+          where: { email: token.email }
         });
 
         if (dbUser) {
           token.role = dbUser.role;
           token.id = dbUser.id;
-        } else {
-          // New OAuth user - assign default INVESTOR role
-          token.role = 'INVESTOR';
+          token.name = dbUser.name;
         }
       }
 
@@ -104,26 +103,47 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         session.user.role = token.role as string;
         session.user.id = token.id as string;
+        session.user.name = token.name as string;
       }
       return session;
     },
     async signIn({ user, account, profile }) {
-      // For OAuth providers, ensure user exists in database
-      if (account?.provider !== 'credentials') {
+      // For OAuth providers, implement account linking
+      if (account?.provider !== 'credentials' && user.email) {
         const existingUser = await prisma.user.findUnique({
-          where: { email: user.email || '' }
+          where: { email: user.email }
         });
 
-        // Create user if doesn't exist
-        if (!existingUser && user.email) {
-          await prisma.user.create({
+        if (existingUser) {
+          // User exists - link this OAuth account to existing user
+          // The PrismaAdapter will automatically create the Account record
+          // linking this OAuth provider to the existing User
+
+          // Update user info if needed (name from OAuth profile)
+          if (user.name && user.name !== existingUser.name) {
+            await prisma.user.update({
+              where: { email: user.email },
+              data: { name: user.name }
+            });
+          }
+
+          // IMPORTANT: Set user.id to existing user's ID for proper account linking
+          user.id = existingUser.id;
+        } else {
+          // New OAuth user - create with default INVESTOR role
+          // Special case: if email is scprime@foundersfund.com, assign ADMIN role
+          const role = user.email.toLowerCase() === 'scprime@foundersfund.com' ? 'ADMIN' : 'INVESTOR';
+
+          const newUser = await prisma.user.create({
             data: {
               email: user.email,
               name: user.name || user.email.split('@')[0],
-              role: 'INVESTOR', // Default role for OAuth users
+              role,
               passwordHash: null, // OAuth users don't have passwords
             }
           });
+
+          user.id = newUser.id;
         }
       }
 
