@@ -69,21 +69,23 @@ export function withRateLimit(
   const result = rateLimitEnhanced(identifier, pathname);
 
   if (!result.ok) {
-    return new Response(
-      JSON.stringify({
-        error: 'Rate limit exceeded',
-        retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000),
-      }),
-      {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RateLimit-Limit': result.limit.toString(),
-          'X-RateLimit-Remaining': result.remaining.toString(),
-          'X-RateLimit-Reset': result.resetAt.toString(),
-          'Retry-After': Math.ceil((result.resetAt - Date.now()) / 1000).toString(),
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000),
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': result.limit.toString(),
+            'X-RateLimit-Remaining': result.remaining.toString(),
+            'X-RateLimit-Reset': result.resetAt.toString(),
+            'Retry-After': Math.ceil((result.resetAt - Date.now()) / 1000).toString(),
+          },
         },
-      },
+      ),
     );
   }
 

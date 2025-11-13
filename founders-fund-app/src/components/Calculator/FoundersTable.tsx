@@ -23,7 +23,7 @@ export default function FoundersTable() {
       type: 'seed',
       amount: 0,
       ts: new Date().toISOString().split('T')[0],
-      cls: 'founder'
+      earnsDollarDaysThisWindow: true
     });
   };
 
@@ -61,7 +61,7 @@ export default function FoundersTable() {
         type: 'seed',
         amount: preset.amount,
         ts: preset.date,
-        cls: 'founder'
+        earnsDollarDaysThisWindow: true
       });
     });
   };
@@ -88,7 +88,7 @@ export default function FoundersTable() {
         type: 'seed',
         amount: item.amount,
         ts: item.date,
-        cls: 'founder'
+        earnsDollarDaysThisWindow: true
       });
     });
   }, [state.contributions, addContribution, removeContribution]);

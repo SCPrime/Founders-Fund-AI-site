@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { EnhancedOCRProcessor } from '@/utils/enhancedOCRProcessor';
+import { EnhancedOCRProcessor, type ExtractedFinancialData } from '@/utils/enhancedOCRProcessor';
+import React, { useRef, useState } from 'react';
 
 interface TradingDashboardOCRProps {
   onExtractComplete: (data: Record<string, unknown>) => void;
@@ -14,11 +14,14 @@ interface ProcessingState {
   message: string;
 }
 
-export default function TradingDashboardOCR({ onExtractComplete, onError }: TradingDashboardOCRProps) {
+export default function TradingDashboardOCR({
+  onExtractComplete,
+  onError,
+}: TradingDashboardOCRProps) {
   const [processingState, setProcessingState] = useState<ProcessingState>({
     status: 'idle',
     progress: 0,
-    message: ''
+    message: '',
   });
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<Record<string, unknown> | null>(null);
@@ -58,7 +61,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
       setProcessingState({
         status: 'preprocessing',
         progress: 10,
-        message: 'Loading and preprocessing image...'
+        message: 'Loading and preprocessing image...',
       });
 
       // Convert to data URL
@@ -75,7 +78,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
         setProcessingState({
           status: 'preprocessing',
           progress: 30,
-          message: 'Enhancing image for financial data extraction...'
+          message: 'Enhancing image for financial data extraction...',
         });
 
         const processedImage = await ocrProcessor.current.preprocessTradingDashboard(imageDataUrl);
@@ -85,7 +88,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
       setProcessingState({
         status: 'extracting',
         progress: 50,
-        message: 'Performing OCR extraction...'
+        message: 'Performing OCR extraction...',
       });
 
       // Step 2: Use Tesseract.js for OCR
@@ -94,8 +97,9 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
 
       // Enhanced configuration for financial data
       await worker.setParameters({
-        tessedit_pageseg_mode: 6 as const, // Uniform block of text
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,%-/$:()/ \\n\\t',
+        tessedit_pageseg_mode: 6 as unknown as any, // Uniform block of text
+        tessedit_char_whitelist:
+          '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,%-/$:()/ \\n\\t',
         tessedit_ocr_engine_mode: '1', // Neural nets LSTM
         preserve_interword_spaces: '1',
       });
@@ -103,7 +107,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
       setProcessingState({
         status: 'extracting',
         progress: 70,
-        message: 'Running enhanced OCR analysis...'
+        message: 'Running enhanced OCR analysis...',
       });
 
       const imageToProcess = preprocessedImage || imageDataUrl;
@@ -113,21 +117,22 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
       setProcessingState({
         status: 'extracting',
         progress: 85,
-        message: 'Extracting financial data patterns...'
+        message: 'Extracting financial data patterns...',
       });
 
       // Step 3: Extract financial data using enhanced patterns
-      let financialData = {};
+      let financialData: ExtractedFinancialData = { confidence: 0 };
       if (ocrProcessor.current) {
-        financialData = ocrProcessor.current.extractFinancialData(data.text);
-        financialData = ocrProcessor.current.validateFinancialData(financialData as Record<string, unknown>);
+        const extracted = ocrProcessor.current.extractFinancialData(data.text);
+        const validated = ocrProcessor.current.validateFinancialData(extracted);
+        financialData = validated;
       }
 
       // Step 4: Send to backend for additional processing
       setProcessingState({
         status: 'extracting',
         progress: 90,
-        message: 'Validating extracted data...'
+        message: 'Validating extracted data...',
       });
 
       const formData = new FormData();
@@ -149,7 +154,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
       setProcessingState({
         status: 'complete',
         progress: 100,
-        message: `Extraction complete! Confidence: ${result.data?.confidence || 85}%`
+        message: `Extraction complete! Confidence: ${result.data?.confidence || 85}%`,
       });
 
       // Combine client-side and server-side results
@@ -161,19 +166,18 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
           'Tesseract.js OCR with financial optimization',
           'Client-side pattern recognition',
           'Server-side AI validation',
-          'Data consistency checks'
-        ]
+          'Data consistency checks',
+        ],
       };
 
       setExtractedData(combinedData);
       onExtractComplete(combinedData);
-
     } catch (error) {
       console.error('Trading dashboard OCR error:', error);
       setProcessingState({
         status: 'error',
         progress: 0,
-        message: 'OCR processing failed'
+        message: 'OCR processing failed',
       });
       onError(error instanceof Error ? error.message : 'Unknown OCR error');
     }
@@ -183,7 +187,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
     setProcessingState({
       status: 'idle',
       progress: 0,
-      message: ''
+      message: '',
     });
     setUploadedImage(null);
     setPreprocessedImage(null);
@@ -196,41 +200,58 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
 
   const getStatusColor = () => {
     switch (processingState.status) {
-      case 'complete': return '#4CAF50';
-      case 'error': return '#f44336';
+      case 'complete':
+        return '#4CAF50';
+      case 'error':
+        return '#f44336';
       case 'preprocessing':
-      case 'extracting': return '#ff9800';
-      default: return '#666';
+      case 'extracting':
+        return '#ff9800';
+      default:
+        return '#666';
     }
   };
 
   const getStatusIcon = () => {
     switch (processingState.status) {
-      case 'complete': return '✅';
-      case 'error': return '❌';
-      case 'preprocessing': return '🔧';
-      case 'extracting': return '🔍';
-      default: return '📊';
+      case 'complete':
+        return '✅';
+      case 'error':
+        return '❌';
+      case 'preprocessing':
+        return '🔧';
+      case 'extracting':
+        return '🔍';
+      default:
+        return '📊';
     }
   };
 
   return (
-    <div style={{
-      border: '2px dashed #2a3b55',
-      borderRadius: '12px',
-      padding: '24px',
-      margin: '16px 0',
-      background: 'var(--panel)'
-    }}>
+    <div
+      style={{
+        border: '2px dashed #2a3b55',
+        borderRadius: '12px',
+        padding: '24px',
+        margin: '16px 0',
+        background: 'var(--panel)',
+      }}
+    >
       <h3>📊 Enhanced Trading Dashboard OCR</h3>
       <p style={{ color: '#9aa4b2', fontSize: '14px', marginBottom: '16px' }}>
-        Advanced OCR optimized for trading dashboards with enhanced pattern recognition for PNL, trades, and financial metrics.
+        Advanced OCR optimized for trading dashboards with enhanced pattern recognition for PNL,
+        trades, and financial metrics.
       </p>
 
       {/* File Upload */}
       <div style={{ marginBottom: '20px' }}>
+        <label htmlFor="trading-dashboard-ocr-file-input" className="sr-only">
+          Upload trading dashboard image for OCR processing
+        </label>
         <input
+          id="trading-dashboard-ocr-file-input"
           ref={fileInputRef}
+          aria-label="Upload trading dashboard image for OCR processing"
           type="file"
           accept="image/*"
           onChange={handleFileSelect}
@@ -239,17 +260,25 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={processingState.status === 'preprocessing' || processingState.status === 'extracting'}
+          disabled={
+            processingState.status === 'preprocessing' || processingState.status === 'extracting'
+          }
           style={{
             padding: '14px 28px',
             backgroundColor: '#4CAF50',
             color: 'white',
             border: 'none',
             borderRadius: '8px',
-            cursor: processingState.status === 'preprocessing' || processingState.status === 'extracting' ? 'not-allowed' : 'pointer',
+            cursor:
+              processingState.status === 'preprocessing' || processingState.status === 'extracting'
+                ? 'not-allowed'
+                : 'pointer',
             fontSize: '16px',
             fontWeight: 'bold',
-            opacity: processingState.status === 'preprocessing' || processingState.status === 'extracting' ? 0.6 : 1
+            opacity:
+              processingState.status === 'preprocessing' || processingState.status === 'extracting'
+                ? 0.6
+                : 1,
           }}
         >
           📊 Upload Trading Dashboard
@@ -266,7 +295,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
-              marginLeft: '12px'
+              marginLeft: '12px',
             }}
           >
             🔄 Reset
@@ -276,13 +305,15 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
 
       {/* Processing Status */}
       {processingState.status !== 'idle' && (
-        <div style={{
-          padding: '16px',
-          backgroundColor: 'rgba(57, 208, 216, 0.1)',
-          border: `2px solid ${getStatusColor()}`,
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
+        <div
+          style={{
+            padding: '16px',
+            backgroundColor: 'rgba(57, 208, 216, 0.1)',
+            border: `2px solid ${getStatusColor()}`,
+            borderRadius: '8px',
+            marginBottom: '20px',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
             <span style={{ fontSize: '20px' }}>{getStatusIcon()}</span>
             <span style={{ fontWeight: 'bold', color: getStatusColor(), fontSize: '16px' }}>
@@ -290,20 +321,25 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
             </span>
           </div>
 
-          {(processingState.status === 'preprocessing' || processingState.status === 'extracting') && (
-            <div style={{
-              width: '100%',
-              height: '10px',
-              backgroundColor: '#334155',
-              borderRadius: '5px',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                width: `${processingState.progress}%`,
-                height: '100%',
-                backgroundColor: getStatusColor(),
-                transition: 'width 0.5s ease'
-              }} />
+          {(processingState.status === 'preprocessing' ||
+            processingState.status === 'extracting') && (
+            <div
+              style={{
+                width: '100%',
+                height: '10px',
+                backgroundColor: '#334155',
+                borderRadius: '5px',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  width: `${processingState.progress}%`,
+                  height: '100%',
+                  backgroundColor: getStatusColor(),
+                  transition: 'width 0.5s ease',
+                }}
+              />
             </div>
           )}
         </div>
@@ -311,8 +347,14 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
 
       {/* Image Comparison */}
       {uploadedImage && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '20px',
+            marginBottom: '20px',
+          }}
+        >
           {/* Original Image */}
           <div>
             <h4>📷 Original Image</h4>
@@ -323,7 +365,7 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
                 maxWidth: '100%',
                 maxHeight: '250px',
                 border: '2px solid #334155',
-                borderRadius: '8px'
+                borderRadius: '8px',
               }}
             />
           </div>
@@ -339,7 +381,11 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
                   maxWidth: '100%',
                   maxHeight: '250px',
                   border: '2px solid #ff9800',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                }}
+                onError={(e) => {
+                  console.error('Failed to load preprocessed image');
+                  e.currentTarget.style.display = 'none';
                 }}
               />
             </div>
@@ -351,29 +397,49 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
       {extractedData && (
         <div style={{ marginTop: '20px' }}>
           <h4>📊 Extracted Financial Data</h4>
-          <div style={{
-            backgroundColor: 'rgba(76, 175, 80, 0.1)',
-            border: '2px solid #4CAF50',
-            borderRadius: '8px',
-            padding: '16px'
-          }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-
+          <div
+            style={{
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              border: '2px solid #4CAF50',
+              borderRadius: '8px',
+              padding: '16px',
+            }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+              }}
+            >
               {Object.entries(extractedData).map(([key, value]) => {
                 if (key === 'processingSteps' || key === 'confidence') return null;
 
                 return (
-                  <div key={key} style={{
-                    backgroundColor: 'var(--panel)',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)'
-                  }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase' }}>
-                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                  <div
+                    key={key}
+                    style={{
+                      backgroundColor: 'var(--panel)',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                        color: 'var(--muted)',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
                     </div>
                     <div style={{ fontSize: '16px', color: 'var(--text)', marginTop: '4px' }}>
-                      {typeof value === 'number' && (key.toLowerCase().includes('pnl') || key.toLowerCase().includes('value') || key.toLowerCase().includes('balance'))
+                      {typeof value === 'number' &&
+                      (key.toLowerCase().includes('pnl') ||
+                        key.toLowerCase().includes('value') ||
+                        key.toLowerCase().includes('balance'))
                         ? `$${value.toLocaleString()}`
                         : String(value)}
                     </div>
@@ -382,18 +448,20 @@ export default function TradingDashboardOCR({ onExtractComplete, onError }: Trad
               })}
             </div>
 
-            {extractedData.confidence && (
+            {typeof extractedData.confidence === 'number' && extractedData.confidence > 0 ? (
               <div style={{ marginTop: '16px', textAlign: 'center' }}>
-                <strong>Extraction Confidence: {Math.round(extractedData.confidence)}%</strong>
+                <strong>
+                  Extraction Confidence: {Math.round(extractedData.confidence as number)}%
+                </strong>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
 
       <div style={{ marginTop: '16px', fontSize: '12px', color: '#9aa4b2', fontStyle: 'italic' }}>
-        💡 This enhanced OCR system uses advanced image preprocessing, specialized financial pattern recognition,
-        and multi-layer validation to accurately extract trading dashboard data.
+        💡 This enhanced OCR system uses advanced image preprocessing, specialized financial pattern
+        recognition, and multi-layer validation to accurately extract trading dashboard data.
       </div>
     </div>
   );

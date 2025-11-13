@@ -9,6 +9,7 @@ const TAB_LABELS = [
   { key: 'calc', label: 'Calculator' },
   { key: 'allocation', label: 'Allocation Engine' },
   { key: 'ocr', label: 'OCR Upload' },
+  { key: 'ocr-chat', label: '📸 OCR Chat' },
   { key: 'history', label: 'History' },
   { key: 'charts', label: 'Charts' },
   { key: 'audit', label: 'Founders Audit' },
@@ -18,7 +19,7 @@ const TAB_LABELS = [
 export default function Tabs({ active, onChange }: TabsProps) {
   return (
     <div className="tabs">
-      {TAB_LABELS.map(t => (
+      {TAB_LABELS.map((t) => (
         <div
           key={t.key}
           className={`tab ${active === t.key ? 'active' : ''}`}

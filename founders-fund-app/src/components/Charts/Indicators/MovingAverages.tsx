@@ -39,7 +39,7 @@ export default function MovingAverages({
     if (sma.enabled && sma.periods.length > 0) {
       sma.periods.forEach((period) => {
         const smaData = calculateSMA(data, period);
-        const series = chart.addLineSeries({
+        const series = (chart as any).addLineSeries({
           color: colors[colorIndex % colors.length],
           lineWidth: 2,
           title: `SMA ${period}`,
@@ -54,7 +54,7 @@ export default function MovingAverages({
     if (ema.enabled && ema.periods.length > 0) {
       ema.periods.forEach((period) => {
         const emaData = calculateEMA(data, period);
-        const series = chart.addLineSeries({
+        const series = (chart as any).addLineSeries({
           color: colors[colorIndex % colors.length],
           lineWidth: 2,
           title: `EMA ${period}`,
@@ -69,7 +69,7 @@ export default function MovingAverages({
     if (wma.enabled && wma.periods.length > 0) {
       wma.periods.forEach((period) => {
         const wmaData = calculateWMA(data, period);
-        const series = chart.addLineSeries({
+        const series = (chart as any).addLineSeries({
           color: colors[colorIndex % colors.length],
           lineWidth: 2,
           title: `WMA ${period}`,

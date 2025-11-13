@@ -81,33 +81,55 @@ export async function GET(request: NextRequest) {
     const portfoliosWithValue = await prisma.portfolio.findMany({
       select: {
         id: true,
+        totalValue: true,
         snapshots: {
           take: 1,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { timestamp: 'desc' },
           select: {
-            totalValue: true,
+            profitTotal: true,
+            realizedProfit: true,
+            unrealizedPnl: true,
           },
         },
       },
     });
 
     const totalPortfolioValue = portfoliosWithValue.reduce((sum, p) => {
+      // Use portfolio.totalValue if available, otherwise calculate from latest snapshot
+      if (p.totalValue) {
+        return sum + Number(p.totalValue);
+      }
       const latestSnapshot = p.snapshots[0];
-      return sum + (latestSnapshot ? Number(latestSnapshot.totalValue) : 0);
+      return sum + (latestSnapshot ? Number(latestSnapshot.realizedProfit) + Number(latestSnapshot.unrealizedPnl) : 0);
     }, 0);
 
-    // Get agent performance summary
+    // Get agent performance summary from recent performance snapshots
     const agentPerformance = await prisma.agent.findMany({
       select: {
         id: true,
         status: true,
-        totalPnl: true,
-        totalValue: true,
+        allocation: true,
+        performance: {
+          take: 1,
+          orderBy: { timestamp: 'desc' },
+          select: {
+            totalValue: true,
+            realizedPnl: true,
+            unrealizedPnl: true,
+          },
+        },
       },
     });
 
-    const totalAgentValue = agentPerformance.reduce((sum, a) => sum + Number(a.totalValue || 0), 0);
-    const totalAgentPnl = agentPerformance.reduce((sum, a) => sum + Number(a.totalPnl || 0), 0);
+    const totalAgentValue = agentPerformance.reduce((sum, a) => {
+      const latest = a.performance[0];
+      return sum + (latest ? Number(latest.totalValue || 0) : Number(a.allocation || 0));
+    }, 0);
+    const totalAgentPnl = agentPerformance.reduce((sum, a) => {
+      const latest = a.performance[0];
+      const pnl = latest ? Number(latest.realizedPnl || 0) + Number(latest.unrealizedPnl || 0) : 0;
+      return sum + pnl;
+    }, 0);
 
     return NextResponse.json({
       users: {

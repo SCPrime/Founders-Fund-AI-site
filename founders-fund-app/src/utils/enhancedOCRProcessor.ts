@@ -1,7 +1,7 @@
 // Enhanced OCR processor specifically designed for trading dashboard screenshots
 // Implements region-based extraction, financial pattern recognition, and confidence scoring
 
-interface ExtractedFinancialData {
+export interface ExtractedFinancialData {
   totalValue?: number;
   unrealizedPNL?: number;
   realizedPNL?: number;
@@ -110,7 +110,12 @@ export class EnhancedOCRProcessor {
     this.ctx.putImageData(sharpened, 0, 0);
   }
 
-  private unsharpMask(original: ImageData, blurred: ImageData, amount: number, threshold: number): ImageData {
+  private unsharpMask(
+    original: ImageData,
+    blurred: ImageData,
+    amount: number,
+    threshold: number,
+  ): ImageData {
     const result = this.ctx.createImageData(original.width, original.height);
 
     for (let i = 0; i < original.data.length; i += 4) {
@@ -148,7 +153,7 @@ export class EnhancedOCRProcessor {
     const kernel = [
       [0, -1, 0],
       [-1, 5, -1],
-      [0, -1, 0]
+      [0, -1, 0],
     ];
 
     for (let y = 1; y < height - 1; y++) {
@@ -185,37 +190,31 @@ export class EnhancedOCRProcessor {
     const patterns = {
       totalValue: [
         /(?:total\s+value|account\s+value|equity)[:\s]*\$?([\d,]+(?:\.\d{2})?)/i,
-        /\$?([\d,]+(?:\.\d{2})?)\s*(?:total|equity)/i
+        /\$?([\d,]+(?:\.\d{2})?)\s*(?:total|equity)/i,
       ],
       unrealizedPNL: [
         /(?:unrealized\s+p[n&]l|floating\s+p[n&]l|open\s+p[n&]l)[:\s]*([+-]?\$?[\d,]+(?:\.\d{2})?)/i,
-        /([+-]?\$?[\d,]+(?:\.\d{2})?)\s*(?:unrealized|floating)/i
+        /([+-]?\$?[\d,]+(?:\.\d{2})?)\s*(?:unrealized|floating)/i,
       ],
       realizedPNL: [
         /(?:realized\s+p[n&]l|closed\s+p[n&]l)[:\s]*([+-]?\$?[\d,]+(?:\.\d{2})?)/i,
         /30d\s+p[n&]l[:\s]*([+-]?\$?[\d,]+(?:\.\d{2})?)/i,
-        /([+-]?\$?[\d,]+(?:\.\d{2})?)\s*(?:realized|30d)/i
+        /([+-]?\$?[\d,]+(?:\.\d{2})?)\s*(?:realized|30d)/i,
       ],
       availableBalance: [
         /(?:available\s+balance|free\s+balance|cash)[:\s]*\$?([\d,]+(?:\.\d{2})?)/i,
-        /\$?([\d,]+(?:\.\d{2})?)\s*(?:available|free)/i
+        /\$?([\d,]+(?:\.\d{2})?)\s*(?:available|free)/i,
       ],
       totalTransactions: [
         /(?:total\s+transactions|transactions)[:\s]*(\d{1,3}(?:,\d{3})*)/i,
-        /(\d{1,3}(?:,\d{3})*)\s*(?:total|transactions)/i
+        /(\d{1,3}(?:,\d{3})*)\s*(?:total|transactions)/i,
       ],
-      wins: [
-        /(\d{1,3}(?:,\d{3})*)\s*(?:wins?|w\b)/i,
-        /(?:wins?)[:\s]*(\d{1,3}(?:,\d{3})*)/i
-      ],
-      losses: [
-        /(\d{1,3}(?:,\d{3})*)\s*(?:losses?|l\b)/i,
-        /(?:losses?)[:\s]*(\d{1,3}(?:,\d{3})*)/i
-      ],
+      wins: [/(\d{1,3}(?:,\d{3})*)\s*(?:wins?|w\b)/i, /(?:wins?)[:\s]*(\d{1,3}(?:,\d{3})*)/i],
+      losses: [/(\d{1,3}(?:,\d{3})*)\s*(?:losses?|l\b)/i, /(?:losses?)[:\s]*(\d{1,3}(?:,\d{3})*)/i],
       winLossRatio: [
         /(\d{1,3}(?:,\d{3})*)\s*(?:wins?|w)\s*[\/\-]\s*(\d{1,3}(?:,\d{3})*)\s*(?:losses?|l)/i,
-        /(\d{1,3}(?:,\d{3})*)\s*w\s*(\d{1,3}(?:,\d{3})*)\s*l/i
-      ]
+        /(\d{1,3}(?:,\d{3})*)\s*w\s*(\d{1,3}(?:,\d{3})*)\s*l/i,
+      ],
     };
 
     // Extract total value
@@ -324,7 +323,7 @@ export class EnhancedOCRProcessor {
     const timestampPatterns = [
       /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
       /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/,
-      /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2},?\s+\d{4})/i
+      /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2},?\s+\d{4})/i,
     ];
 
     for (const pattern of timestampPatterns) {
@@ -362,11 +361,12 @@ export class EnhancedOCRProcessor {
       const expectedTotal = validated.availableBalance + validated.unrealizedPNL;
       const diff = Math.abs(validated.totalValue - expectedTotal);
 
-      if (diff > validated.totalValue * 0.1) { // More than 10% difference
+      if (diff > validated.totalValue * 0.1) {
+        // More than 10% difference
         console.warn('Total value validation failed', {
           totalValue: validated.totalValue,
           calculated: expectedTotal,
-          difference: diff
+          difference: diff,
         });
         validated.confidence *= 0.8; // Reduce confidence
       }
@@ -380,7 +380,7 @@ export class EnhancedOCRProcessor {
           wins: validated.wins,
           losses: validated.losses,
           calculated: calculatedTotal,
-          reported: validated.totalTransactions
+          reported: validated.totalTransactions,
         });
         validated.confidence *= 0.9;
       }

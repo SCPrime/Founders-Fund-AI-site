@@ -19,7 +19,7 @@ export default function FeesByClass() {
 
   useEffect(() => {
     const calculateFeesByClass = () => {
-      const investorData = (window as Record<string, unknown>).getInvestorData?.() || [];
+      const investorData = (window as any).getInvestorData?.() || [];
 
       if (investorData.length === 0) {
         setFeesByClass([]);
@@ -49,7 +49,8 @@ export default function FeesByClass() {
 
         let dollarDays = 0;
         contributions.forEach(contrib => {
-          const contribDate = new Date(contrib.date);
+          if (!contrib.date) return;
+          const contribDate = new Date(contrib.date as string);
           if (contribDate >= windowStart && contribDate <= windowEnd) {
             const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));
             dollarDays += (Number(contrib.amount) || 0) * daysInWindow;
@@ -68,7 +69,8 @@ export default function FeesByClass() {
         let entryFeesInWindow = 0;
 
         contributions.forEach(contrib => {
-          const contribDate = new Date(contrib.date);
+          if (!contrib.date) return;
+          const contribDate = new Date(contrib.date as string);
           const contribAmount = Number(contrib.amount) || 0;
 
           if (contribDate >= windowStart && contribDate <= windowEnd) {
@@ -97,7 +99,8 @@ export default function FeesByClass() {
             .reduce((sum, contribs) => {
               let investorDollarDays = 0;
               contribs.forEach(contrib => {
-                const contribDate = new Date(contrib.date);
+                if (!contrib.date) return;
+                const contribDate = new Date(contrib.date as string);
                 if (contribDate >= windowStart && contribDate <= windowEnd) {
                   const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));
                   investorDollarDays += (Number(contrib.amount) || 0) * daysInWindow;
@@ -124,7 +127,8 @@ export default function FeesByClass() {
             .reduce((sum, contribs) => {
               let fees = 0;
               contribs.forEach(contrib => {
-                const contribDate = new Date(contrib.date);
+                if (!contrib.date) return;
+                const contribDate = new Date(contrib.date as string);
                 if (contribDate >= windowStart && contribDate <= windowEnd) {
                   fees += (Number(contrib.amount) || 0) * (settings.entryFeePct / 100);
                 }
@@ -137,8 +141,8 @@ export default function FeesByClass() {
         }
 
         results.push({
-          name: participant.name || 'Unknown',
-          cls: participant.cls || 'investor',
+          name: (participant.name as string) || 'Unknown',
+          cls: (participant.cls as string) || 'investor',
           baseProfitShare: baseProfitShare,
           mgmtFeeRole: mgmtFeeRole,
           mgmtFeeRate: settings.mgmtFeePct,

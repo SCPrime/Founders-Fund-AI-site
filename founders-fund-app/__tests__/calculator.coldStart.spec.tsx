@@ -1,7 +1,6 @@
-import React from 'react';
-import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, resetPersist } from '@/test/test-utils';
 import AllocationDashboard from '@/components/Allocation/AllocationDashboard';
+import { renderWithProviders, resetPersist } from '@/test/test-utils';
+import { screen, waitFor } from '@testing-library/dom';
 
 beforeEach(() => {
   resetPersist();

@@ -10,9 +10,9 @@ interface IndicatorSelectorProps {
 
 const AVAILABLE_INDICATORS: Omit<IndicatorConfig, 'enabled'>[] = [
   { id: 'ichimoku', name: 'Ichimoku Cloud', params: { tenkan: 9, kijun: 26, senkouB: 52 } },
-  { id: 'sma', name: 'Simple Moving Average', params: { periods: '20,50,200' } },
-  { id: 'ema', name: 'Exponential Moving Average', params: { periods: '12,26,50' } },
-  { id: 'wma', name: 'Weighted Moving Average', params: { periods: '20,50' } },
+  { id: 'sma', name: 'Simple Moving Average', params: { periods: '20,50,200' } as any },
+  { id: 'ema', name: 'Exponential Moving Average', params: { periods: '12,26,50' } as any },
+  { id: 'wma', name: 'Weighted Moving Average', params: { periods: '20,50' } as any },
   { id: 'rsi', name: 'RSI (Relative Strength Index)', params: { period: 14 } },
   { id: 'macd', name: 'MACD', params: { fast: 12, slow: 26, signal: 9 } },
   { id: 'bollinger', name: 'Bollinger Bands', params: { period: 20, stdDev: 2 } },

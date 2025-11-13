@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLivePrice } from '@/hooks/useLivePrice';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import DrawingTools from './DrawingTools';
 import FullScreenChart from './FullScreenChart';
 import IndicatorSelector from './IndicatorSelector';
 import TimeFrameSelector from './TimeFrameSelector';
-import DrawingTools from './DrawingTools';
-import { CandleData, IndicatorConfig, TimeFrame, DrawingTool } from './types';
-import { useLivePrice } from '@/hooks/useLivePrice';
+import { CandleData, DrawingTool, IndicatorConfig, TimeFrame } from './types';
 
 interface LiveTradingChartProps {
   symbol: string;
@@ -48,7 +48,7 @@ export default function LiveTradingChart({
       setIsLoadingHistory(true);
       try {
         const response = await fetch(
-          `/api/integrations/dexscreener/chart?chain=${chain}&address=${address}&timeframe=${timeFrame}`
+          `/api/integrations/dexscreener/chart?chain=${chain}&address=${address}&timeframe=${timeFrame}`,
         );
 
         if (response.ok) {
@@ -100,7 +100,7 @@ export default function LiveTradingChart({
     const candleDuration = getTimeframeDuration(timeFrame);
     const currentCandleStart = Math.floor(currentTime / candleDuration) * candleDuration;
 
-    setCandleData(prev => {
+    setCandleData((prev) => {
       const newData = [...prev];
       const lastCandle = newData[newData.length - 1];
       const lastCandleTime = lastCandle.time as number;
@@ -109,10 +109,10 @@ export default function LiveTradingChart({
       if (currentCandleStart > lastCandleTime) {
         const newCandle: CandleData = {
           time: currentCandleStart as any,
-          open: livePrice.price,
-          high: livePrice.price,
-          low: livePrice.price,
-          close: livePrice.price,
+          open: livePrice.price || 0,
+          high: livePrice.price || 0,
+          low: livePrice.price || 0,
+          close: livePrice.price || 0,
           volume: livePrice.volume24h || 0,
         };
         newData.push(newCandle);
@@ -120,9 +120,9 @@ export default function LiveTradingChart({
         // Update current candle
         const updatedCandle: CandleData = {
           ...lastCandle,
-          high: Math.max(lastCandle.high, livePrice.price),
-          low: Math.min(lastCandle.low, livePrice.price),
-          close: livePrice.price,
+          high: Math.max(lastCandle.high, livePrice.price || 0),
+          low: Math.min(lastCandle.low, livePrice.price || 0),
+          close: livePrice.price || 0,
           volume: livePrice.volume24h || lastCandle.volume,
         };
         newData[newData.length - 1] = updatedCandle;
@@ -189,18 +189,27 @@ export default function LiveTradingChart({
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h1
+              className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            >
               {symbol} Trading Chart
             </h1>
             {livePrice.isConnected && (
               <div className="flex items-center gap-2 mt-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                 <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Live Price: ${livePrice.price?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                  Live Price: $
+                  {livePrice.price?.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 8,
+                  })}
                 </span>
                 {livePrice.change24h !== null && (
-                  <span className={`text-sm font-medium ${livePrice.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {livePrice.change24h >= 0 ? '↑' : '↓'} {Math.abs(livePrice.change24h).toFixed(2)}% 24h
+                  <span
+                    className={`text-sm font-medium ${livePrice.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}
+                  >
+                    {livePrice.change24h >= 0 ? '↑' : '↓'}{' '}
+                    {Math.abs(livePrice.change24h).toFixed(2)}% 24h
                   </span>
                 )}
               </div>
@@ -252,34 +261,52 @@ export default function LiveTradingChart({
         </div>
 
         {/* Info Panel */}
-        <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}>
+        <div
+          className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}
+        >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Live Stats */}
             <div>
-              <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h3
+                className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+              >
                 Live Statistics
               </h3>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Price:</span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                    Price:
+                  </span>
                   <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
                     ${livePrice.price?.toFixed(8) || 'Loading...'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>24h Change:</span>
-                  <span className={livePrice.change24h && livePrice.change24h >= 0 ? 'text-green-500' : 'text-red-500'}>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                    24h Change:
+                  </span>
+                  <span
+                    className={
+                      livePrice.change24h && livePrice.change24h >= 0
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
                     {livePrice.change24h !== null ? `${livePrice.change24h.toFixed(2)}%` : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>24h Volume:</span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                    24h Volume:
+                  </span>
                   <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
                     ${livePrice.volume24h?.toLocaleString() || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Liquidity:</span>
+                  <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                    Liquidity:
+                  </span>
                   <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
                     ${livePrice.liquidity?.toLocaleString() || 'N/A'}
                   </span>
@@ -289,19 +316,23 @@ export default function LiveTradingChart({
 
             {/* Active Indicators */}
             <div>
-              <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h3
+                className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+              >
                 Active Indicators
               </h3>
               <div className="flex flex-wrap gap-2">
-                {indicators.filter(i => i.enabled).map(indicator => (
-                  <span
-                    key={indicator.id}
-                    className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
-                  >
-                    {indicator.name}
-                  </span>
-                ))}
-                {indicators.filter(i => i.enabled).length === 0 && (
+                {indicators
+                  .filter((i) => i.enabled)
+                  .map((indicator) => (
+                    <span
+                      key={indicator.id}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
+                    >
+                      {indicator.name}
+                    </span>
+                  ))}
+                {indicators.filter((i) => i.enabled).length === 0 && (
                   <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
                     No indicators active
                   </span>
@@ -311,18 +342,25 @@ export default function LiveTradingChart({
 
             {/* Connection Status */}
             <div>
-              <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              <h3
+                className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+              >
                 Connection Status
               </h3>
               <div className="space-y-1 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${livePrice.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${livePrice.isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+                  ></span>
                   <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
                     {livePrice.isConnected ? 'Connected' : 'Disconnected'}
                   </span>
                 </div>
                 <div className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
-                  Last Update: {livePrice.lastUpdate ? new Date(livePrice.lastUpdate).toLocaleTimeString() : 'Never'}
+                  Last Update:{' '}
+                  {livePrice.lastUpdate
+                    ? new Date(livePrice.lastUpdate).toLocaleTimeString()
+                    : 'Never'}
                 </div>
               </div>
             </div>
@@ -339,10 +377,12 @@ function getTimeframeDuration(timeframe: TimeFrame): number {
     '1m': 60,
     '5m': 300,
     '15m': 900,
+    '30m': 1800,
     '1h': 3600,
     '4h': 14400,
     '1d': 86400,
     '1w': 604800,
+    '1M': 2592000, // 30 days
   };
   return durations[timeframe] || 86400;
 }

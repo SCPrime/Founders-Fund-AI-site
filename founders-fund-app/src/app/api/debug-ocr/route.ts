@@ -169,39 +169,46 @@ function validateExtractedData(data: Record<string, unknown>) {
 
   // Mathematical validation
   if (data.totalValue && data.availableBalance && data.unrealizedPNL) {
-    const expected = data.availableBalance + data.unrealizedPNL;
-    const diff = Math.abs(data.totalValue - expected);
-    const tolerance = data.totalValue * 0.15; // 15% tolerance
+    const totalValue = Number(data.totalValue);
+    const availableBalance = Number(data.availableBalance);
+    const unrealizedPNL = Number(data.unrealizedPNL);
+    const expected = availableBalance + unrealizedPNL;
+    const diff = Math.abs(totalValue - expected);
+    const tolerance = totalValue * 0.15; // 15% tolerance
 
     if (diff <= tolerance) {
       confidenceBonus += 15;
-      issues.push(`✅ Math check passed: ${data.totalValue} ≈ ${data.availableBalance} + ${data.unrealizedPNL}`);
+      issues.push(`✅ Math check passed: ${totalValue} ≈ ${availableBalance} + ${unrealizedPNL}`);
     } else {
-      issues.push(`❌ Math check failed: ${data.totalValue} ≠ ${data.availableBalance} + ${data.unrealizedPNL}`);
+      issues.push(`❌ Math check failed: ${totalValue} ≠ ${availableBalance} + ${unrealizedPNL}`);
     }
   }
 
   // Win/Loss validation
   if (data.wins && data.losses && data.totalTransactions) {
-    const calculated = data.wins + data.losses;
-    const diff = Math.abs(calculated - data.totalTransactions);
-    const tolerance = Math.max(data.totalTransactions * 0.1, 50);
+    const wins = Number(data.wins);
+    const losses = Number(data.losses);
+    const totalTransactions = Number(data.totalTransactions);
+    const calculated = wins + losses;
+    const diff = Math.abs(calculated - totalTransactions);
+    const tolerance = Math.max(totalTransactions * 0.1, 50);
 
     if (diff <= tolerance) {
       confidenceBonus += 10;
-      issues.push(`✅ Win/Loss check passed: ${data.wins} + ${data.losses} ≈ ${data.totalTransactions}`);
+      issues.push(`✅ Win/Loss check passed: ${wins} + ${losses} ≈ ${totalTransactions}`);
     } else {
-      issues.push(`❌ Win/Loss mismatch: ${data.wins} + ${data.losses} = ${calculated} ≠ ${data.totalTransactions}`);
+      issues.push(`❌ Win/Loss mismatch: ${wins} + ${losses} = ${calculated} ≠ ${totalTransactions}`);
     }
   }
 
   // Realistic value checks
   if (data.totalValue) {
-    if (data.totalValue >= 1000 && data.totalValue <= 1000000) {
+    const totalValue = Number(data.totalValue);
+    if (totalValue >= 1000 && totalValue <= 1000000) {
       confidenceBonus += 5;
-      issues.push(`✅ Realistic total value: $${data.totalValue}`);
+      issues.push(`✅ Realistic total value: $${totalValue}`);
     } else {
-      issues.push(`❓ Unusual total value: $${data.totalValue}`);
+      issues.push(`❓ Unusual total value: $${totalValue}`);
     }
   }
 

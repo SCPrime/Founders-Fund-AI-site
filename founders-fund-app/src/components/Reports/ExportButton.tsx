@@ -5,7 +5,8 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import type { ReportData, TradeHistoryReportData } from '@/types/reports';
+import { useEffect, useRef, useState } from 'react';
 
 export type ExportFormat = 'pdf' | 'csv' | 'excel';
 export type ReportType =
@@ -16,7 +17,7 @@ export type ReportType =
 
 interface ExportButtonProps {
   reportType: ReportType;
-  data: any;
+  data: ReportData;
   label?: string;
   className?: string;
   formats?: ExportFormat[];
@@ -74,7 +75,9 @@ export default function ExportButton({
       onExportComplete?.(format, true);
     } catch (error) {
       console.error(`Export ${format} failed:`, error);
-      alert(`Failed to export ${format.toUpperCase()}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(
+        `Failed to export ${format.toUpperCase()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       onExportComplete?.(format, false);
     } finally {
       setIsExporting(false);
@@ -120,28 +123,41 @@ export default function ExportButton({
     // Convert data to CSV format
     let csvContent = '';
 
-    if (reportType === 'trade-history' && data.trades) {
+    if (reportType === 'trade-history' && 'trades' in data) {
       // CSV for trade history
-      const headers = ['Date', 'Agent', 'Symbol', 'Side', 'Amount', 'Price', 'Value', 'Fees', 'P&L'];
+      const headers = [
+        'Date',
+        'Agent',
+        'Symbol',
+        'Side',
+        'Amount',
+        'Price',
+        'Value',
+        'Fees',
+        'P&L',
+      ];
       csvContent = headers.join(',') + '\n';
 
-      data.trades.forEach((trade: any) => {
-        const row = [
-          trade.date || '',
-          trade.agentName || '',
-          trade.symbol || '',
-          trade.type || '',
-          trade.amount || 0,
-          trade.price || 0,
-          trade.value || 0,
-          trade.fees || 0,
-          trade.profit !== undefined ? trade.profit : '',
-        ];
-        csvContent += row.join(',') + '\n';
-      });
-    } else if (reportType === 'portfolio-summary' && data.allocationOutputs) {
+      const tradeData = data as TradeHistoryReportData;
+      if (Array.isArray(tradeData.trades)) {
+        tradeData.trades.forEach((trade) => {
+          const row = [
+            trade.timestamp || '',
+            trade.agentName || '',
+            trade.symbol || '',
+            trade.side || '',
+            trade.amount?.toString() || '0',
+            trade.price?.toString() || '0',
+            ((trade.amount || 0) * (trade.price || 0)).toString(),
+            trade.fees?.toString() || '0',
+            trade.pnl?.toString() || '',
+          ];
+          csvContent += row.join(',') + '\n';
+        });
+      }
+    } else if (reportType === 'portfolio-summary' && 'allocations' in data && data.allocations) {
       // CSV for portfolio summary
-      const outputs = data.allocationOutputs;
+      const outputs = data.allocations;
       csvContent = 'Participant,Type,Dollar Days,Share %,Realized Net,Moonbag,End Capital\n';
 
       // Founders
@@ -229,12 +245,7 @@ export default function ExportButton({
           </>
         ) : (
           <>
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

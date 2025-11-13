@@ -115,9 +115,9 @@ export async function PATCH(
     }
 
     // Handle direct status or strategy updates
-    const updateData: { status?: AgentStatus; strategy?: unknown } = {};
+    const updateData: { status?: AgentStatus; strategy?: any } = {};
     if (status) updateData.status = status;
-    if (strategy) updateData.strategy = strategy;
+    if (strategy) updateData.strategy = strategy as any;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(

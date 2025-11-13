@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { useFundStore } from '@/store/fundStore';
-import { useAllocationStore } from '@/store/allocationStore';
 import { useOCR } from '@/context/OCRContext';
+import { useAllocationStore } from '@/store/allocationStore';
+import { useFundStore } from '@/store/fundStore';
+import React, { useRef, useState } from 'react';
 
 interface DebugOCRProps {
   onExtractComplete?: (data: Record<string, unknown>) => void;
@@ -69,13 +69,12 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
       setOCRData({
         rawText: result.rawText,
         extractedData: result.extractedData,
-        confidence: result.finalConfidence
+        confidence: result.finalConfidence,
       });
 
       if (onExtractComplete && result.success) {
         onExtractComplete(result.extractedData);
       }
-
     } catch (err) {
       console.error('Debug OCR Error:', err);
       const errorMsg = err instanceof Error ? err.message : 'Debug OCR failed';
@@ -95,14 +94,18 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
 
       // Save screenshot wallet data to allocation store
       if (data.settings && (data.settings.walletSize || data.settings.moonbagUnreal)) {
-        const walletSize = data.settings.walletSize || 0;
-        const unrealized = data.settings.moonbagUnreal || 0;
+        const walletSizeValue = data.settings.walletSize;
+        const unrealizedValue = data.settings.moonbagUnreal;
+        const walletSize =
+          typeof walletSizeValue === 'number' && !isNaN(walletSizeValue) ? walletSizeValue : 0;
+        const unrealized =
+          typeof unrealizedValue === 'number' && !isNaN(unrealizedValue) ? unrealizedValue : 0;
 
         saveScreenshot({
           imageId: `ocr_upload_${Date.now()}`,
           walletSize: walletSize,
           unrealized: unrealized,
-          capturedAt: new Date().toISOString()
+          capturedAt: new Date().toISOString(),
         });
       }
 
@@ -110,9 +113,12 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
       if (data.settings) {
         const settingsUpdates: Record<string, unknown> = {};
         if (data.settings.walletSize) settingsUpdates.walletSize = data.settings.walletSize;
-        if (data.settings.realizedProfit) settingsUpdates.realizedProfit = data.settings.realizedProfit;
-        if (data.settings.moonbagUnreal) settingsUpdates.moonbagUnreal = data.settings.moonbagUnreal;
-        if (data.settings.moonbagFounderPct) settingsUpdates.moonbagFounderPct = data.settings.moonbagFounderPct;
+        if (data.settings.realizedProfit)
+          settingsUpdates.realizedProfit = data.settings.realizedProfit;
+        if (data.settings.moonbagUnreal)
+          settingsUpdates.moonbagUnreal = data.settings.moonbagUnreal;
+        if (data.settings.moonbagFounderPct)
+          settingsUpdates.moonbagFounderPct = data.settings.moonbagFounderPct;
         if (data.settings.mgmtFeePct) settingsUpdates.mgmtFeePct = data.settings.mgmtFeePct;
         if (data.settings.entryFeePct) settingsUpdates.entryFeePct = data.settings.entryFeePct;
 
@@ -126,26 +132,30 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
         name: string;
         date: string;
         amount: number;
-        rule: string;
-        cls: string;
+        rule: 'net' | 'gross';
+        cls: 'founder' | 'investor';
       }> = [];
       if (data.founders && Array.isArray(data.founders)) {
-        combinedData.push(...data.founders.map((f: Record<string, unknown>) => ({
-          name: (f.name as string) || 'Founder',
-          date: f.date as string,
-          amount: f.amount as number,
-          rule: (f.rule as string) || 'net',
-          cls: 'founder'
-        })));
+        combinedData.push(
+          ...data.founders.map((f: Record<string, unknown>) => ({
+            name: (f.name as string) || 'Founder',
+            date: f.date as string,
+            amount: typeof f.amount === 'number' ? f.amount : 0,
+            rule: (f.rule === 'gross' ? 'gross' : 'net') as 'net' | 'gross',
+            cls: 'founder' as const,
+          })),
+        );
       }
       if (data.investors && Array.isArray(data.investors)) {
-        combinedData.push(...data.investors.map((i: Record<string, unknown>) => ({
-          name: (i.name as string) || 'Investor',
-          date: i.date as string,
-          amount: i.amount as number,
-          rule: (i.rule as string) || 'net',
-          cls: 'investor'
-        })));
+        combinedData.push(
+          ...data.investors.map((i: Record<string, unknown>) => ({
+            name: (i.name as string) || 'Investor',
+            date: i.date as string,
+            amount: typeof i.amount === 'number' ? i.amount : 0,
+            rule: (i.rule === 'gross' ? 'gross' : 'net') as 'net' | 'gross',
+            cls: 'investor' as const,
+          })),
+        );
       }
 
       // Push to fund store using populateContributions
@@ -157,7 +167,7 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
       if (onExtractComplete) {
         onExtractComplete({
           ...ocrData.extractedData,
-          rawText: ocrData.rawText
+          rawText: ocrData.rawText,
         });
       }
 
@@ -184,13 +194,15 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
   };
 
   return (
-    <div style={{
-      border: '2px solid #ff9800',
-      borderRadius: '12px',
-      padding: '20px',
-      margin: '16px 0',
-      background: 'linear-gradient(135deg, var(--panel) 0%, rgba(255, 152, 0, 0.05) 100%)'
-    }}>
+    <div
+      style={{
+        border: '2px solid #ff9800',
+        borderRadius: '12px',
+        padding: '20px',
+        margin: '16px 0',
+        background: 'linear-gradient(135deg, var(--panel) 0%, rgba(255, 152, 0, 0.05) 100%)',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <span style={{ fontSize: '24px' }}>🔍</span>
         <div>
@@ -203,10 +215,15 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
 
       {/* Upload */}
       <div style={{ marginBottom: '20px' }}>
+        <label htmlFor="debug-ocr-file-input" style={{ display: 'none' }}>
+          Upload image for OCR processing
+        </label>
         <input
+          id="debug-ocr-file-input"
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          aria-label="Upload image for OCR processing"
           onChange={handleFileUpload}
           disabled={isProcessing}
           style={{ display: 'none' }}
@@ -223,7 +240,7 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
             borderRadius: '8px',
             cursor: isProcessing ? 'not-allowed' : 'pointer',
             fontSize: '16px',
-            opacity: isProcessing ? 0.6 : 1
+            opacity: isProcessing ? 0.6 : 1,
           }}
         >
           {isProcessing ? '🔄 Processing...' : '🔍 Debug OCR Analysis'}
@@ -242,7 +259,7 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
               cursor: isPushing ? 'not-allowed' : 'pointer',
               fontSize: '16px',
               marginLeft: '12px',
-              opacity: isPushing ? 0.6 : 1
+              opacity: isPushing ? 0.6 : 1,
             }}
           >
             {isPushing ? '⏳ Pushing...' : '📊 Push to Calculator'}
@@ -260,7 +277,7 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '14px',
-              marginLeft: '12px'
+              marginLeft: '12px',
             }}
           >
             🗑️ Reset
@@ -279,7 +296,7 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
               maxWidth: '100%',
               maxHeight: '300px',
               border: '1px solid #ff9800',
-              borderRadius: '8px'
+              borderRadius: '8px',
             }}
           />
         </div>
@@ -287,28 +304,32 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
 
       {/* Success Message */}
       {pushSuccess && (
-        <div style={{
-          padding: '16px',
-          backgroundColor: 'rgba(53, 199, 89, 0.1)',
-          border: '1px solid var(--good)',
-          borderRadius: '8px',
-          color: 'var(--good)',
-          marginBottom: '20px'
-        }}>
+        <div
+          style={{
+            padding: '16px',
+            backgroundColor: 'rgba(53, 199, 89, 0.1)',
+            border: '1px solid var(--good)',
+            borderRadius: '8px',
+            color: 'var(--good)',
+            marginBottom: '20px',
+          }}
+        >
           <strong>{pushSuccess}</strong>
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div style={{
-          padding: '16px',
-          backgroundColor: 'rgba(255, 107, 107, 0.1)',
-          border: '1px solid var(--bad)',
-          borderRadius: '8px',
-          color: 'var(--bad)',
-          marginBottom: '20px'
-        }}>
+        <div
+          style={{
+            padding: '16px',
+            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            border: '1px solid var(--bad)',
+            borderRadius: '8px',
+            color: 'var(--bad)',
+            marginBottom: '20px',
+          }}
+        >
           <strong>❌ Error:</strong> {error}
         </div>
       )}
@@ -317,18 +338,29 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
       {ocrData.extractedData && (
         <div style={{ marginTop: '20px' }}>
           {/* Confidence Display */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '16px',
-            backgroundColor: ocrData.confidence >= 90 ? 'rgba(53, 199, 89, 0.1)' :
-                           ocrData.confidence >= 70 ? 'rgba(255, 176, 32, 0.1)' : 'rgba(255, 107, 107, 0.1)',
-            border: `2px solid ${ocrData.confidence >= 90 ? 'var(--good)' :
-                                ocrData.confidence >= 70 ? 'var(--warn)' : 'var(--bad)'}`,
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px',
+              backgroundColor:
+                ocrData.confidence >= 90
+                  ? 'rgba(53, 199, 89, 0.1)'
+                  : ocrData.confidence >= 70
+                    ? 'rgba(255, 176, 32, 0.1)'
+                    : 'rgba(255, 107, 107, 0.1)',
+              border: `2px solid ${
+                ocrData.confidence >= 90
+                  ? 'var(--good)'
+                  : ocrData.confidence >= 70
+                    ? 'var(--warn)'
+                    : 'var(--bad)'
+              }`,
+              borderRadius: '8px',
+              marginBottom: '20px',
+            }}
+          >
             <div>
               <div style={{ fontWeight: 'bold', fontSize: '18px', color: 'var(--text)' }}>
                 Confidence: {ocrData.confidence}%
@@ -338,26 +370,27 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
               </div>
             </div>
             <div style={{ fontSize: '24px' }}>
-              {ocrData.confidence >= 90 ? '🎯' :
-               ocrData.confidence >= 70 ? '⚠️' : '❌'}
+              {ocrData.confidence >= 90 ? '🎯' : ocrData.confidence >= 70 ? '⚠️' : '❌'}
             </div>
           </div>
 
           {/* Raw Text */}
           <div style={{ marginBottom: '20px' }}>
             <h4 style={{ color: 'var(--text)' }}>📝 Raw Text Extracted</h4>
-            <div style={{
-              backgroundColor: 'var(--ink)',
-              border: '1px solid var(--line)',
-              borderRadius: '8px',
-              padding: '12px',
-              maxHeight: '200px',
-              overflowY: 'auto',
-              fontSize: '12px',
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              color: 'var(--text)'
-            }}>
+            <div
+              style={{
+                backgroundColor: 'var(--ink)',
+                border: '1px solid var(--line)',
+                borderRadius: '8px',
+                padding: '12px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap',
+                color: 'var(--text)',
+              }}
+            >
               {ocrData.rawText || 'No raw text extracted'}
             </div>
           </div>
@@ -365,36 +398,46 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
           {/* Structured Data */}
           <div style={{ marginBottom: '20px' }}>
             <h4 style={{ color: 'var(--text)' }}>📊 Structured Data Extracted</h4>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px'
-            }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+              }}
+            >
               {Object.entries(ocrData.extractedData || {}).map(([key, value]) => (
-                <div key={key} style={{
-                  backgroundColor: 'var(--panel)',
-                  padding: '12px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--line)'
-                }}>
-                  <div style={{
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    color: 'var(--muted)',
-                    textTransform: 'uppercase',
-                    marginBottom: '6px'
-                  }}>
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                <div
+                  key={key}
+                  style={{
+                    backgroundColor: 'var(--panel)',
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 'bold',
+                      fontSize: '12px',
+                      color: 'var(--muted)',
+                      textTransform: 'uppercase',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
                   </div>
-                  <div style={{
-                    fontSize: '16px',
-                    color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
-                    fontWeight: 'bold'
-                  }}>
-                    {value !== null && value !== undefined ?
-                      (typeof value === 'number' && (key.includes('Value') || key.includes('PNL') || key.includes('Balance')) ?
-                        `$${value.toLocaleString()}` :
-                        String(value))
+                  <div
+                    style={{
+                      fontSize: '16px',
+                      color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {value !== null && value !== undefined
+                      ? typeof value === 'number' &&
+                        (key.includes('Value') || key.includes('PNL') || key.includes('Balance'))
+                        ? `$${value.toLocaleString()}`
+                        : String(value)
                       : 'Not Found'}
                   </div>
                 </div>
@@ -403,16 +446,21 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
           </div>
 
           {/* Push Button Below Extracted Data */}
-          <div style={{
-            marginTop: '20px',
-            padding: '16px',
-            backgroundColor: 'var(--panel)',
-            border: '1px solid var(--line)',
-            borderRadius: '8px'
-          }}>
-            <h4 style={{ color: 'var(--text)', marginBottom: '12px' }}>📊 Push Data to Calculator</h4>
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '16px',
+              backgroundColor: 'var(--panel)',
+              border: '1px solid var(--line)',
+              borderRadius: '8px',
+            }}
+          >
+            <h4 style={{ color: 'var(--text)', marginBottom: '12px' }}>
+              📊 Push Data to Calculator
+            </h4>
             <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '16px' }}>
-              Click the button below to populate the calculator with this extracted data and verify the calculations.
+              Click the button below to populate the calculator with this extracted data and verify
+              the calculations.
             </p>
             <button
               onClick={pushToCalculator}
@@ -429,23 +477,27 @@ export default function DebugOCR({ onExtractComplete, onError }: DebugOCRProps) 
                 opacity: isPushing ? 0.6 : 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
               }}
             >
-              {isPushing ? '⏳ Pushing to Fund Store...' : '📊 Push to Fund Store & Verify Calculations'}
+              {isPushing
+                ? '⏳ Pushing to Fund Store...'
+                : '📊 Push to Fund Store & Verify Calculations'}
             </button>
           </div>
-
         </div>
       )}
 
-      <div style={{
-        marginTop: '16px',
-        fontSize: '12px',
-        color: 'var(--muted)',
-        fontStyle: 'italic'
-      }}>
-        🔍 This debug tool shows the complete OCR extraction process to help identify and fix accuracy issues.
+      <div
+        style={{
+          marginTop: '16px',
+          fontSize: '12px',
+          color: 'var(--muted)',
+          fontStyle: 'italic',
+        }}
+      >
+        🔍 This debug tool shows the complete OCR extraction process to help identify and fix
+        accuracy issues.
       </div>
     </div>
   );

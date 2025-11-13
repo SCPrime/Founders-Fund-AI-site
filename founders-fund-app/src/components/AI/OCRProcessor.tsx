@@ -116,8 +116,8 @@ export default function OCRProcessor({ onOCRComplete, onError }: OCRProcessorPro
       // Debug logging for troubleshooting
       console.log('OCR Results:', result.extractedData);
       console.log('Auto-population functions available:', {
-        populateFoundersFromAI: typeof (window as Record<string, unknown>).populateFoundersFromAI,
-        populateInvestorsFromAI: typeof (window as Record<string, unknown>).populateInvestorsFromAI
+        populateFoundersFromAI: typeof (window as any).populateFoundersFromAI,
+        populateInvestorsFromAI: typeof (window as any).populateInvestorsFromAI
       });
 
       // Force auto-population with debug feedback

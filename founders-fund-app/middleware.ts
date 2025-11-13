@@ -1,5 +1,5 @@
 import { withAuth } from 'next-auth/middleware';
-import type { NextRequest } from 'next/server';
+import type { NextRequestWithAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
 // Security headers middleware
@@ -29,8 +29,8 @@ function applySecurityHeaders(response: NextResponse) {
 }
 
 export default withAuth(
-  function middleware(req: NextRequest) {
-    const token = req.nextauth.token;
+  function middleware(req: NextRequestWithAuth) {
+    const token = req.nextauth?.token;
     const path = req.nextUrl.pathname;
 
     // Public routes that don't require authentication

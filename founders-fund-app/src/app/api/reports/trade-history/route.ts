@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     const pdf = generator.generateTradeHistoryReport(reportData);
 
     // Get PDF as blob
-    const pdfBlob = pdf.getBlob();
+    const pdfBlob = pdf.output('blob');
     const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
 
     // Generate filename

@@ -72,6 +72,111 @@
       "directories": ["docs", "*.md"],
       "file_patterns": ["*.md", "*.txt"],
       "never_touch": []
+    },
+    "agent_1_database": {
+      "name": "Agent #1 - Database Schema Architect",
+      "specialties": ["Prisma", "Database Design", "Schema Migrations", "Data Modeling"],
+      "directories": ["founders-fund-app/prisma"],
+      "file_patterns": ["schema.prisma", "*.sql"],
+      "active": true
+    },
+    "agent_2_auth": {
+      "name": "Agent #2 - Authentication Specialist",
+      "specialties": ["NextAuth", "Security", "RBAC", "Session Management"],
+      "directories": ["founders-fund-app/src/app/api/auth", "founders-fund-app/src/lib/auth.ts"],
+      "file_patterns": ["*auth*.ts", "*auth*.tsx"],
+      "active": true
+    },
+    "agent_3_trading": {
+      "name": "Agent #3 - AI Agent System Builder",
+      "specialties": ["AI Trading Agents", "Strategy Generation", "Performance Tracking"],
+      "directories": ["founders-fund-app/src/app/api/agents", "founders-fund-app/src/components/Agents"],
+      "file_patterns": ["*agent*.ts", "*agent*.tsx"],
+      "active": true
+    },
+    "agent_4_integrations": {
+      "name": "Agent #4 - External Integrations Engineer",
+      "specialties": ["API Integration", "DexScreener", "DEXTools", "Coinbase", "Price Feeds"],
+      "directories": ["founders-fund-app/src/app/api/integrations", "founders-fund-app/src/lib/priceFeed.ts"],
+      "file_patterns": ["*integration*.ts", "*price*.ts"],
+      "active": true
+    },
+    "agent_5_charts": {
+      "name": "Agent #5 - Chart & Visualization Expert",
+      "specialties": ["TradingView Charts", "Technical Indicators", "Data Visualization"],
+      "directories": ["founders-fund-app/src/components/Charts"],
+      "file_patterns": ["*chart*.tsx", "*indicator*.ts"],
+      "active": true
+    },
+    "agent_6_pdf": {
+      "name": "Agent #6 - PDF Export Engineer",
+      "specialties": ["PDF Generation", "Report Templates", "Chart Embedding"],
+      "directories": ["founders-fund-app/src/lib/pdfGenerator.ts"],
+      "file_patterns": ["*pdf*.ts", "*export*.ts"],
+      "active": true
+    },
+    "agent_7_realtime": {
+      "name": "Agent #7 - Real-time Price Feed Specialist",
+      "specialties": ["WebSocket", "Real-time Data", "Price Alerts", "Live Updates"],
+      "directories": ["founders-fund-app/src/lib/priceAlerts.ts", "founders-fund-app/src/hooks"],
+      "file_patterns": ["*alert*.ts", "*live*.ts", "*websocket*.ts"],
+      "active": true
+    },
+    "agent_8_analytics": {
+      "name": "Agent #8 - Analytics & Reporting Specialist",
+      "specialties": ["Performance Analytics", "Risk Metrics", "Trading Statistics"],
+      "directories": ["founders-fund-app/src/lib/analytics.ts", "founders-fund-app/src/app/api/reports"],
+      "file_patterns": ["*analytics*.ts", "*report*.ts"],
+      "active": true
+    },
+    "agent_9_notifications": {
+      "name": "Agent #9 - Notifications & Alerts Specialist",
+      "specialties": ["Discord", "Slack", "Webhook Integration", "Alert System"],
+      "directories": ["founders-fund-app/src/lib/notifications.ts", "founders-fund-app/src/app/api/notifications"],
+      "file_patterns": ["*notification*.ts", "*webhook*.ts"],
+      "active": true
+    },
+    "agent_10_backtest": {
+      "name": "Agent #10 - Backtesting Engine Specialist",
+      "specialties": ["MACD", "RSI", "Strategy Backtesting", "Performance Simulation"],
+      "directories": ["founders-fund-app/src/lib/backtestEngine.ts"],
+      "file_patterns": ["*backtest*.ts", "*strategy*.ts"],
+      "active": true
+    },
+    "agent_11_rebalance": {
+      "name": "Agent #11 - Portfolio Rebalancing Specialist",
+      "specialties": ["Portfolio Optimization", "Rebalancing Logic", "Allocation Management"],
+      "directories": ["founders-fund-app/src/lib/rebalancing.ts"],
+      "file_patterns": ["*rebalanc*.ts", "*allocation*.ts"],
+      "active": true
+    },
+    "agent_12_admin": {
+      "name": "Agent #12 - Admin Dashboard Specialist",
+      "specialties": ["User Management", "RBAC", "System Stats", "Activity Logs"],
+      "directories": ["founders-fund-app/src/app/admin", "founders-fund-app/src/app/api/admin"],
+      "file_patterns": ["*admin*.tsx", "*admin*.ts"],
+      "active": true
+    },
+    "agent_13_performance": {
+      "name": "Agent #13 - Performance Optimization Specialist",
+      "specialties": ["Caching", "Query Optimization", "Bundle Size", "Code Splitting"],
+      "directories": ["founders-fund-app/src/lib/cache.ts"],
+      "file_patterns": ["*cache*.ts", "*optimization*.ts"],
+      "active": true
+    },
+    "agent_14_security": {
+      "name": "Agent #14 - Security & Monitoring Specialist",
+      "specialties": ["Rate Limiting", "Security Headers", "Error Tracking", "Monitoring"],
+      "directories": ["founders-fund-app/middleware.ts", "founders-fund-app/src/lib/rateLimiter.ts"],
+      "file_patterns": ["*security*.ts", "*monitor*.ts", "*rate*.ts"],
+      "active": true
+    },
+    "agent_15_testing": {
+      "name": "Agent #15 - Testing & Quality Assurance Specialist",
+      "specialties": ["Unit Tests", "Integration Tests", "E2E Tests", "Test Coverage"],
+      "directories": ["founders-fund-app/__tests__"],
+      "file_patterns": ["*.test.ts", "*.test.tsx", "*.spec.ts"],
+      "active": true
     }
   },
   "shared_files": {
@@ -140,11 +245,15 @@
     }
   },
   "performance_targets": {
-    "velocity_multiplier": "3-4x",
-    "parallel_agents": 2,
+    "velocity_multiplier": "10-15x",
+    "parallel_agents": 20,
+    "max_agents_enabled": true,
+    "agent_coordination_protocol": "MOD SQUAD TEAM ULTRA",
     "zero_conflicts": true,
     "test_pass_rate": "100%",
-    "deployment_frequency": "multiple per day"
+    "deployment_frequency": "multiple per day",
+    "real_time_coordination": true,
+    "live_feed_updates": true
   },
   "priority_tasks": {
     "p0_critical": [

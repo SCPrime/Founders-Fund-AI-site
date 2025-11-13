@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import { useFundStore } from '@/store/fundStore';
 import { preprocessImageForOCR, type ProcessingResult } from '@/utils/imagePreprocessor';
+import { useRef, useState } from 'react';
 
 interface ExtractedFields {
   winStart?: string;
@@ -40,7 +40,7 @@ interface OCRResponse {
       'Total Transactions/TXNS': string;
       'Total Trades': string;
     };
-    'Timestamp': {
+    Timestamp: {
       'Date from image': string;
     };
   };
@@ -76,7 +76,7 @@ export default function EnhancedOCRUpload() {
       reader.readAsDataURL(file);
 
       // Step 2: Preprocess image for better OCR
-      setProcessingSteps(prev => [...prev, 'Preprocessing image for optimal OCR...']);
+      setProcessingSteps((prev) => [...prev, 'Preprocessing image for optimal OCR...']);
 
       const imageDataUrl = await new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -95,17 +95,17 @@ export default function EnhancedOCRUpload() {
             removeNoise: true,
             sharpenText: true,
             normalizeSize: true,
-            targetWidth: 1200
+            targetWidth: 1200,
           });
-          setProcessingSteps(prev => [...prev, ...processingResult!.processingSteps]);
+          setProcessingSteps((prev) => [...prev, ...processingResult!.processingSteps]);
         } catch (preprocessError) {
           console.warn('Image preprocessing failed, using original:', preprocessError);
-          setProcessingSteps(prev => [...prev, 'Using original image (preprocessing failed)']);
+          setProcessingSteps((prev) => [...prev, 'Using original image (preprocessing failed)']);
         }
       }
 
       // Step 3: Perform enhanced OCR using Tesseract.js with better config
-      setProcessingSteps(prev => [...prev, 'Running enhanced OCR for financial data...']);
+      setProcessingSteps((prev) => [...prev, 'Running enhanced OCR for financial data...']);
 
       // Dynamic import for client-side only
       const { createWorker } = await import('tesseract.js');
@@ -113,8 +113,9 @@ export default function EnhancedOCRUpload() {
 
       // Enhanced Tesseract configuration for financial documents
       await worker.setParameters({
-        tessedit_pageseg_mode: '6', // Uniform block of text
-        tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,%-/$:()/ \n\t',
+        tessedit_pageseg_mode: 6 as unknown as any, // Uniform block of text
+        tessedit_char_whitelist:
+          '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,%-/$:()/ \n\t',
         tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine
         preserve_interword_spaces: '1',
       });
@@ -125,10 +126,13 @@ export default function EnhancedOCRUpload() {
 
       await worker.terminate();
 
-      setProcessingSteps(prev => [...prev, `OCR completed. Confidence: ${data.confidence.toFixed(1)}%`]);
+      setProcessingSteps((prev) => [
+        ...prev,
+        `OCR completed. Confidence: ${data.confidence.toFixed(1)}%`,
+      ]);
 
       // Step 4: Send to backend for structured data extraction
-      setProcessingSteps(prev => [...prev, 'Extracting structured financial data...']);
+      setProcessingSteps((prev) => [...prev, 'Extracting structured financial data...']);
 
       const formData = new FormData();
       formData.append('file', file);
@@ -149,21 +153,26 @@ export default function EnhancedOCRUpload() {
         setOcrResult({
           ...result,
           processingSteps: processingSteps,
-          estimatedQuality: processingResult?.estimatedQuality || 85 // Enhanced Tesseract with preprocessing
+          estimatedQuality: processingResult?.estimatedQuality || 85, // Enhanced Tesseract with preprocessing
         });
-        setProcessingSteps(prev => [...prev, `Successfully extracted ${result.fieldsCaptured} fields from financial data`]);
+        setProcessingSteps((prev) => [
+          ...prev,
+          `Successfully extracted ${result.fieldsCaptured} fields from financial data`,
+        ]);
 
         // Step 5: Auto-populate calculator fields
         applyExtractedFields(result.extractedFields);
-        setProcessingSteps(prev => [...prev, 'Calculator fields updated successfully']);
+        setProcessingSteps((prev) => [...prev, 'Calculator fields updated successfully']);
       } else {
         throw new Error('OCR processing failed');
       }
-
     } catch (err) {
       console.error('OCR Error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
-      setProcessingSteps(prev => [...prev, `Error: ${err instanceof Error ? err.message : 'Unknown error'}`]);
+      setProcessingSteps((prev) => [
+        ...prev,
+        `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      ]);
     } finally {
       setIsProcessing(false);
     }
@@ -180,7 +189,8 @@ export default function EnhancedOCRUpload() {
     if (fields.moonbagReal !== undefined) updates.moonbagReal = fields.moonbagReal;
     if (fields.moonbagUnreal !== undefined) updates.moonbagUnreal = fields.moonbagUnreal;
     if (fields.includeUnreal) updates.includeUnreal = fields.includeUnreal;
-    if (fields.moonbagFounderPct !== undefined) updates.moonbagFounderPct = fields.moonbagFounderPct;
+    if (fields.moonbagFounderPct !== undefined)
+      updates.moonbagFounderPct = fields.moonbagFounderPct;
     if (fields.mgmtFeePct !== undefined) updates.mgmtFeePct = fields.mgmtFeePct;
     if (fields.entryFeePct !== undefined) updates.entryFeePct = fields.entryFeePct;
     if (fields.feeReducesInvestor) updates.feeReducesInvestor = fields.feeReducesInvestor;
@@ -198,7 +208,10 @@ export default function EnhancedOCRUpload() {
     <div className="enhanced-ocr-upload">
       <div className="upload-section">
         <h3>Enhanced Financial Document OCR</h3>
-        <p>Upload a trading dashboard screenshot to automatically extract and populate calculator fields with advanced OCR processing</p>
+        <p>
+          Upload a trading dashboard screenshot to automatically extract and populate calculator
+          fields with advanced OCR processing
+        </p>
 
         <input
           type="file"
@@ -247,9 +260,15 @@ export default function EnhancedOCRUpload() {
         <div className="ocr-results">
           <h4>Extraction Results:</h4>
           <div className="results-summary">
-            <p><strong>Fields Captured:</strong> {ocrResult.fieldsCaptured}</p>
-            <p><strong>Processing Quality:</strong> {ocrResult.estimatedQuality}%</p>
-            <p><strong>Status:</strong> {ocrResult.message}</p>
+            <p>
+              <strong>Fields Captured:</strong> {ocrResult.fieldsCaptured}
+            </p>
+            <p>
+              <strong>Processing Quality:</strong> {ocrResult.estimatedQuality}%
+            </p>
+            <p>
+              <strong>Status:</strong> {ocrResult.message}
+            </p>
           </div>
 
           <div className="extracted-fields">

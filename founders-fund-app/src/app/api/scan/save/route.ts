@@ -32,7 +32,7 @@ async function upsertContribution(c: IncomingContribution, portfolioId: string) 
       portfolioId,
       owner: c.owner,
       name: c.name,
-      type: c.type,
+      type: c.type as any,
       amount: c.amount,
       ts,
     },
@@ -44,7 +44,7 @@ async function upsertContribution(c: IncomingContribution, portfolioId: string) 
       portfolioId,
       owner: c.owner,
       name: c.name,
-      type: c.type,
+      type: c.type as any,
       amount: c.amount,
       ts,
       earnsDollarDaysThisWindow: c.earnsDollarDaysThisWindow ?? true,
@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limit: 10 saves/min/IP
-  const ip = headers().get('x-forwarded-for') ?? 'unknown';
+  const headersList = await headers();
+  const ip = headersList.get('x-forwarded-for') ?? 'unknown';
   const rl = rateLimit(`scan-save:${ip}`, 10, 60_000);
   const rlHeaders = {
     'X-RateLimit-Limit': String(rl.limit),

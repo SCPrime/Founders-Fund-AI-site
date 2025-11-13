@@ -1,5 +1,13 @@
+import type {
+  AllocationOutputs,
+  DollarDaysMap,
+  EndCapital,
+  ManagementFees,
+  MoonbagAllocation,
+  RealizedAllocation,
+  SharesMap,
+} from '@/types/allocation';
 import { UserRole } from '@prisma/client';
-import type { AllocationOutputs } from '@/types/allocation';
 
 /**
  * Privacy layer for role-based data filtering
@@ -24,7 +32,7 @@ export interface PrivacyContext {
  */
 export function filterAllocationByRole(
   data: AllocationOutputs,
-  context: PrivacyContext
+  context: PrivacyContext,
 ): AllocationOutputs {
   // ADMIN and FOUNDER can see everything
   if (context.userRole === 'ADMIN' || context.userRole === 'FOUNDER') {
@@ -34,35 +42,98 @@ export function filterAllocationByRole(
   // INVESTOR can only see their own data
   if (context.userRole === 'INVESTOR') {
     // Filter shares to only include investor's own share
-    const filteredShares = data.shares.filter(
-      (share) => share.name === context.userName
-    );
+    const filteredShares: SharesMap = {
+      founders: 0, // Investors can't see founders' shares
+      investors:
+        context.userName in data.shares.investors
+          ? { [context.userName]: data.shares.investors[context.userName] }
+          : {},
+    };
 
     // Filter dollar-days to only include investor's own data
-    const filteredDollarDays = data.dollarDays.filter(
-      (dd) => dd.name === context.userName
-    );
+    const filteredDollarDays: DollarDaysMap = {
+      founders: 0, // Investors can't see founders' dollar-days
+      investors:
+        context.userName in data.dollarDays.investors
+          ? { [context.userName]: data.dollarDays.investors[context.userName] }
+          : {},
+      total:
+        context.userName in data.dollarDays.investors
+          ? data.dollarDays.investors[context.userName]
+          : 0,
+    };
 
-    // Filter allocation breakdown to only include investor's data
-    const filteredAllocationBreakdown = data.allocationBreakdown.filter(
-      (item) => item.name === context.userName
-    );
+    // Filter realized allocations to only include investor's data
+    const filteredRealizedGross: RealizedAllocation = {
+      founders: 0,
+      investors:
+        context.userName in data.realizedGross.investors
+          ? { [context.userName]: data.realizedGross.investors[context.userName] }
+          : {},
+    };
+
+    const filteredRealizedNet: RealizedAllocation = {
+      founders: 0,
+      investors:
+        context.userName in data.realizedNet.investors
+          ? { [context.userName]: data.realizedNet.investors[context.userName] }
+          : {},
+    };
+
+    const filteredManagementFees: ManagementFees = {
+      investors:
+        context.userName in data.managementFees.investors
+          ? { [context.userName]: data.managementFees.investors[context.userName] }
+          : {},
+      foundersCarryTotal: 0, // Investors can't see founders' carry
+    };
+
+    const filteredMoonbag: MoonbagAllocation = {
+      founders: 0,
+      investors:
+        context.userName in data.moonbag.investors
+          ? { [context.userName]: data.moonbag.investors[context.userName] }
+          : {},
+    };
+
+    const filteredEndCapital: EndCapital = {
+      founders: 0,
+      investors:
+        context.userName in data.endCapital.investors
+          ? { [context.userName]: data.endCapital.investors[context.userName] }
+          : {},
+    };
 
     return {
       ...data,
       shares: filteredShares,
       dollarDays: filteredDollarDays,
-      allocationBreakdown: filteredAllocationBreakdown,
-      // Keep totals visible for context
+      realizedGross: filteredRealizedGross,
+      realizedNet: filteredRealizedNet,
+      managementFees: filteredManagementFees,
+      moonbag: filteredMoonbag,
+      endCapital: filteredEndCapital,
+      // Keep totals visible for context but zero out founders' portions
+      profitTotal: data.realizedProfit, // Only show realized profit
+      realizedProfit:
+        context.userName in data.realizedNet.investors
+          ? data.realizedNet.investors[context.userName]
+          : 0,
     };
   }
 
   // Default: return empty data for unknown roles
   return {
     ...data,
-    shares: [],
-    dollarDays: [],
-    allocationBreakdown: [],
+    shares: { founders: 0, investors: {} },
+    dollarDays: { founders: 0, investors: {}, total: 0 },
+    realizedGross: { founders: 0, investors: {} },
+    realizedNet: { founders: 0, investors: {} },
+    managementFees: { investors: {}, foundersCarryTotal: 0 },
+    moonbag: { founders: 0, investors: {} },
+    endCapital: { founders: 0, investors: {} },
+    profitTotal: 0,
+    realizedProfit: 0,
   };
 }
 
@@ -73,7 +144,7 @@ export function filterAllocationByRole(
  */
 export function filterContributionsByRole<T extends { owner: string; name: string }>(
   contributions: T[],
-  context: PrivacyContext
+  context: PrivacyContext,
 ): T[] {
   // ADMIN and FOUNDER can see everything
   if (context.userRole === 'ADMIN' || context.userRole === 'FOUNDER') {
@@ -82,9 +153,7 @@ export function filterContributionsByRole<T extends { owner: string; name: strin
 
   // INVESTOR can only see their own contributions
   if (context.userRole === 'INVESTOR') {
-    return contributions.filter(
-      (contrib) => contrib.name === context.userName
-    );
+    return contributions.filter((contrib) => contrib.name === context.userName);
   }
 
   return [];
@@ -97,7 +166,7 @@ export function filterContributionsByRole<T extends { owner: string; name: strin
  */
 export function filterPortfoliosByRole<T extends { userId?: string | null }>(
   portfolios: T[],
-  context: PrivacyContext
+  context: PrivacyContext,
 ): T[] {
   // ADMIN can see everything
   if (context.userRole === 'ADMIN') {
@@ -122,7 +191,7 @@ export function filterPortfoliosByRole<T extends { userId?: string | null }>(
  */
 export function canAccessPortfolio(
   portfolioUserId: string | null | undefined,
-  context: PrivacyContext
+  context: PrivacyContext,
 ): boolean {
   // ADMIN and FOUNDER can access any portfolio
   if (context.userRole === 'ADMIN' || context.userRole === 'FOUNDER') {
@@ -142,7 +211,7 @@ export function canAccessPortfolio(
  */
 export function canModifyResource(
   resourceOwnerId: string | null | undefined,
-  context: PrivacyContext
+  context: PrivacyContext,
 ): boolean {
   // ADMIN can modify anything
   if (context.userRole === 'ADMIN') {
@@ -168,7 +237,7 @@ export function canModifyResource(
  */
 export function sanitizeUserData<T extends { passwordHash?: string }>(
   user: T,
-  context: PrivacyContext
+  context: PrivacyContext,
 ): Omit<T, 'passwordHash'> {
   const { passwordHash, ...safeUser } = user;
   return safeUser;

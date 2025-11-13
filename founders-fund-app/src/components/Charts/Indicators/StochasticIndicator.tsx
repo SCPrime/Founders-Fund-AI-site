@@ -39,7 +39,7 @@ export default function StochasticIndicator({
     const stochData = calculateStochastic(data, period, signalPeriod);
 
     if (!kLineRef.current) {
-      kLineRef.current = chart.addLineSeries({
+      kLineRef.current = (chart as any).addLineSeries({
         color: '#2962FF',
         lineWidth: 2,
         title: '%K',
@@ -48,7 +48,7 @@ export default function StochasticIndicator({
     }
 
     if (!dLineRef.current) {
-      dLineRef.current = chart.addLineSeries({
+      dLineRef.current = (chart as any).addLineSeries({
         color: '#FF6D00',
         lineWidth: 2,
         title: '%D',
@@ -63,8 +63,12 @@ export default function StochasticIndicator({
       },
     });
 
-    kLineRef.current.setData(stochData.k);
-    dLineRef.current.setData(stochData.d);
+    if (kLineRef.current) {
+      kLineRef.current.setData(stochData.k);
+    }
+    if (dLineRef.current) {
+      dLineRef.current.setData(stochData.d);
+    }
 
     return () => {
       if (kLineRef.current) chart.removeSeries(kLineRef.current);

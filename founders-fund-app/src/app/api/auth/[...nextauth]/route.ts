@@ -8,8 +8,10 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import type { AuthOptions } from 'next-auth';
 
-export const authOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma),
+// NOTE: authOptions must not be exported from route files in Next.js App Router
+// This is an internal constant for the NextAuth handler only
+const authOptions: AuthOptions = {
+  adapter: PrismaAdapter(prisma) as any, // Type cast to resolve @auth/core vs next-auth adapter incompatibility
   providers: [
     // Email/Password Authentication
     CredentialsProvider({
@@ -101,7 +103,7 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role as string;
+        session.user.role = token.role as any; // Type cast to UserRole enum
         session.user.id = token.id as string;
         session.user.name = token.name as string;
       }

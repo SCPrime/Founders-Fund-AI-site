@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { useAllocationStore } from '@/store/allocationStore';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Charts() {
   const [source, setSource] = useState('current');
@@ -9,7 +9,7 @@ export default function Charts() {
   const [includeFounders, setIncludeFounders] = useState('yes');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { } = useAllocationStore();
+  const {} = useAllocationStore();
 
   const generateSampleData = () => {
     // Generate sample data for demonstration
@@ -85,7 +85,7 @@ export default function Charts() {
     // Draw chart based on type
     if (type.startsWith('bar')) {
       // Bar chart
-      const barWidth = chartWidth / labels.length * 0.6;
+      const barWidth = (chartWidth / labels.length) * 0.6;
       const barSpacing = chartWidth / labels.length;
 
       ctx.fillStyle = '#4CAF50';
@@ -193,15 +193,20 @@ export default function Charts() {
       drawChart();
     }, 100);
     return () => clearTimeout(timer);
-  }, [type, source, includeFounders, calc.walletSize, calc.realizedProfit]);
+  }, [type, source, includeFounders]);
 
   return (
     <div className="panel">
       <h2>Charts</h2>
-      <div className="grid" style={{ alignItems: 'center' }}>
+      <div className="grid items-center">
         <div style={{ gridColumn: 'span 4' }}>
           <label>Data Source</label>
-          <select value={source} onChange={e => setSource(e.target.value)}>
+          <select
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            title="Select data source for chart"
+            aria-label="Select data source for chart"
+          >
             <option value="current">Current (on screen)</option>
             <option value="latest">Latest saved snapshot</option>
             <option value="all">All saved snapshots (time series)</option>
@@ -209,7 +214,12 @@ export default function Charts() {
         </div>
         <div style={{ gridColumn: 'span 5' }}>
           <label>Chart Type</label>
-          <select value={type} onChange={e => setType(e.target.value)}>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            title="Select chart type"
+            aria-label="Select chart type"
+          >
             <option value="lineNet">Line — Net profit (per class)</option>
             <option value="barNet">Bar — Net profit (per class)</option>
             <option value="barBase">Bar — Base profit (per class)</option>
@@ -221,7 +231,9 @@ export default function Charts() {
           <label>Include Founders in line charts?</label>
           <select
             value={includeFounders}
-            onChange={e => setIncludeFounders(e.target.value)}
+            onChange={(e) => setIncludeFounders(e.target.value)}
+            title="Include founders data in line charts"
+            aria-label="Include founders data in line charts"
           >
             <option value="yes">Yes</option>
             <option value="no">No</option>
@@ -234,11 +246,11 @@ export default function Charts() {
           </button>
         </div>
       </div>
-      <div style={{ marginTop: '12px' }}>
+      <div className="mt-3">
         <canvas ref={canvasRef} id="chart" width={1100} height={420}></canvas>
         <div className="legend" id="legend"></div>
         <div className="small" id="chartNote"></div>
-        <div className="small" style={{ marginTop: '6px' }}>
+        <div className="small mt-1.5">
           <b id="yAxisTitle"></b> — Y-axis · <b id="xAxisTitle"></b> — X-axis
         </div>
       </div>

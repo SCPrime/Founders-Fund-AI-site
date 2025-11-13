@@ -1,5 +1,5 @@
 import { useFundStore } from '@/store/fundStore';
-import { FundSnapshot, ValidationIssue, Contribution } from '@/types/fund';
+import { Contribution, FundSnapshot, ValidationIssue } from '@/types/fund';
 
 /**
  * AI Assistant Tools for Founders Fund Calculator
@@ -34,16 +34,17 @@ export interface AITool {
  */
 export const getSnapshotTool: AITool = {
   name: 'get_snapshot',
-  description: 'Get complete current state of the fund including contributions, settings, results, and validation issues',
+  description:
+    'Get complete current state of the fund including contributions, settings, results, and validation issues',
   parameters: {
     type: 'object',
     properties: {},
-    required: []
+    required: [],
   },
   execute: (): FundSnapshot => {
     const store = useFundStore.getState();
     return store.getSnapshot();
-  }
+  },
 };
 
 /**
@@ -51,7 +52,8 @@ export const getSnapshotTool: AITool = {
  */
 export const simulateTool: AITool = {
   name: 'simulate',
-  description: 'Run what-if scenarios by simulating changes to contributions or settings without affecting current state',
+  description:
+    'Run what-if scenarios by simulating changes to contributions or settings without affecting current state',
   parameters: {
     type: 'object',
     properties: {
@@ -65,8 +67,8 @@ export const simulateTool: AITool = {
           entryFeePct: { type: 'number', description: 'Entry fee percentage' },
           moonbagFounderPct: { type: 'number', description: 'Founder moonbag percentage' },
           winStart: { type: 'string', description: 'Window start date (YYYY-MM-DD)' },
-          winEnd: { type: 'string', description: 'Window end date (YYYY-MM-DD)' }
-        }
+          winEnd: { type: 'string', description: 'Window end date (YYYY-MM-DD)' },
+        },
       },
       contributionChanges: {
         type: 'array',
@@ -74,7 +76,11 @@ export const simulateTool: AITool = {
         items: {
           type: 'object',
           properties: {
-            action: { type: 'string', enum: ['add', 'modify', 'remove'], description: 'Type of change' },
+            action: {
+              type: 'string',
+              enum: ['add', 'modify', 'remove'],
+              description: 'Type of change',
+            },
             id: { type: 'string', description: 'Contribution ID (for modify/remove)' },
             contribution: {
               type: 'object',
@@ -84,18 +90,19 @@ export const simulateTool: AITool = {
                 date: { type: 'string' },
                 amount: { type: 'number' },
                 rule: { type: 'string', enum: ['net', 'gross'] },
-                cls: { type: 'string', enum: ['founder', 'investor'] }
-              }
-            }
-          }
-        }
-      }
-    }
+                cls: { type: 'string', enum: ['founder', 'investor'] },
+              },
+            },
+          },
+        },
+      },
+    },
   },
-  execute: ({ settingsChanges, contributionChanges }: {
-    settingsChanges?: SettingsChanges;
-    contributionChanges?: ContributionChange[];
-  }) => {
+  execute: (params?: Record<string, unknown>) => {
+    const { settingsChanges, contributionChanges } = (params || {}) as {
+      settingsChanges?: SettingsChanges;
+      contributionChanges?: ContributionChange[];
+    };
     const store = useFundStore.getState();
 
     // Get current contributions
@@ -103,7 +110,7 @@ export const simulateTool: AITool = {
 
     // Apply contribution changes
     if (contributionChanges) {
-      contributionChanges.forEach(change => {
+      contributionChanges.forEach((change) => {
         switch (change.action) {
           case 'add':
             if (change.contribution) {
@@ -113,13 +120,13 @@ export const simulateTool: AITool = {
                 date: change.contribution.date || '2025-01-01',
                 amount: change.contribution.amount || 0,
                 rule: change.contribution.rule || 'net',
-                cls: change.contribution.cls || 'investor'
+                cls: change.contribution.cls || 'investor',
               });
             }
             break;
           case 'modify':
             if (change.id && change.contribution) {
-              const index = testContributions.findIndex(c => c.id === change.id);
+              const index = testContributions.findIndex((c) => c.id === change.id);
               if (index !== -1) {
                 testContributions[index] = { ...testContributions[index], ...change.contribution };
               }
@@ -127,7 +134,7 @@ export const simulateTool: AITool = {
             break;
           case 'remove':
             if (change.id) {
-              testContributions = testContributions.filter(c => c.id !== change.id);
+              testContributions = testContributions.filter((c) => c.id !== change.id);
             }
             break;
         }
@@ -136,9 +143,9 @@ export const simulateTool: AITool = {
 
     return store.simulate({
       contributions: testContributions,
-      settings: settingsChanges
+      settings: settingsChanges,
     });
-  }
+  },
 };
 
 /**
@@ -152,24 +159,28 @@ export const applyChangesTool: AITool = {
     properties: {
       settingsChanges: {
         type: 'object',
-        description: 'Settings to update'
+        description: 'Settings to update',
       },
       contributionChanges: {
         type: 'array',
-        description: 'Contribution changes to apply'
+        description: 'Contribution changes to apply',
       },
       reason: {
         type: 'string',
-        description: 'Explanation for the changes'
-      }
+        description: 'Explanation for the changes',
+      },
     },
-    required: ['reason']
+    required: ['reason'],
   },
-  execute: ({ settingsChanges, contributionChanges, reason }: {
-    settingsChanges?: SettingsChanges;
-    contributionChanges?: ContributionChange[];
-    reason: string;
-  }) => {
+  execute: (params?: Record<string, unknown>) => {
+    const { settingsChanges, contributionChanges, reason } = (params || {}) as {
+      settingsChanges?: SettingsChanges;
+      contributionChanges?: ContributionChange[];
+      reason: string;
+    };
+    if (!reason) {
+      throw new Error('Reason is required');
+    }
     const store = useFundStore.getState();
 
     // Apply settings changes
@@ -183,7 +194,22 @@ export const applyChangesTool: AITool = {
         switch (change.action) {
           case 'add':
             if (change.contribution) {
-              store.addContribution(change.contribution);
+              const contrib = change.contribution as Partial<Contribution>;
+              if (
+                contrib.name &&
+                contrib.date &&
+                contrib.amount !== undefined &&
+                contrib.rule &&
+                contrib.cls
+              ) {
+                store.addContribution({
+                  name: contrib.name as string,
+                  date: contrib.date as string,
+                  amount: contrib.amount as number,
+                  rule: contrib.rule as 'net' | 'gross',
+                  cls: contrib.cls as 'founder' | 'investor',
+                });
+              }
             }
             break;
           case 'modify':
@@ -201,7 +227,7 @@ export const applyChangesTool: AITool = {
     }
 
     return { success: true, reason, appliedAt: new Date().toISOString() };
-  }
+  },
 };
 
 /**
@@ -213,12 +239,12 @@ export const validateFundTool: AITool = {
   parameters: {
     type: 'object',
     properties: {},
-    required: []
+    required: [],
   },
   execute: (): ValidationIssue[] => {
     const store = useFundStore.getState();
     return store.validateData();
-  }
+  },
 };
 
 /**
@@ -233,18 +259,22 @@ export const quickFixTool: AITool = {
       issueIds: {
         type: 'array',
         items: { type: 'string' },
-        description: 'List of validation issue IDs to fix'
-      }
+        description: 'List of validation issue IDs to fix',
+      },
     },
-    required: ['issueIds']
+    required: ['issueIds'],
   },
-  execute: ({ issueIds }: { issueIds: string[] }) => {
+  execute: (params?: Record<string, unknown>) => {
+    const { issueIds } = (params || {}) as { issueIds: string[] };
+    if (!Array.isArray(issueIds)) {
+      throw new Error('issueIds must be an array');
+    }
     const store = useFundStore.getState();
     const issues = store.validationIssues;
     const fixedIssues: string[] = [];
 
-    issueIds.forEach(issueId => {
-      const issue = issues.find(i => i.id === issueId);
+    issueIds.forEach((issueId) => {
+      const issue = issues.find((i) => i.id === issueId);
       if (issue?.quickFix) {
         issue.quickFix();
         fixedIssues.push(issueId);
@@ -252,7 +282,7 @@ export const quickFixTool: AITool = {
     });
 
     return { fixedIssues, fixedCount: fixedIssues.length };
-  }
+  },
 };
 
 /**
@@ -266,22 +296,26 @@ export const analyzeParticipantTool: AITool = {
     properties: {
       participantName: {
         type: 'string',
-        description: 'Name of the participant to analyze'
-      }
+        description: 'Name of the participant to analyze',
+      },
     },
-    required: ['participantName']
+    required: ['participantName'],
   },
-  execute: ({ participantName }: { participantName: string }) => {
+  execute: (params?: Record<string, unknown>) => {
+    const { participantName } = (params || {}) as { participantName: string };
+    if (!participantName || typeof participantName !== 'string') {
+      throw new Error('participantName is required and must be a string');
+    }
     const store = useFundStore.getState();
 
     // Find contributions for this participant
-    const contributions = store.contributions.filter(c =>
-      c.name.toLowerCase().includes(participantName.toLowerCase())
+    const contributions = store.contributions.filter((c) =>
+      c.name.toLowerCase().includes(participantName.toLowerCase()),
     );
 
     // Find results for this participant
-    const results = store.results.filter(r =>
-      r.name.toLowerCase().includes(participantName.toLowerCase())
+    const results = store.results.filter((r) =>
+      r.name.toLowerCase().includes(participantName.toLowerCase()),
     );
 
     if (contributions.length === 0 && results.length === 0) {
@@ -293,18 +327,27 @@ export const analyzeParticipantTool: AITool = {
       contributions,
       results: results[0] || null,
       totalContributed: contributions.reduce((sum, c) => sum + c.amount, 0),
-      contributionDates: contributions.map(c => c.date).sort(),
+      contributionDates: contributions.map((c) => c.date).sort(),
       analysis: {
-        isFounder: contributions.some(c => c.cls === 'founder'),
+        isFounder: contributions.some((c) => c.cls === 'founder'),
         contributionCount: contributions.length,
-        averageContribution: contributions.length > 0 ? contributions.reduce((sum, c) => sum + c.amount, 0) / contributions.length : 0,
-        firstContribution: contributions.length > 0 ? Math.min(...contributions.map(c => new Date(c.date).getTime())) : null,
-        lastContribution: contributions.length > 0 ? Math.max(...contributions.map(c => new Date(c.date).getTime())) : null
-      }
+        averageContribution:
+          contributions.length > 0
+            ? contributions.reduce((sum, c) => sum + c.amount, 0) / contributions.length
+            : 0,
+        firstContribution:
+          contributions.length > 0
+            ? Math.min(...contributions.map((c) => new Date(c.date).getTime()))
+            : null,
+        lastContribution:
+          contributions.length > 0
+            ? Math.max(...contributions.map((c) => new Date(c.date).getTime()))
+            : null,
+      },
     };
 
     return analysis;
-  }
+  },
 };
 
 /**
@@ -316,14 +359,14 @@ export const aiTools: AITool[] = [
   applyChangesTool,
   validateFundTool,
   quickFixTool,
-  analyzeParticipantTool
+  analyzeParticipantTool,
 ];
 
 /**
  * Get tool by name
  */
 export const getAITool = (name: string): AITool | undefined => {
-  return aiTools.find(tool => tool.name === name);
+  return aiTools.find((tool) => tool.name === name);
 };
 
 /**
@@ -338,6 +381,8 @@ export const executeAITool = (name: string, parameters: Record<string, unknown> 
   try {
     return tool.execute(parameters);
   } catch (error) {
-    throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 };

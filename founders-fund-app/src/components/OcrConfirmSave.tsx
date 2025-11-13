@@ -3,9 +3,9 @@
 import { useState } from 'react';
 
 type ProposedContribution = {
-  owner: 'investor'|'founders';
+  owner: 'investor' | 'founders';
   name: string;
-  type: 'investor_contribution'|'founders_contribution'|'entry_fee';
+  type: 'investor_contribution' | 'founders_contribution' | 'entry_fee';
   amount: number;
   ts: string; // yyyy-mm-dd
   earnsDollarDaysThisWindow?: boolean;
@@ -37,13 +37,16 @@ export default function OcrConfirmSave({
     try {
       const form = new FormData();
       if (file) form.set('file', file);
-      form.set('meta', JSON.stringify({
-        portfolioId,
-        userLabel,
-        ocrText,
-        ai,
-        contributions: proposedContributions,
-      }));
+      form.set(
+        'meta',
+        JSON.stringify({
+          portfolioId,
+          userLabel,
+          ocrText,
+          ai,
+          contributions: proposedContributions,
+        }),
+      );
       const res = await fetch('/api/scan/save', { method: 'POST', body: form });
       const json = await res.json();
       if (!res.ok) {

@@ -102,7 +102,7 @@ Return ONLY this JSON structure:
         const gptResult = parseAIResponse(response.choices[0]?.message?.content || '{}', 'GPT-4o');
         modelResults.push({
           data: gptResult,
-          confidence: gptResult.extractionConfidence || 70,
+          confidence: Number(gptResult.extractionConfidence) || 70,
           model: 'GPT-4o',
           processingTime: Date.now() - startTime
         });
@@ -178,7 +178,7 @@ Output format:
         const claudeResult = parseAIResponse(response.content[0].type === 'text' ? response.content[0].text : '{}', 'Claude');
         modelResults.push({
           data: claudeResult,
-          confidence: claudeResult.extractionConfidence || 70,
+          confidence: Number(claudeResult.extractionConfidence) || 70,
           model: 'Claude-Sonnet',
           processingTime: Date.now() - startTime
         });
@@ -241,7 +241,7 @@ Return the corrected/confirmed JSON with your confidence level:`
         const validationResult = parseAIResponse(response.choices[0]?.message?.content || '{}', 'GPT-4o-Validator');
         modelResults.push({
           data: validationResult,
-          confidence: validationResult.extractionConfidence || 70,
+          confidence: Number(validationResult.extractionConfidence) || 70,
           model: 'GPT-4o-Validator',
           processingTime: Date.now() - startTime
         });
@@ -341,8 +341,9 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string
 
     if (field === 'timestamp') {
       // For timestamps, take the most common value
-      const counts = values.reduce((acc, val) => {
-        acc[val] = (acc[val] || 0) + 1;
+      const counts = values.reduce((acc: Record<string, number>, val: any) => {
+        const key = String(val);
+        acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {});
       consensus[field] = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
@@ -353,13 +354,14 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string
       let agreementCount = 0;
 
       values.forEach((value, index) => {
+        const numValue = Number(value);
         const weight = results[index].confidence / 100;
-        weightedSum += value * weight;
+        weightedSum += numValue * weight;
         totalWeight += weight;
 
         // Check agreement (within 5% tolerance)
-        const tolerance = Math.max(Math.abs(value * 0.05), 1);
-        const agreements = values.filter(v => Math.abs(v - value) <= tolerance).length;
+        const tolerance = Math.max(Math.abs(numValue * 0.05), 1);
+        const agreements = values.filter(v => Math.abs(Number(v) - numValue) <= tolerance).length;
         if (agreements > agreementCount) {
           agreementCount = agreements;
         }
@@ -386,9 +388,12 @@ function performAdvancedValidation(data: Record<string, unknown>): number {
 
   // Validation 1: Mathematical consistency
   if (data.totalValue && data.availableBalance && data.unrealizedPNL) {
-    const expectedTotal = data.availableBalance + data.unrealizedPNL;
-    const diff = Math.abs(data.totalValue - expectedTotal);
-    const tolerance = data.totalValue * 0.1; // 10% tolerance
+    const totalValue = Number(data.totalValue);
+    const availableBalance = Number(data.availableBalance);
+    const unrealizedPNL = Number(data.unrealizedPNL);
+    const expectedTotal = availableBalance + unrealizedPNL;
+    const diff = Math.abs(totalValue - expectedTotal);
+    const tolerance = totalValue * 0.1; // 10% tolerance
 
     if (diff > tolerance) {
       score -= 20;
@@ -398,9 +403,12 @@ function performAdvancedValidation(data: Record<string, unknown>): number {
 
   // Validation 2: Win/Loss vs Total Transactions
   if (data.wins && data.losses && data.totalTransactions) {
-    const calculatedTotal = data.wins + data.losses;
-    const diff = Math.abs(calculatedTotal - data.totalTransactions);
-    const tolerance = Math.max(data.totalTransactions * 0.1, 10);
+    const wins = Number(data.wins);
+    const losses = Number(data.losses);
+    const totalTransactions = Number(data.totalTransactions);
+    const calculatedTotal = wins + losses;
+    const diff = Math.abs(calculatedTotal - totalTransactions);
+    const tolerance = Math.max(totalTransactions * 0.1, 10);
 
     if (diff > tolerance) {
       score -= 15;
@@ -409,14 +417,19 @@ function performAdvancedValidation(data: Record<string, unknown>): number {
   }
 
   // Validation 3: Realistic value ranges
-  if (data.totalValue && (data.totalValue < 100 || data.totalValue > 1000000)) {
-    score -= 10;
-    issues.push('Unrealistic total value');
+  if (data.totalValue) {
+    const totalValue = Number(data.totalValue);
+    if (totalValue < 100 || totalValue > 1000000) {
+      score -= 10;
+      issues.push('Unrealistic total value');
+    }
   }
 
   // Validation 4: Win rate sanity check
   if (data.wins && data.losses) {
-    const winRate = data.wins / (data.wins + data.losses);
+    const wins = Number(data.wins);
+    const losses = Number(data.losses);
+    const winRate = wins / (wins + losses);
     if (winRate < 0.1 || winRate > 0.95) {
       score -= 10;
       issues.push('Unrealistic win rate');

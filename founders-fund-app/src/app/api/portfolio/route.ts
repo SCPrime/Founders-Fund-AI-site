@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
       // Add contributions
       if (contributions.length > 0) {
-        const contributionData = contributions.map((leg: unknown) => ({
+        const contributionData = contributions.map((leg: any) => ({
           portfolioId: newPortfolio.id,
           owner: leg.owner,
           name: leg.name,
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
       // Add snapshots if provided
       if (snapshots && snapshots.length > 0) {
-        const snapshotData = snapshots.map((snap: unknown) => ({
+        const snapshotData = snapshots.map((snap: any) => ({
           portfolioId: newPortfolio.id,
           timestamp: snap.timestamp ? new Date(snap.timestamp) : new Date(),
           windowStart: new Date(snap.window.start),
@@ -156,7 +156,7 @@ export async function PUT(request: NextRequest) {
       await tx.contribution.deleteMany({ where: { portfolioId: id } });
 
       const updatedContribs = await tx.contribution.createMany({
-        data: contributions.map((leg: unknown) => ({
+        data: contributions.map((leg: any) => ({
           portfolioId: id,
           owner: leg.owner,
           name: leg.name,

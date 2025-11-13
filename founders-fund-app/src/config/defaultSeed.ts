@@ -1,4 +1,4 @@
-import { CashflowLeg, AllocationConstants } from '@/types/allocation';
+import { AllocationConstants, CashflowLeg } from '@/types/allocation';
 
 export interface DefaultSeed {
   window: {
@@ -9,15 +9,23 @@ export interface DefaultSeed {
   contributions: CashflowLeg[];
 }
 
+/**
+ * Convert DefaultSeed contributions to CashflowLeg array
+ * Entry fees are already expanded in the seed data
+ */
+export const convertSeedToLegs = (seed: DefaultSeed): CashflowLeg[] => {
+  return seed.contributions;
+};
+
 export const getDefaultSeed = (): DefaultSeed => {
-  const entryFeeRate = 0.10;
+  const entryFeeRate = 0.1;
 
   // Calculate net amounts and entry fees for investors
   const lauraCounts = [
     { amount: 5000, date: '2025-07-22' },
     { amount: 5000, date: '2025-08-01' },
     { amount: 2500, date: '2025-08-15' },
-    { amount: 2500, date: '2025-09-01' }
+    { amount: 2500, date: '2025-09-01' },
   ];
 
   const damonContrib = { amount: 5000, date: '2025-08-15' };
@@ -32,7 +40,7 @@ export const getDefaultSeed = (): DefaultSeed => {
     type: 'seed',
     amount: 5000,
     ts: '2025-07-10',
-    earnsDollarDaysThisWindow: true
+    earnsDollarDaysThisWindow: true,
   });
 
   // Add Laura's contributions (net-of-fee)
@@ -49,7 +57,7 @@ export const getDefaultSeed = (): DefaultSeed => {
       type: 'investor_contribution',
       amount: netAmount,
       ts: contrib.date,
-      earnsDollarDaysThisWindow: true
+      earnsDollarDaysThisWindow: true,
     });
 
     // Corresponding entry fee to founders
@@ -60,7 +68,7 @@ export const getDefaultSeed = (): DefaultSeed => {
       type: 'founders_entry_fee',
       amount: entryFeeAmount,
       ts: contrib.date,
-      earnsDollarDaysThisWindow: true
+      earnsDollarDaysThisWindow: true,
     });
   });
 
@@ -76,7 +84,7 @@ export const getDefaultSeed = (): DefaultSeed => {
     type: 'investor_contribution',
     amount: damonNet,
     ts: damonContrib.date,
-    earnsDollarDaysThisWindow: true
+    earnsDollarDaysThisWindow: true,
   });
 
   contributions.push({
@@ -86,22 +94,22 @@ export const getDefaultSeed = (): DefaultSeed => {
     type: 'founders_entry_fee',
     amount: damonEntryFee,
     ts: damonContrib.date,
-    earnsDollarDaysThisWindow: true
+    earnsDollarDaysThisWindow: true,
   });
 
   return {
     window: {
       start: '2025-07-22',
-      end: '2025-09-06'
+      end: '2025-09-06',
     },
     constants: {
-      INVESTOR_SEED_BASELINE: 0,  // Start from $0 - user inputs data via OCR scans
-      ENTRY_FEE_RATE: 0.10,
-      MGMT_FEE_RATE: 0.20,
+      INVESTOR_SEED_BASELINE: 0, // Start from $0 - user inputs data via OCR scans
+      ENTRY_FEE_RATE: 0.1,
+      MGMT_FEE_RATE: 0.2,
       FOUNDERS_MOONBAG_PCT: 0.75,
       FOUNDERS_COUNT: 2,
-      ENTRY_FEE_REDUCES_INVESTOR_CREDIT: true
+      ENTRY_FEE_REDUCES_INVESTOR_CREDIT: true,
     },
-    contributions
+    contributions,
   };
 };

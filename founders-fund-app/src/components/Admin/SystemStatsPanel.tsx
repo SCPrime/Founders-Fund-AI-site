@@ -44,6 +44,7 @@ interface SystemStats {
       newTrades: number;
     };
   };
+  timestamp?: string | number;
 }
 
 export default function SystemStatsPanel() {

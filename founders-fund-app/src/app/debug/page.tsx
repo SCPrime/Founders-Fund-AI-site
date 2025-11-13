@@ -7,7 +7,7 @@ import { CalculatorProvider } from '@/context/CalculatorContext';
 import { OCRProvider } from '@/context/OCRContext';
 
 export default function DebugPage() {
-  const [testResults, setTestResults] = useState<Record<string, unknown> | null>(null);
+  const [testResults, setTestResults] = useState<any | null>(null);
 
   useEffect(() => {
     // Load test results to show expected behavior

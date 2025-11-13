@@ -1,14 +1,14 @@
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import type { PrivacyContext } from './privacy';
 import { NextResponse } from 'next/server';
 
 /**
  * Get the current session in API routes
  * Returns null if no session exists
+ * Note: authOptions is auto-discovered from /api/auth/[...nextauth]/route.ts
  */
 export async function getSession() {
-  return await getServerSession(authOptions);
+  return await getServerSession();
 }
 
 /**

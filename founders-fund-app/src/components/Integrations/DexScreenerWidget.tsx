@@ -58,7 +58,7 @@ export default function DexScreenerWidget({
         setError(null);
 
         const response = await fetch(
-          `/api/integrations/dexscreener/chart?chain=${chain}&address=${address}`
+          `/api/integrations/dexscreener/chart?chain=${chain}&address=${address}`,
         );
 
         if (!response.ok) {
@@ -82,6 +82,7 @@ export default function DexScreenerWidget({
       const interval = setInterval(fetchChartData, 30000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [chain, address]);
 
   if (loading) {
@@ -132,17 +133,22 @@ export default function DexScreenerWidget({
       <div className={`p-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <h3
+              className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            >
               {chartData.baseToken.symbol} / {chartData.baseToken.name}
             </h3>
             <p className="text-sm text-gray-400">{chartData.dexId}</p>
           </div>
           <div className="text-right">
-            <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            <p
+              className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+            >
               ${chartData.priceUsd.toFixed(chartData.priceUsd < 1 ? 6 : 2)}
             </p>
             <p className={`text-sm font-semibold ${priceChangeColor}`}>
-              {priceChangeSign}{chartData.priceChange.h24.toFixed(2)}% (24h)
+              {priceChangeSign}
+              {chartData.priceChange.h24.toFixed(2)}% (24h)
             </p>
           </div>
         </div>
@@ -152,26 +158,36 @@ export default function DexScreenerWidget({
       <div className="grid grid-cols-2 gap-4 p-4">
         <div>
           <p className="text-xs text-gray-400 mb-1">24h Volume</p>
-          <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <p
+            className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             ${chartData.volume.h24.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
         <div>
           <p className="text-xs text-gray-400 mb-1">Liquidity</p>
-          <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+          <p
+            className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             ${chartData.liquidity.usd.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
         <div>
           <p className="text-xs text-gray-400 mb-1">6h Change</p>
-          <p className={`text-sm font-semibold ${chartData.priceChange.h6 >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {chartData.priceChange.h6 >= 0 ? '+' : ''}{chartData.priceChange.h6.toFixed(2)}%
+          <p
+            className={`text-sm font-semibold ${chartData.priceChange.h6 >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          >
+            {chartData.priceChange.h6 >= 0 ? '+' : ''}
+            {chartData.priceChange.h6.toFixed(2)}%
           </p>
         </div>
         <div>
           <p className="text-xs text-gray-400 mb-1">1h Change</p>
-          <p className={`text-sm font-semibold ${chartData.priceChange.h1 >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {chartData.priceChange.h1 >= 0 ? '+' : ''}{chartData.priceChange.h1.toFixed(2)}%
+          <p
+            className={`text-sm font-semibold ${chartData.priceChange.h1 >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          >
+            {chartData.priceChange.h1 >= 0 ? '+' : ''}
+            {chartData.priceChange.h1.toFixed(2)}%
           </p>
         </div>
       </div>
@@ -187,7 +203,12 @@ export default function DexScreenerWidget({
           >
             View Full Chart on DexScreener
             <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
             </svg>
           </a>
         )}

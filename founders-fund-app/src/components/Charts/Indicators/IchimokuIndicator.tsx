@@ -61,7 +61,7 @@ export default function IchimokuIndicator({
 
     // Create or update series
     if (!seriesRefs.current.tenkan) {
-      seriesRefs.current.tenkan = chart.addLineSeries({
+      seriesRefs.current.tenkan = (chart as any).addLineSeries({
         color: '#0496ff',
         lineWidth: 1,
         title: 'Tenkan-sen',
@@ -69,7 +69,7 @@ export default function IchimokuIndicator({
     }
 
     if (!seriesRefs.current.kijun) {
-      seriesRefs.current.kijun = chart.addLineSeries({
+      seriesRefs.current.kijun = (chart as any).addLineSeries({
         color: '#991515',
         lineWidth: 1,
         title: 'Kijun-sen',
@@ -77,7 +77,7 @@ export default function IchimokuIndicator({
     }
 
     if (!seriesRefs.current.senkouA) {
-      seriesRefs.current.senkouA = chart.addLineSeries({
+      seriesRefs.current.senkouA = (chart as any).addLineSeries({
         color: 'rgba(0, 255, 0, 0.3)',
         lineWidth: 1,
         title: 'Senkou Span A',
@@ -85,7 +85,7 @@ export default function IchimokuIndicator({
     }
 
     if (!seriesRefs.current.senkouB) {
-      seriesRefs.current.senkouB = chart.addLineSeries({
+      seriesRefs.current.senkouB = (chart as any).addLineSeries({
         color: 'rgba(255, 0, 0, 0.3)',
         lineWidth: 1,
         title: 'Senkou Span B',
@@ -93,7 +93,7 @@ export default function IchimokuIndicator({
     }
 
     if (!seriesRefs.current.chikou) {
-      seriesRefs.current.chikou = chart.addLineSeries({
+      seriesRefs.current.chikou = (chart as any).addLineSeries({
         color: '#00ff00',
         lineWidth: 1,
         title: 'Chikou Span',
@@ -101,11 +101,21 @@ export default function IchimokuIndicator({
     }
 
     // Set data
-    seriesRefs.current.tenkan.setData(ichimokuData.tenkan);
-    seriesRefs.current.kijun.setData(ichimokuData.kijun);
-    seriesRefs.current.senkouA.setData(ichimokuData.senkouA);
-    seriesRefs.current.senkouB.setData(ichimokuData.senkouB);
-    seriesRefs.current.chikou.setData(ichimokuData.chikou);
+    if (seriesRefs.current.tenkan) {
+      seriesRefs.current.tenkan.setData(ichimokuData.tenkan);
+    }
+    if (seriesRefs.current.kijun) {
+      seriesRefs.current.kijun.setData(ichimokuData.kijun);
+    }
+    if (seriesRefs.current.senkouA) {
+      seriesRefs.current.senkouA.setData(ichimokuData.senkouA);
+    }
+    if (seriesRefs.current.senkouB) {
+      seriesRefs.current.senkouB.setData(ichimokuData.senkouB);
+    }
+    if (seriesRefs.current.chikou) {
+      seriesRefs.current.chikou.setData(ichimokuData.chikou);
+    }
 
     return () => {
       // Cleanup

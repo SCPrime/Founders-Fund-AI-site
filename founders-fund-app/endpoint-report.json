@@ -1,0 +1,486 @@
+{
+  "timestamp": "2025-11-13T20:55:43.610Z",
+  "totalEndpoints": 53,
+  "validEndpoints": 53,
+  "invalidEndpoints": 0,
+  "noMethodsEndpoints": 0,
+  "endpoints": [
+    {
+      "path": "/api/admin/activity",
+      "methods": [
+        "GET"
+      ],
+      "file": "admin\\activity\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/admin/monitoring",
+      "methods": [
+        "GET"
+      ],
+      "file": "admin\\monitoring\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/admin/stats",
+      "methods": [
+        "GET"
+      ],
+      "file": "admin\\stats\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/admin/users",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "admin\\users\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/admin/users/[userId]",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "file": "admin\\users\\[userId]\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/agents",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "agents\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/agents/[agentId]",
+      "methods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "file": "agents\\[agentId]\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/agents/[agentId]/performance",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "agents\\[agentId]\\performance\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/agents/[agentId]/trades",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "agents\\[agentId]\\trades\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/agents/create-strategy",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "agents\\create-strategy\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/ai/analyze",
+      "methods": [
+        "POST"
+      ],
+      "file": "ai\\analyze\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/ai/anomalies",
+      "methods": [
+        "POST"
+      ],
+      "file": "ai\\anomalies\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/ai/predict",
+      "methods": [
+        "POST"
+      ],
+      "file": "ai\\predict\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/alerts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "alerts\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/alerts/[alertId]",
+      "methods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ],
+      "file": "alerts\\[alertId]\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/auth/[...nextauth]",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "auth\\[...nextauth]\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/backtest",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "backtest\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/calculate",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "calculate\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/debug-ocr",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "debug-ocr\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/healthz",
+      "methods": [
+        "GET"
+      ],
+      "file": "healthz\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/coinbase/accounts",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\coinbase\\accounts\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/coinbase/prices",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\coinbase\\prices\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/dexscreener/chart",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\dexscreener\\chart\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/dexscreener/pairs",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\dexscreener\\pairs\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/dexscreener/price",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\dexscreener\\price\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/dextools/holders",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\dextools\\holders\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/dextools/token-info",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\dextools\\token-info\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/integrations/dextools/transactions",
+      "methods": [
+        "GET"
+      ],
+      "file": "integrations\\dextools\\transactions\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/jobs/update-prices",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "jobs\\update-prices\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/monitoring/health",
+      "methods": [
+        "GET"
+      ],
+      "file": "monitoring\\health\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/monitoring/metrics",
+      "methods": [
+        "GET"
+      ],
+      "file": "monitoring\\metrics\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/notifications/discord",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "notifications\\discord\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/notifications/slack",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "notifications\\slack\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/ocr",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "ocr\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/pnl-extract",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "pnl-extract\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/portfolio",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE"
+      ],
+      "file": "portfolio\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/rebalance",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "rebalance\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/[reportId]",
+      "methods": [
+        "GET",
+        "DELETE"
+      ],
+      "file": "reports\\[reportId]\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/agent-performance",
+      "methods": [
+        "POST"
+      ],
+      "file": "reports\\agent-performance\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/export-pdf",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "reports\\export-pdf\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/list",
+      "methods": [
+        "GET"
+      ],
+      "file": "reports\\list\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/multi-agent",
+      "methods": [
+        "POST"
+      ],
+      "file": "reports\\multi-agent\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/performance",
+      "methods": [
+        "GET"
+      ],
+      "file": "reports\\performance\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/portfolio-summary",
+      "methods": [
+        "POST"
+      ],
+      "file": "reports\\portfolio-summary\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/risk",
+      "methods": [
+        "GET"
+      ],
+      "file": "reports\\risk\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/trade-history",
+      "methods": [
+        "POST"
+      ],
+      "file": "reports\\trade-history\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/reports/trading",
+      "methods": [
+        "GET"
+      ],
+      "file": "reports\\trading\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/scan/list",
+      "methods": [
+        "GET"
+      ],
+      "file": "scan\\list\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/scan/save",
+      "methods": [
+        "POST"
+      ],
+      "file": "scan\\save\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/simple-ocr",
+      "methods": [
+        "POST"
+      ],
+      "file": "simple-ocr\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/test-claude",
+      "methods": [
+        "GET"
+      ],
+      "file": "test-claude\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/test-debug",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "test-debug\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/ultra-ocr",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "ultra-ocr\\route.ts",
+      "valid": true
+    }
+  ],
+  "categories": {
+    "admin": 5,
+    "agents": 5,
+    "ai": 3,
+    "alerts": 2,
+    "auth": 1,
+    "backtest": 1,
+    "calculate": 1,
+    "debug-ocr": 1,
+    "healthz": 1,
+    "integrations": 8,
+    "jobs": 1,
+    "monitoring": 2,
+    "notifications": 2,
+    "ocr": 1,
+    "pnl-extract": 1,
+    "portfolio": 1,
+    "rebalance": 1,
+    "reports": 10,
+    "scan": 2,
+    "simple-ocr": 1,
+    "test-claude": 1,
+    "test-debug": 1,
+    "ultra-ocr": 1
+  }
+}

@@ -9,7 +9,7 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reportId } = params;
+    const { reportId } = await params;
 
     // Fetch report from database
     const report = await prisma.report.findUnique({
@@ -79,8 +79,9 @@ export async function GET(
 
     // Return PDF from database or URL
     if (report.fileBlob) {
-      // Return from database blob
-      return new NextResponse(report.fileBlob, {
+      // Return from database blob - convert Uint8Array to Buffer
+      const buffer = Buffer.from(report.fileBlob);
+      return new NextResponse(buffer, {
         status: 200,
         headers: {
           'Content-Type': report.mimeType,
@@ -116,7 +117,7 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -125,7 +126,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { reportId } = params;
+    const { reportId } = await params;
 
     // Fetch report
     const report = await prisma.report.findUnique({

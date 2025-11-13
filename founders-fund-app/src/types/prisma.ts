@@ -61,7 +61,7 @@ export function contributionToCashflowLeg(contribution: {
   owner: string;
   name: string;
   type: string;
-  amount: number;
+  amount: Prisma.Decimal | number;
   ts: Date;
   earnsDollarDaysThisWindow: boolean;
 }): CashflowLeg {
@@ -70,7 +70,7 @@ export function contributionToCashflowLeg(contribution: {
     owner: contribution.owner as Owner,
     name: contribution.name,
     type: contribution.type as LegType,
-    amount: contribution.amount,
+    amount: typeof contribution.amount === 'number' ? contribution.amount : Number(contribution.amount),
     ts: contribution.ts.toISOString().split('T')[0], // Convert to YYYY-MM-DD format
     earnsDollarDaysThisWindow: contribution.earnsDollarDaysThisWindow,
   };

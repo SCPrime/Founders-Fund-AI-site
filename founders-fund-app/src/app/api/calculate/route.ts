@@ -3,19 +3,19 @@ import { headers } from 'next/headers';
 import { rateLimit } from '@/lib/rateLimit';
 import { AllocationEngine } from '@/lib/allocationEngine';
 import type { Contribution } from '@prisma/client';
-import type { AllocationState, AllocationOutputs, Leg } from '@/types/allocation';
+import type { AllocationState, AllocationOutputs, CashflowLeg } from '@/types/allocation';
 import { prisma } from '@/lib/prisma';
 import { BASELINE_PORTFOLIO_ID } from '@/lib/constants';
 import { requireAuth } from '@/lib/auth';
 import { filterAllocationByRole } from '@/lib/privacy';
 
-// Convert Prisma Contribution to AllocationState Leg format
-function contributionToLeg(r: Contribution): Leg {
+// Convert Prisma Contribution to AllocationState CashflowLeg format
+function contributionToLeg(r: Contribution): CashflowLeg {
   return {
     id: r.id,
-    owner: r.owner,
+    owner: r.owner as any, // Prisma LegOwner to Owner type cast
     name: r.name,
-    type: r.type,
+    type: r.type as any, // Prisma LegType to LegType/LegTypeUnion cast
     amount: Number(r.amount),
     ts: r.ts.toISOString(),
     earnsDollarDaysThisWindow: r.earnsDollarDaysThisWindow,
@@ -32,13 +32,13 @@ async function mergeWithBaseline(clientState: AllocationState): Promise<Allocati
     if (!baselineRows.length) return clientState;
 
     const baselineLegs = baselineRows.map(contributionToLeg);
-    const clientIds = new Set(clientState.legs.map((l) => l.id));
+    const clientIds = new Set(clientState.contributions.map((l) => l.id));
     const uniqBaseline = baselineLegs.filter((l) => !clientIds.has(l.id));
 
-    const legs = [...uniqBaseline, ...clientState.legs].sort(
+    const contributions = [...uniqBaseline, ...clientState.contributions].sort(
       (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
     );
-    return { ...clientState, legs };
+    return { ...clientState, contributions };
   } catch (e) {
     console.error('Failed to merge baseline data:', e);
     return clientState;
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting - 20 requests per minute per IP for calculations
-    const headersList = headers();
+    const headersList = await headers();
     const ip = headersList.get('x-forwarded-for')?.split(',')[0] ??
               headersList.get('x-real-ip') ??
               'unknown';

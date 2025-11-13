@@ -1,16 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
 import {
+  CandlestickSeriesPartialOptions,
   createChart,
   IChartApi,
   ISeriesApi,
-  CandlestickSeriesPartialOptions,
-  LineSeriesPartialOptions,
-  HistogramSeriesPartialOptions,
-  Time,
 } from 'lightweight-charts';
-import { CandleData, ChartTheme, IndicatorConfig, DrawingTool, TimeFrame } from './types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CandleData, ChartTheme, DrawingTool, IndicatorConfig } from './types';
 
 interface FullScreenChartProps {
   data: CandleData[];
@@ -99,7 +96,14 @@ export default function FullScreenChart({
       },
     });
 
-    const candleSeries = chart.addCandlestickSeries({
+    // Type cast needed for TradingView Lightweight Charts v5 API compatibility
+    // Type extension for addCandlestickSeries (exists in runtime but may not be in types)
+    type ChartWithCandlestick = IChartApi & {
+      addCandlestickSeries: (
+        options?: CandlestickSeriesPartialOptions,
+      ) => ISeriesApi<'Candlestick'>;
+    };
+    const candleSeries = (chart as ChartWithCandlestick).addCandlestickSeries({
       upColor: currentTheme.upColor,
       downColor: currentTheme.downColor,
       borderUpColor: currentTheme.upColor,
@@ -200,8 +204,10 @@ export default function FullScreenChart({
       {/* Chart Container */}
       <div
         ref={chartContainerRef}
-        className={`border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} rounded`}
-        style={{ height: isFullScreen ? '100vh' : `${height}px` }}
+        className={`border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'} rounded ${
+          isFullScreen ? 'h-screen' : ''
+        }`}
+        style={!isFullScreen ? { height: `${height}px` } : undefined}
       />
 
       {/* Loading State */}

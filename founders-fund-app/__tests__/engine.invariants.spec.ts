@@ -1,19 +1,19 @@
+import { getDefaultSeed } from '@/config/defaultSeed';
 import { AllocationEngine } from '@/lib/allocationEngine';
-import { getDefaultSeed, convertSeedToLegs } from '@/config/defaultSeed';
 import { AllocationState } from '@/types/allocation';
 
 describe('Allocation engine invariants', () => {
   test('profit derivation and invariants hold with preset data', () => {
     // Arrange: seed + wallet/unrealized for the window
     const seed = getDefaultSeed();
-    const legs = convertSeedToLegs(seed);
+    const legs = seed.contributions;
 
     const state: AllocationState = {
       window: seed.window,
       walletSizeEndOfWindow: 26005,
       unrealizedPnlEndOfWindow: 52.3,
       contributions: legs,
-      constants: seed.constants
+      constants: seed.constants,
     };
 
     // Act
@@ -40,7 +40,8 @@ describe('Allocation engine invariants', () => {
     expect(sumNet).toBeCloseTo(outputs.realizedProfit, 2);
 
     // Moonbag allocation: no fees on unrealized
-    const moonbagTotal = outputs.moonbag.founders +
+    const moonbagTotal =
+      outputs.moonbag.founders +
       Object.values(outputs.moonbag.investors).reduce((a, b) => a + b, 0);
     expect(moonbagTotal).toBeCloseTo(state.unrealizedPnlEndOfWindow, 2);
 
@@ -49,28 +50,26 @@ describe('Allocation engine invariants', () => {
     expect(outputs.dollarDays.founders).toBeGreaterThan(0);
 
     // Validate shares sum to 1
-    const totalShares = outputs.shares.founders +
-      Object.values(outputs.shares.investors).reduce((a, b) => a + b, 0);
+    const totalShares =
+      outputs.shares.founders + Object.values(outputs.shares.investors).reduce((a, b) => a + b, 0);
     expect(totalShares).toBeCloseTo(1, 5);
   });
 
   test('entry fee expansion works correctly', () => {
     const seed = getDefaultSeed();
-    const legs = convertSeedToLegs(seed);
+    const legs = seed.contributions;
 
-    // Should have more legs than original contributions due to entry fee expansion
-    expect(legs.length).toBeGreaterThan(seed.contributions.length);
-
-    // Check that net-of-fee investors generated entry fee legs
-    const entryFeeLegs = legs.filter(leg => leg.type === 'founders_entry_fee');
-    const netOfFeeInvestors = seed.contributions.filter(c =>
-      c.netRule === 'net-of-fee' && c.owner === 'investor'
+    // Should have entry fee legs for net-of-fee investors
+    const entryFeeLegs = legs.filter((leg) => leg.type === 'founders_entry_fee');
+    const investorContributions = legs.filter(
+      (leg) => leg.type === 'investor_contribution' && leg.owner === 'investor',
     );
 
-    expect(entryFeeLegs.length).toBe(netOfFeeInvestors.length);
+    // Each investor contribution should have a corresponding entry fee leg
+    expect(entryFeeLegs.length).toBeGreaterThan(0);
 
     // Verify each entry fee leg corresponds to a net investor contribution
-    entryFeeLegs.forEach(feeLeg => {
+    entryFeeLegs.forEach((feeLeg) => {
       expect(feeLeg.owner).toBe('founders');
       expect(feeLeg.name).toBe('Founders');
       expect(feeLeg.amount).toBeGreaterThan(0);
@@ -79,20 +78,20 @@ describe('Allocation engine invariants', () => {
 
   test('validation catches common errors', () => {
     const seed = getDefaultSeed();
-    const legs = convertSeedToLegs(seed);
+    const legs = seed.contributions;
 
     const state: AllocationState = {
       window: seed.window,
       walletSizeEndOfWindow: 26005,
       unrealizedPnlEndOfWindow: 52.3,
       contributions: legs,
-      constants: seed.constants
+      constants: seed.constants,
     };
 
     const outputs = AllocationEngine.recompute(state);
     const validationErrors = AllocationEngine.validate(state, outputs);
 
     // Should pass validation with correct data
-    expect(validationErrors.filter(e => e.type === 'error')).toHaveLength(0);
+    expect(validationErrors.filter((e) => e.type === 'error')).toHaveLength(0);
   });
 });

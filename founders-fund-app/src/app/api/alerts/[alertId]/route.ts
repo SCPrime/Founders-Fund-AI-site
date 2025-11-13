@@ -10,14 +10,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     alertId: string;
-  };
+  }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { alertId } = params;
+    const { alertId } = await params;
 
     const alert = await prisma.priceAlert.findUnique({
       where: { id: alertId },
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const { alertId } = params;
+    const { alertId } = await params;
     const body = await request.json();
 
     const { condition, threshold, isActive, message } = body;
@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { alertId } = params;
+    const { alertId } = await params;
 
     await prisma.priceAlert.delete({
       where: { id: alertId },

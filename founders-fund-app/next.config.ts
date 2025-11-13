@@ -8,10 +8,10 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // STRICT MODE - catch all errors
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false, // STRICT MODE - enforce code quality
   },
   reactStrictMode: true,
   images: {

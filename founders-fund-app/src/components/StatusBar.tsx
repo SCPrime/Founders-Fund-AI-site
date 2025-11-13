@@ -1,8 +1,8 @@
 'use client';
 
 import { useAllocationStore } from '@/store/allocationStore';
-import { useRef, useState, type ChangeEvent } from 'react';
 import Image from 'next/image';
+import { useRef, useState, type ChangeEvent } from 'react';
 
 export default function StatusBar() {
   const { recompute, saveSnapshot, lastComputeTime } = useAllocationStore();
@@ -49,7 +49,7 @@ export default function StatusBar() {
         method: 'POST',
         body: form,
       })
-        .then(async res => {
+        .then(async (res) => {
           const json = await res.json();
           if (!res.ok) {
             setOcrText(`OCR error: ${json?.error || res.statusText}`);
@@ -63,7 +63,7 @@ export default function StatusBar() {
             setProcessedImage(null);
           }
         })
-        .catch(err => {
+        .catch((err) => {
           console.error('OCR request failed', err);
           setOcrText('OCR request failed');
         });
@@ -119,12 +119,17 @@ export default function StatusBar() {
       <button className="btn" onClick={handleSaveSnap}>
         Save snapshot now
       </button>
+      <label htmlFor="statusbar-screenshot-input" style={{ display: 'none' }}>
+        Upload screenshot for OCR processing
+      </label>
       <input
+        id="statusbar-screenshot-input"
         type="file"
         accept="image/*"
         ref={fileRef}
         style={{ display: 'none' }}
         onChange={handleScreenshot}
+        aria-label="Upload screenshot for OCR processing"
       />
       <button className="btn" onClick={handleUploadClick}>
         Upload Screenshot
@@ -140,19 +145,31 @@ export default function StatusBar() {
             Copy
           </button>
           {processedImage && (
-            <a className="btn" href={processedImage} download="processed.png" style={{ marginLeft: '8px' }}>
+            <a
+              className="btn"
+              href={processedImage}
+              download="processed.png"
+              style={{ marginLeft: '8px' }}
+            >
               Download Processed Image
             </a>
           )}
         </div>
       )}
       {processedImage && (
-        <Image id="ocrCanvas" src={processedImage} alt="processed" width={160} height={120} style={{ marginLeft: 12, borderRadius: 6 }} />
+        <Image
+          id="ocrCanvas"
+          src={processedImage}
+          alt="processed"
+          width={160}
+          height={120}
+          style={{ marginLeft: 12, borderRadius: 6 }}
+        />
       )}
       <span className="small">{calcTime}</span>
-      {analysis && (
+      {analysis !== null && (
         <div className="analysis-preview">
-          <pre>{JSON.stringify(analysis, null, 2) as string}</pre>
+          <pre>{String(JSON.stringify(analysis as Record<string, unknown>, null, 2))}</pre>
           <button className="btn" onClick={handleConfirmSave}>
             Save Analysis
           </button>

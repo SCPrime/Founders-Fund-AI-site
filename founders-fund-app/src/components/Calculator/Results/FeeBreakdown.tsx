@@ -56,6 +56,7 @@ export default function FeeBreakdown() {
         let dollarDays = 0;
 
         contributions.forEach(contrib => {
+          if (!contrib.date) return;
           const contribDate = new Date(contrib.date);
           if (contribDate >= windowStart && contribDate <= windowEnd) {
             const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));
@@ -74,6 +75,7 @@ export default function FeeBreakdown() {
         let dollarDays = 0;
 
         contributions.forEach(contrib => {
+          if (!contrib.date) return;
           const contribDate = new Date(contrib.date);
           if (contribDate >= windowStart && contribDate <= windowEnd) {
             const daysInWindow = Math.max(0, Math.ceil((windowEnd.getTime() - contribDate.getTime()) / (1000 * 60 * 60 * 24)));

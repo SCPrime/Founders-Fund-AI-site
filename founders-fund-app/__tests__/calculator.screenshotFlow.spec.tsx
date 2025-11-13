@@ -1,8 +1,8 @@
-import React from 'react';
-import { renderWithProviders, resetPersist } from '@/test/test-utils';
-import { screen, act, waitFor } from '@testing-library/react';
 import AllocationDashboard from '@/components/Allocation/AllocationDashboard';
 import { useAllocationStore } from '@/store/allocationStore';
+import { renderWithProviders, resetPersist } from '@/test/test-utils';
+import { screen, waitFor } from '@testing-library/dom';
+import { act } from '@testing-library/react';
 
 beforeEach(() => {
   resetPersist();
@@ -23,7 +23,7 @@ test('saving a new screenshot populates wallet and recomputes', async () => {
       imageId: 'img-001',
       walletSize: 26005,
       unrealized: 52.3,
-      capturedAt: '2025-09-06T23:59:59Z'
+      capturedAt: '2025-09-06T23:59:59Z',
     });
   });
 
@@ -42,12 +42,14 @@ test('saving a new screenshot populates wallet and recomputes', async () => {
       imageId: 'img-001', // same
       walletSize: 99999,
       unrealized: 0,
-      capturedAt: '2025-09-06T23:59:59Z'
+      capturedAt: '2025-09-06T23:59:59Z',
     });
   });
 
   const stateAfter = useAllocationStore.getState();
-  expect(stateAfter.wallet.lastAppliedScreenshotId).toBe(stateBefore.wallet.lastAppliedScreenshotId);
+  expect(stateAfter.wallet.lastAppliedScreenshotId).toBe(
+    stateBefore.wallet.lastAppliedScreenshotId,
+  );
 
   // Wallet values should remain unchanged
   expect(screen.getByTestId('wallet-size-value')).toHaveTextContent('$26,005');

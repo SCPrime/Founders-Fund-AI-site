@@ -11,7 +11,7 @@ const redact = (s?: string) => (s ?? '').replace(/\b-?\d[\d,.\-]{2,}\b/g, '***')
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting - 10 requests per minute per IP
-    const headersList = headers();
+    const headersList = await headers();
     const ip = headersList.get('x-forwarded-for')?.split(',')[0] ??
               headersList.get('x-real-ip') ??
               'unknown';

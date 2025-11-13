@@ -21,6 +21,8 @@
     "analyze": "ANALYZE=true npm run build",
     "check-secrets": "node scripts/check-secrets.js",
     "console-scan": "npx tsx scripts/console-scan.ts",
+    "test:endpoints": "node scripts/test-endpoints.js",
+    "validate:endpoints": "npx tsx scripts/validate-endpoints.ts",
     "migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
@@ -79,6 +81,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@next/bundle-analyzer": "^15.5.4",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^16",
     "@testing-library/user-event": "^14.6.1",

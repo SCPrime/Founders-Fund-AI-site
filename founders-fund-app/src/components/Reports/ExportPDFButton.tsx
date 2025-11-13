@@ -5,12 +5,17 @@
 
 'use client';
 
+import type { AllocationOutputs, AllocationState } from '@/types/allocation';
+import type { ExportPDFRequestBody, ReportData } from '@/types/reports';
 import React, { useState } from 'react';
-import type { AllocationState, AllocationOutputs } from '@/types/allocation';
 
 interface ExportPDFButtonProps {
-  reportType: 'individual-investor' | 'portfolio-performance' | 'agent-performance' | 'agent-comparison';
-  data?: any;
+  reportType:
+    | 'individual-investor'
+    | 'portfolio-performance'
+    | 'agent-performance'
+    | 'agent-comparison';
+  data?: ReportData;
   allocationState?: AllocationState;
   allocationOutputs?: AllocationOutputs;
   investorName?: string;
@@ -39,7 +44,7 @@ export const ExportPDFButton: React.FC<ExportPDFButtonProps> = ({
     setError(null);
 
     try {
-      const requestBody: any = {
+      const requestBody: ExportPDFRequestBody = {
         reportType,
         filename,
       };

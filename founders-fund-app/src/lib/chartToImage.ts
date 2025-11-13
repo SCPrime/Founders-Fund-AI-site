@@ -4,7 +4,7 @@
  * Supports both client-side canvas rendering and server-side puppeteer
  */
 
-import type { ISeriesApi, IChartApi } from 'lightweight-charts';
+import type { IChartApi } from 'lightweight-charts';
 
 export interface ChartImageOptions {
   width?: number;
@@ -28,7 +28,7 @@ export interface ChartToImageResult {
  */
 export async function domElementToImage(
   element: HTMLElement,
-  options: ChartImageOptions = {}
+  options: ChartImageOptions = {},
 ): Promise<ChartToImageResult> {
   const {
     width = 1200,
@@ -93,14 +93,9 @@ export async function domElementToImage(
  */
 export async function lightweightChartToImage(
   chartApi: IChartApi,
-  options: ChartImageOptions = {}
+  options: ChartImageOptions = {},
 ): Promise<ChartToImageResult> {
-  const {
-    width = 1200,
-    height = 800,
-    format = 'png',
-    quality = 0.95,
-  } = options;
+  const { width = 1200, height = 800, format = 'png', quality = 0.95 } = options;
 
   // Get the chart's canvas element
   const chartContainer = (chartApi as any)._private__chartWidget?._element;
@@ -127,7 +122,7 @@ export async function lightweightChartToImage(
   }
 
   // Draw each canvas layer
-  canvases.forEach((canvas) => {
+  canvases.forEach((canvas: HTMLCanvasElement) => {
     ctx.drawImage(canvas, 0, 0, width, height);
   });
 
@@ -139,8 +134,8 @@ export async function lightweightChartToImage(
  */
 function canvasToImage(
   canvas: HTMLCanvasElement,
-  options: { format?: 'png' | 'jpeg'; quality?: number } = {}
-): ChartToImageResult {
+  options: { format?: 'png' | 'jpeg'; quality?: number } = {},
+): Promise<ChartToImageResult> {
   const { format = 'png', quality = 0.95 } = options;
   const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
 
@@ -148,7 +143,7 @@ function canvasToImage(
   const dataUrl = canvas.toDataURL(mimeType, quality);
 
   // Convert to blob
-  return new Promise((resolve, reject) => {
+  return new Promise<ChartToImageResult>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
@@ -165,7 +160,7 @@ function canvasToImage(
         });
       },
       mimeType,
-      quality
+      quality,
     );
   });
 }
@@ -177,7 +172,7 @@ async function drawSVGToCanvas(
   svg: SVGElement,
   ctx: CanvasRenderingContext2D,
   width: number,
-  height: number
+  height: number,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const svgData = new XMLSerializer().serializeToString(svg);
@@ -205,7 +200,7 @@ async function drawElementViaForeignObject(
   element: HTMLElement,
   ctx: CanvasRenderingContext2D,
   width: number,
-  height: number
+  height: number,
 ): Promise<void> {
   const data = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
@@ -221,7 +216,7 @@ async function drawElementViaForeignObject(
     new DOMParser().parseFromString(data, 'image/svg+xml').documentElement as any,
     ctx,
     width,
-    height
+    height,
   );
 }
 
@@ -231,16 +226,11 @@ async function drawElementViaForeignObject(
  */
 export async function renderChartServerSide(
   htmlContent: string,
-  options: ChartImageOptions = {}
+  options: ChartImageOptions = {},
 ): Promise<Buffer> {
   const puppeteer = await import('puppeteer');
 
-  const {
-    width = 1200,
-    height = 800,
-    format = 'png',
-    quality = 95,
-  } = options;
+  const { width = 1200, height = 800, format = 'png', quality = 95 } = options;
 
   const browser = await puppeteer.launch({
     headless: true,
@@ -258,7 +248,7 @@ export async function renderChartServerSide(
     });
 
     // Wait for charts to render
-    await page.waitForTimeout(1000);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Take screenshot
     const screenshot = await page.screenshot({
@@ -283,7 +273,7 @@ export function generateChartHTML(
     title?: string;
     subtitle?: string;
     theme?: 'light' | 'dark';
-  } = {}
+  } = {},
 ): string {
   const { title = 'Chart', subtitle = '', theme = 'light' } = options;
 
@@ -401,16 +391,11 @@ function generateCustomChartScript(): string {
 export async function captureChartFromURL(
   url: string,
   selector: string = 'body',
-  options: ChartImageOptions = {}
+  options: ChartImageOptions = {},
 ): Promise<Buffer> {
   const puppeteer = await import('puppeteer');
 
-  const {
-    width = 1200,
-    height = 800,
-    format = 'png',
-    quality = 95,
-  } = options;
+  const { width = 1200, height = 800, format = 'png', quality = 95 } = options;
 
   const browser = await puppeteer.launch({
     headless: true,

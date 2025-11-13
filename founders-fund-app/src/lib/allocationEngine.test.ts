@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { AllocationEngine } from './allocationEngine';
 import { AllocationState } from '@/types/allocation';
 import { getDefaultConstants, createSeedDataset } from '@/utils/allocationUtils';

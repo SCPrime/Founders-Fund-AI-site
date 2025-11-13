@@ -32,7 +32,7 @@ export default function ATRIndicator({
     const atrData = calculateATR(data, period);
 
     if (!atrSeriesRef.current) {
-      atrSeriesRef.current = chart.addLineSeries({
+      atrSeriesRef.current = (chart as any).addLineSeries({
         color: '#00C853',
         lineWidth: 2,
         title: `ATR ${period}`,
@@ -47,7 +47,9 @@ export default function ATRIndicator({
       },
     });
 
-    atrSeriesRef.current.setData(atrData);
+    if (atrSeriesRef.current) {
+      atrSeriesRef.current.setData(atrData);
+    }
 
     return () => {
       if (atrSeriesRef.current) {

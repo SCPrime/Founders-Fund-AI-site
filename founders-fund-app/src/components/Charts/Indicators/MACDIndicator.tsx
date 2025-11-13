@@ -49,7 +49,7 @@ export default function MACDIndicator({
 
     // Create MACD line series
     if (!macdLineRef.current) {
-      macdLineRef.current = chart.addLineSeries({
+      macdLineRef.current = (chart as any).addLineSeries({
         color: '#2962FF',
         lineWidth: 2,
         title: 'MACD',
@@ -59,7 +59,7 @@ export default function MACDIndicator({
 
     // Create Signal line series
     if (!signalLineRef.current) {
-      signalLineRef.current = chart.addLineSeries({
+      signalLineRef.current = (chart as any).addLineSeries({
         color: '#FF6D00',
         lineWidth: 2,
         title: 'Signal',
@@ -69,7 +69,7 @@ export default function MACDIndicator({
 
     // Create Histogram series
     if (!histogramRef.current) {
-      histogramRef.current = chart.addHistogramSeries({
+      histogramRef.current = (chart as any).addHistogramSeries({
         priceScaleId: 'macd',
       });
     }
@@ -83,9 +83,15 @@ export default function MACDIndicator({
     });
 
     // Set data
-    macdLineRef.current.setData(macdData.macd);
-    signalLineRef.current.setData(macdData.signal);
-    histogramRef.current.setData(macdData.histogram);
+    if (macdLineRef.current) {
+      macdLineRef.current.setData(macdData.macd);
+    }
+    if (signalLineRef.current) {
+      signalLineRef.current.setData(macdData.signal);
+    }
+    if (histogramRef.current) {
+      histogramRef.current.setData(macdData.histogram);
+    }
 
     return () => {
       if (macdLineRef.current) {

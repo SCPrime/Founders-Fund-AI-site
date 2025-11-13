@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           userId: true,
-          user: {
+          owner: {
             select: {
               id: true,
               name: true,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
             select: {
               agents: true,
               snapshots: true,
-              scans: true,
+              scanReports: true,
             },
           },
         },
@@ -79,15 +79,16 @@ export async function GET(request: NextRequest) {
     const recentAgents = await prisma.agent.findMany({
       where: userId ? { portfolio: { userId } } : {},
       take: 20,
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { deployed: 'desc' },
       select: {
         id: true,
         name: true,
         status: true,
+        deployed: true,
         portfolio: {
           select: {
             userId: true,
-            user: {
+            owner: {
               select: {
                 id: true,
                 name: true,
@@ -96,7 +97,6 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        updatedAt: true,
       },
     });
 
@@ -105,25 +105,25 @@ export async function GET(request: NextRequest) {
       ...portfolios.map((p) => ({
         type: 'PORTFOLIO_UPDATE' as const,
         userId: p.userId,
-        userName: p.user?.name || 'Unknown',
-        userEmail: p.user?.email || 'Unknown',
+        userName: p.owner?.name || 'Unknown',
+        userEmail: p.owner?.email || 'Unknown',
         resourceId: p.id,
         resourceType: 'portfolio',
         timestamp: p.updatedAt.toISOString(),
         metadata: {
           agentCount: p._count.agents,
           snapshotCount: p._count.snapshots,
-          scanCount: p._count.scans,
+          scanCount: p._count.scanReports,
         },
       })),
       ...recentAgents.map((a) => ({
         type: 'AGENT_UPDATE' as const,
         userId: a.portfolio?.userId || null,
-        userName: a.portfolio?.user?.name || 'Unknown',
-        userEmail: a.portfolio?.user?.email || 'Unknown',
+        userName: a.portfolio?.owner?.name || 'Unknown',
+        userEmail: a.portfolio?.owner?.email || 'Unknown',
         resourceId: a.id,
         resourceType: 'agent',
-        timestamp: a.updatedAt.toISOString(),
+        timestamp: a.deployed.toISOString(),
         metadata: {
           agentName: a.name,
           status: a.status,

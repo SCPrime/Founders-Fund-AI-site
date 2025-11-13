@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useFundStore } from '@/store/fundStore';
 import { useOCR } from '@/context/OCRContext';
 import { aiTools, executeAITool } from '@/lib/aiTools';
+import { useFundStore } from '@/store/fundStore';
+import { useEffect, useRef, useState } from 'react';
+import OCRChatInterface from './OCRChatInterface';
+import OCRProcessor from './OCRProcessor';
 import PredictiveAnalytics from './PredictiveAnalytics';
 import SmartValidation from './SmartValidation';
-import OCRProcessor from './OCRProcessor';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  imageUrl?: string;
   timestamp: Date;
 }
 
@@ -20,15 +22,57 @@ interface Contribution {
   amount: number;
 }
 
+interface ValidationIssue {
+  type: 'error' | 'warning' | 'info';
+  message: string;
+}
+
+interface SimulationResult {
+  currentSummary: {
+    totalNetProfit: number;
+    totalContributions: number;
+    [key: string]: unknown;
+  };
+  simulatedSummary: {
+    totalNetProfit: number;
+    totalContributions: number;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface SnapshotData {
+  contributions: Contribution[];
+  settings: {
+    walletSize: number;
+    realizedProfit: number;
+    moonbagUnreal: number;
+    mgmtFeePct: number;
+    entryFeePct: number;
+    winStart: string;
+    winEnd: string;
+    [key: string]: unknown;
+  };
+  results: any[];
+  summary: {
+    totalNetProfit: number;
+    totalFees: number;
+    [key: string]: unknown;
+  };
+  validationIssues: ValidationIssue[];
+  [key: string]: unknown;
+}
 
 export default function AIAssistant() {
+  const [useChatInterface, setUseChatInterface] = useState(true); // Default to new chat interface
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Hello! I\'m your AI assistant for Founders Fund calculations. I can help you:\n\n• Analyze fund snapshots and performance\n• Run what-if scenarios with simulations\n• Validate fund data and suggest fixes\n• Auto-populate contribution tables from OCR\n• Provide detailed participant analysis\n\nI have access to powerful AI tools:\n🔍 **get_snapshot** - Get complete fund state\n🎯 **simulate** - Run what-if scenarios\n✅ **validate_fund** - Check for issues\n🔧 **quick_fix** - Auto-fix common problems\n👤 **analyze_participant** - Deep participant analysis\n⚡ **apply_changes** - Apply approved changes\n\nHow can I assist you today?',
-      timestamp: new Date()
-    }
+      content:
+        "Hello! I'm your AI assistant for Founders Fund calculations. I can help you:\n\n• Analyze fund snapshots and performance\n• Run what-if scenarios with simulations\n• Validate fund data and suggest fixes\n• Auto-populate contribution tables from OCR\n• Provide detailed participant analysis\n\nI have access to powerful AI tools:\n🔍 **get_snapshot** - Get complete fund state\n🎯 **simulate** - Run what-if scenarios\n✅ **validate_fund** - Check for issues\n🔧 **quick_fix** - Auto-fix common problems\n👤 **analyze_participant** - Deep participant analysis\n⚡ **apply_changes** - Apply approved changes\n\nHow can I assist you today?",
+      timestamp: new Date(),
+    },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,22 +93,21 @@ export default function AIAssistant() {
       id: `${role}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role,
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
   };
-
 
   const analyzeWithAI = async (text: string, context?: string): Promise<string> => {
     try {
       // Try to execute AI tools locally first
       if (context === 'get_snapshot') {
-        const snapshot = executeAITool('get_snapshot');
+        const snapshot = executeAITool('get_snapshot') as SnapshotData;
         return formatSnapshotResponse(snapshot);
       }
 
       if (context === 'validate_fund') {
-        const issues = executeAITool('validate_fund');
+        const issues = executeAITool('validate_fund') as ValidationIssue[];
         return formatValidationResponse(issues);
       }
 
@@ -76,11 +119,11 @@ export default function AIAssistant() {
           text,
           context: context || 'user_query',
           current_snapshot: executeAITool('get_snapshot'),
-          available_tools: aiTools.map(tool => ({
+          available_tools: aiTools.map((tool) => ({
             name: tool.name,
-            description: tool.description
-          }))
-        })
+            description: tool.description,
+          })),
+        }),
       });
 
       if (!response.ok) {
@@ -101,7 +144,7 @@ export default function AIAssistant() {
     }
   };
 
-  const formatSnapshotResponse = (snapshot: { contributions: Contribution[]; settings: Record<string, unknown>; [key: string]: unknown }): string => {
+  const formatSnapshotResponse = (snapshot: SnapshotData): string => {
     let response = '📊 **Fund Snapshot**\n\n';
 
     response += `**Settings:**\n`;
@@ -113,7 +156,10 @@ export default function AIAssistant() {
     response += `• Window: ${snapshot.settings.winStart} to ${snapshot.settings.winEnd}\n\n`;
 
     response += `**Contributions:** ${snapshot.contributions.length} entries\n`;
-    const totalContributions = snapshot.contributions.reduce((sum: number, c: Contribution) => sum + c.amount, 0);
+    const totalContributions = snapshot.contributions.reduce(
+      (sum: number, c: Contribution) => sum + c.amount,
+      0,
+    );
     response += `• Total Amount: $${totalContributions.toLocaleString()}\n`;
 
     if (snapshot.results.length > 0) {
@@ -127,7 +173,7 @@ export default function AIAssistant() {
     return response;
   };
 
-  const formatValidationResponse = (issues: string[]): string => {
+  const formatValidationResponse = (issues: ValidationIssue[]): string => {
     let response = '✅ **Fund Validation**\n\n';
 
     if (issues.length === 0) {
@@ -135,13 +181,13 @@ export default function AIAssistant() {
       return response;
     }
 
-    const errors = issues.filter(i => i.type === 'error');
-    const warnings = issues.filter(i => i.type === 'warning');
-    const infos = issues.filter(i => i.type === 'info');
+    const errors = issues.filter((i) => i.type === 'error');
+    const warnings = issues.filter((i) => i.type === 'warning');
+    const infos = issues.filter((i) => i.type === 'info');
 
     if (errors.length > 0) {
       response += `❌ **${errors.length} Error${errors.length > 1 ? 's' : ''}:**\n`;
-      errors.forEach(issue => {
+      errors.forEach((issue) => {
         response += `• ${issue.message}\n`;
       });
       response += '\n';
@@ -149,7 +195,7 @@ export default function AIAssistant() {
 
     if (warnings.length > 0) {
       response += `⚠️ **${warnings.length} Warning${warnings.length > 1 ? 's' : ''}:**\n`;
-      warnings.forEach(issue => {
+      warnings.forEach((issue) => {
         response += `• ${issue.message}\n`;
       });
       response += '\n';
@@ -157,14 +203,13 @@ export default function AIAssistant() {
 
     if (infos.length > 0) {
       response += `ℹ️ **${infos.length} Info:**\n`;
-      infos.forEach(issue => {
+      infos.forEach((issue) => {
         response += `• ${issue.message}\n`;
       });
     }
 
     return response;
   };
-
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -178,7 +223,10 @@ export default function AIAssistant() {
       const analysis = await analyzeWithAI(userMessage, 'user_query');
       addMessage('assistant', analysis);
     } catch (error) {
-      addMessage('assistant', `❌ Error: ${error instanceof Error ? error.message : 'Failed to process your request'}`);
+      addMessage(
+        'assistant',
+        `❌ Error: ${error instanceof Error ? error.message : 'Failed to process your request'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -199,7 +247,10 @@ export default function AIAssistant() {
       const analysis = await analyzeWithAI('', 'get_snapshot');
       addMessage('assistant', analysis);
     } catch (error) {
-      addMessage('assistant', `❌ Snapshot error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addMessage(
+        'assistant',
+        `❌ Snapshot error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +264,10 @@ export default function AIAssistant() {
       const analysis = await analyzeWithAI('', 'validate_fund');
       addMessage('assistant', analysis);
     } catch (error) {
-      addMessage('assistant', `❌ Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addMessage(
+        'assistant',
+        `❌ Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -234,11 +288,11 @@ export default function AIAssistant() {
               date: '2025-09-15',
               amount: 10000,
               rule: 'net',
-              cls: 'investor'
-            }
-          }
-        ]
-      });
+              cls: 'investor',
+            },
+          },
+        ],
+      }) as SimulationResult;
 
       let response = '🎯 **Simulation Results**\n\n';
       response += `**Current Results:**\n`;
@@ -249,12 +303,16 @@ export default function AIAssistant() {
       response += `• Total Net Profit: $${simulation.simulatedSummary.totalNetProfit.toLocaleString()}\n`;
       response += `• Total Contributions: $${simulation.simulatedSummary.totalContributions.toLocaleString()}\n\n`;
 
-      const profitDiff = simulation.simulatedSummary.totalNetProfit - simulation.currentSummary.totalNetProfit;
+      const profitDiff =
+        simulation.simulatedSummary.totalNetProfit - simulation.currentSummary.totalNetProfit;
       response += `**Impact:** ${profitDiff >= 0 ? '+' : ''}$${profitDiff.toLocaleString()} net profit change`;
 
       addMessage('assistant', response);
     } catch (error) {
-      addMessage('assistant', `❌ Simulation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addMessage(
+        'assistant',
+        `❌ Simulation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -262,7 +320,10 @@ export default function AIAssistant() {
 
   const pushOCRToCalculator = () => {
     if (!ocrData.extractedData) {
-      addMessage('assistant', '❌ No OCR data available. Please upload and process an image first.');
+      addMessage(
+        'assistant',
+        '❌ No OCR data available. Please upload and process an image first.',
+      );
       return;
     }
 
@@ -274,12 +335,16 @@ export default function AIAssistant() {
       // Update fund store settings
       if (data.settings) {
         const settingsUpdates: Record<string, number> = {};
-        if (data.settings.walletSize) settingsUpdates.walletSize = data.settings.walletSize;
-        if (data.settings.realizedProfit) settingsUpdates.realizedProfit = data.settings.realizedProfit;
-        if (data.settings.moonbagUnreal) settingsUpdates.moonbagUnreal = data.settings.moonbagUnreal;
-        if (data.settings.moonbagFounderPct) settingsUpdates.moonbagFounderPct = data.settings.moonbagFounderPct;
-        if (data.settings.mgmtFeePct) settingsUpdates.mgmtFeePct = data.settings.mgmtFeePct;
-        if (data.settings.entryFeePct) settingsUpdates.entryFeePct = data.settings.entryFeePct;
+        if (data.settings.walletSize) settingsUpdates.walletSize = Number(data.settings.walletSize);
+        if (data.settings.realizedProfit)
+          settingsUpdates.realizedProfit = Number(data.settings.realizedProfit);
+        if (data.settings.moonbagUnreal)
+          settingsUpdates.moonbagUnreal = Number(data.settings.moonbagUnreal);
+        if (data.settings.moonbagFounderPct)
+          settingsUpdates.moonbagFounderPct = Number(data.settings.moonbagFounderPct);
+        if (data.settings.mgmtFeePct) settingsUpdates.mgmtFeePct = Number(data.settings.mgmtFeePct);
+        if (data.settings.entryFeePct)
+          settingsUpdates.entryFeePct = Number(data.settings.entryFeePct);
 
         if (Object.keys(settingsUpdates).length > 0) {
           updateSettings(settingsUpdates);
@@ -289,37 +354,45 @@ export default function AIAssistant() {
       // Combine founders and investors for the table
       const combinedData = [];
       if (data.founders) {
-        combinedData.push(...data.founders.map((f: Contribution) => ({
-          name: f.name || 'Founder',
-          date: f.date,
-          amount: f.amount,
-          rule: f.rule || 'net',
-          cls: 'founder'
-        })));
+        combinedData.push(
+          ...data.founders.map((f: any) => ({
+            name: f.name || 'Founder',
+            date: f.date,
+            amount: f.amount,
+            rule: f.rule || 'net',
+            cls: 'founder',
+          })),
+        );
       }
       if (data.investors) {
-        combinedData.push(...data.investors.map((i: Contribution) => ({
-          name: i.name || 'Investor',
-          date: i.date,
-          amount: i.amount,
-          rule: i.rule || 'net',
-          cls: 'investor'
-        })));
+        combinedData.push(
+          ...data.investors.map((i: any) => ({
+            name: i.name || 'Investor',
+            date: i.date,
+            amount: i.amount,
+            rule: i.rule || 'net',
+            cls: 'investor',
+          })),
+        );
       }
 
       // Push to fund store using populateContributions
       if (combinedData.length > 0) {
-        populateContributions(combinedData);
+        populateContributions(combinedData as any);
       }
 
       let message = '✅ **OCR Data Successfully Pushed to Fund Store!**\n\n';
 
       if (data.settings) {
         message += '⚙️ **Updated Settings:**\n';
-        if (data.settings.walletSize) message += `💰 Wallet Size: $${data.settings.walletSize.toLocaleString()}\n`;
-        if (data.settings.realizedProfit) message += `📈 Realized Profit: $${data.settings.realizedProfit.toLocaleString()}\n`;
-        if (data.settings.moonbagUnreal) message += `🌙 Moonbag: $${data.settings.moonbagUnreal.toLocaleString()}\n`;
-        if (data.settings.mgmtFeePct) message += `💼 Management Fee: ${data.settings.mgmtFeePct}%\n`;
+        if (data.settings.walletSize)
+          message += `💰 Wallet Size: $${data.settings.walletSize.toLocaleString()}\n`;
+        if (data.settings.realizedProfit)
+          message += `📈 Realized Profit: $${data.settings.realizedProfit.toLocaleString()}\n`;
+        if (data.settings.moonbagUnreal)
+          message += `🌙 Moonbag: $${data.settings.moonbagUnreal.toLocaleString()}\n`;
+        if (data.settings.mgmtFeePct)
+          message += `💼 Management Fee: ${data.settings.mgmtFeePct}%\n`;
         if (data.settings.entryFeePct) message += `💼 Entry Fee: ${data.settings.entryFeePct}%\n`;
       }
 
@@ -327,39 +400,97 @@ export default function AIAssistant() {
         message += `\n👥 **Populated ${combinedData.length} entries** in the Founders & Investors table.\n`;
       }
 
-      message += '\n🔄 **Switch to the Calculator tab** to see all the updated data and automatic calculations!';
+      message +=
+        '\n🔄 **Switch to the Calculator tab** to see all the updated data and automatic calculations!';
 
       addMessage('assistant', message);
     } catch (error) {
-      addMessage('assistant', `❌ Error pushing data to fund store: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      addMessage(
+        'assistant',
+        `❌ Error pushing data to fund store: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   };
 
+  // If using new chat interface, render it
+  if (useChatInterface) {
+    return (
+      <div
+        className="panel"
+        style={{ minHeight: '600px', display: 'flex', flexDirection: 'column' }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px',
+          }}
+        >
+          <h2>AI Assistant</h2>
+          <button
+            onClick={() => setUseChatInterface(false)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '12px',
+              backgroundColor: 'var(--panel)',
+              color: 'var(--text)',
+              border: '1px solid var(--line)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+            }}
+            title="Switch to classic interface"
+          >
+            🔄 Classic Mode
+          </button>
+        </div>
+        <OCRChatInterface
+          onExtractComplete={(data) => {
+            console.log('OCR Chat extraction complete:', data);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="panel" style={{ minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
-      <h2>AI Assistant</h2>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+        }}
+      >
+        <h2>AI Assistant</h2>
+        <button
+          onClick={() => setUseChatInterface(true)}
+          style={{
+            padding: '6px 12px',
+            fontSize: '12px',
+            backgroundColor: 'var(--accent)',
+            color: 'var(--ink)',
+            border: '1px solid var(--accent)',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+          }}
+          title="Switch to new chat interface with image upload"
+        >
+          💬 Chat Mode
+        </button>
+      </div>
 
       {/* Quick Actions */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <button
-          className="btn"
-          onClick={getSnapshot}
-          disabled={isLoading}
-        >
+        <button className="btn" onClick={getSnapshot} disabled={isLoading}>
           📊 Get Snapshot
         </button>
-        <button
-          className="btn"
-          onClick={validateCurrentData}
-          disabled={isLoading}
-        >
+        <button className="btn" onClick={validateCurrentData} disabled={isLoading}>
           🔍 Validate Data
         </button>
-        <button
-          className="btn"
-          onClick={runSimulation}
-          disabled={isLoading}
-        >
+        <button className="btn" onClick={runSimulation} disabled={isLoading}>
           🎯 Run Simulation
         </button>
         {ocrData.extractedData && (
@@ -373,7 +504,7 @@ export default function AIAssistant() {
               color: 'var(--text)',
               border: '1px solid var(--good)',
               borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer'
+              cursor: isLoading ? 'not-allowed' : 'pointer',
             }}
           >
             📊 Push OCR to Fund Store
@@ -384,62 +515,105 @@ export default function AIAssistant() {
       {/* OCR Processor */}
       <OCRProcessor
         onOCRComplete={(extractedData) => {
-          addMessage('assistant', '🎯 OCR Processing Complete! Extracted financial data from your image.');
+          addMessage(
+            'assistant',
+            '🎯 OCR Processing Complete! Extracted financial data from your image.',
+          );
 
           // Prepare contributions for fund store
           const combinedData = [];
 
           if (extractedData.founders && extractedData.founders.length > 0) {
-            combinedData.push(...extractedData.founders.map((f: Contribution) => ({
-              name: f.name || 'Founder',
-              date: f.date,
-              amount: f.amount,
-              rule: f.rule || 'net',
-              cls: 'founder'
-            })));
-            addMessage('assistant', `✅ Processed ${extractedData.founders.length} founder entries!`);
+            combinedData.push(
+              ...extractedData.founders.map((f: any) => ({
+                name: f.name || 'Founder',
+                date: f.date,
+                amount: f.amount,
+                rule: f.rule || 'net',
+                cls: 'founder',
+              })),
+            );
+            addMessage(
+              'assistant',
+              `✅ Processed ${extractedData.founders.length} founder entries!`,
+            );
           }
 
           if (extractedData.investors && extractedData.investors.length > 0) {
-            combinedData.push(...extractedData.investors.map((i: Contribution) => ({
-              name: i.name || 'Investor',
-              date: i.date,
-              amount: i.amount,
-              rule: i.rule || 'net',
-              cls: 'investor'
-            })));
-            addMessage('assistant', `✅ Processed ${extractedData.investors.length} investor entries!`);
+            combinedData.push(
+              ...extractedData.investors.map((i: any) => ({
+                name: i.name || 'Investor',
+                date: i.date,
+                amount: i.amount,
+                rule: i.rule || 'net',
+                cls: 'investor',
+              })),
+            );
+            addMessage(
+              'assistant',
+              `✅ Processed ${extractedData.investors.length} investor entries!`,
+            );
           }
 
           // Auto-populate contributions to fund store
           if (combinedData.length > 0) {
-            populateContributions(combinedData);
+            populateContributions(combinedData as any);
           }
 
           if (extractedData.settings) {
             // Update fund store settings with proper validation
             const settingsUpdates: Record<string, number> = {};
 
-            if (extractedData.settings.walletSize && extractedData.settings.walletSize > 0) {
-              settingsUpdates.walletSize = Math.round(extractedData.settings.walletSize);
+            if (
+              extractedData.settings.walletSize &&
+              Number(extractedData.settings.walletSize) > 0
+            ) {
+              settingsUpdates.walletSize = Math.round(Number(extractedData.settings.walletSize));
             }
-            if (extractedData.settings.realizedProfit && extractedData.settings.realizedProfit > 0) {
-              settingsUpdates.realizedProfit = Math.round(extractedData.settings.realizedProfit);
+            if (
+              extractedData.settings.realizedProfit &&
+              Number(extractedData.settings.realizedProfit) > 0
+            ) {
+              settingsUpdates.realizedProfit = Math.round(
+                Number(extractedData.settings.realizedProfit),
+              );
             }
-            if (extractedData.settings.unrealizedProfit && extractedData.settings.unrealizedProfit > 0) {
-              settingsUpdates.moonbagUnreal = Math.round(extractedData.settings.unrealizedProfit);
+            if (
+              extractedData.settings.unrealizedProfit &&
+              Number(extractedData.settings.unrealizedProfit) > 0
+            ) {
+              settingsUpdates.moonbagUnreal = Math.round(
+                Number(extractedData.settings.unrealizedProfit),
+              );
             }
-            if (extractedData.settings.moonbagUnreal && extractedData.settings.moonbagUnreal > 0) {
-              settingsUpdates.moonbagUnreal = Math.round(extractedData.settings.moonbagUnreal);
+            if (
+              extractedData.settings.moonbagUnreal &&
+              Number(extractedData.settings.moonbagUnreal) > 0
+            ) {
+              settingsUpdates.moonbagUnreal = Math.round(
+                Number(extractedData.settings.moonbagUnreal),
+              );
             }
-            if (extractedData.settings.moonbagFounderPct && extractedData.settings.moonbagFounderPct >= 0 && extractedData.settings.moonbagFounderPct <= 100) {
-              settingsUpdates.moonbagFounderPct = extractedData.settings.moonbagFounderPct;
+            if (
+              extractedData.settings.moonbagFounderPct &&
+              Number(extractedData.settings.moonbagFounderPct) >= 0 &&
+              Number(extractedData.settings.moonbagFounderPct) <= 100
+            ) {
+              settingsUpdates.moonbagFounderPct = Number(extractedData.settings.moonbagFounderPct);
             }
-            if (extractedData.settings.mgmtFeePct && extractedData.settings.mgmtFeePct >= 0 && extractedData.settings.mgmtFeePct <= 100) {
-              settingsUpdates.mgmtFeePct = extractedData.settings.mgmtFeePct;
+            if (
+              extractedData.settings.mgmtFeePct &&
+              Number(extractedData.settings.mgmtFeePct) >= 0 &&
+              Number(extractedData.settings.mgmtFeePct) <= 100
+            ) {
+              settingsUpdates.mgmtFeePct = Number(extractedData.settings.mgmtFeePct);
             }
-            if (extractedData.settings.entryFeePct && extractedData.settings.entryFeePct >= 0 && extractedData.settings.entryFeePct <= 100) {
-              settingsUpdates.entryFeePct = extractedData.settings.entryFeePct;
+            if (
+              extractedData.settings.entryFeePct &&
+              Number(extractedData.settings.entryFeePct) >= 0 &&
+              Number(extractedData.settings.entryFeePct) <= 100
+            ) {
+              settingsUpdates.entryFeePct = Number(extractedData.settings.entryFeePct);
             }
 
             if (Object.keys(settingsUpdates).length > 0) {
@@ -469,14 +643,17 @@ export default function AIAssistant() {
               }
             }
             if (extractedData.settings.transactionStats) {
-              const stats = extractedData.settings.transactionStats;
+              const stats = extractedData.settings.transactionStats as any;
               settingsMessage += `📊 **Trading Performance:** ${stats.winning}W/${stats.losing}L (${stats.winRate.toFixed(1)}% win rate)\n`;
             }
 
             addMessage('assistant', settingsMessage);
           }
 
-          addMessage('assistant', '🚀 **All Done!** Your financial document has been processed and the data has been automatically populated into the fund store with real-time calculations. Check the main Calculator tab to see the results.');
+          addMessage(
+            'assistant',
+            '🚀 **All Done!** Your financial document has been processed and the data has been automatically populated into the fund store with real-time calculations. Check the main Calculator tab to see the results.',
+          );
         }}
         onError={(error) => {
           addMessage('assistant', `❌ OCR Error: ${error}`);
@@ -485,14 +662,23 @@ export default function AIAssistant() {
 
       {/* Extracted Data Display */}
       {ocrData.extractedData && (
-        <div style={{
-          marginBottom: '16px',
-          padding: '16px',
-          backgroundColor: 'var(--panel)',
-          border: '2px solid var(--accent)',
-          borderRadius: '8px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '16px',
+            backgroundColor: 'var(--panel)',
+            border: '2px solid var(--accent)',
+            borderRadius: '8px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+            }}
+          >
             <h3 style={{ margin: 0, color: 'var(--accent)' }}>📊 Extracted Data Ready</h3>
             <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
               Confidence: {ocrData.confidence || 0}%
@@ -500,36 +686,46 @@ export default function AIAssistant() {
           </div>
 
           {/* Data Summary */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-            marginBottom: '16px'
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+              marginBottom: '16px',
+            }}
+          >
             {Object.entries(ocrData.extractedData || {}).map(([key, value]) => (
-              <div key={key} style={{
-                backgroundColor: 'var(--ink)',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid var(--line)'
-              }}>
-                <div style={{
-                  fontSize: '10px',
-                  color: 'var(--muted)',
-                  textTransform: 'uppercase',
-                  marginBottom: '4px'
-                }}>
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+              <div
+                key={key}
+                style={{
+                  backgroundColor: 'var(--ink)',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--muted)',
+                    textTransform: 'uppercase',
+                    marginBottom: '4px',
+                  }}
+                >
+                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
                 </div>
-                <div style={{
-                  fontSize: '14px',
-                  color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
-                  fontWeight: 'bold'
-                }}>
-                  {value !== null && value !== undefined ?
-                    (typeof value === 'number' && (key.includes('Value') || key.includes('PNL') || key.includes('Balance')) ?
-                      `$${value.toLocaleString()}` :
-                      String(value))
+                <div
+                  style={{
+                    fontSize: '14px',
+                    color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {value !== null && value !== undefined
+                    ? typeof value === 'number' &&
+                      (key.includes('Value') || key.includes('PNL') || key.includes('Balance'))
+                      ? `$${value.toLocaleString()}`
+                      : String(value)
                     : 'Not Found'}
                 </div>
               </div>
@@ -554,64 +750,91 @@ export default function AIAssistant() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '8px',
             }}
           >
-            {isLoading ? '⏳ Pushing to Fund Store...' : '📊 Push Data to Calculator & Verify Calculations'}
+            {isLoading
+              ? '⏳ Pushing to Fund Store...'
+              : '📊 Push Data to Calculator & Verify Calculations'}
           </button>
 
-          <div style={{
-            marginTop: '8px',
-            fontSize: '12px',
-            color: 'var(--muted)',
-            textAlign: 'center'
-          }}>
+          <div
+            style={{
+              marginTop: '8px',
+              fontSize: '12px',
+              color: 'var(--muted)',
+              textAlign: 'center',
+            }}
+          >
             This will populate the calculator tables and trigger real-time calculations
           </div>
         </div>
       )}
 
       {/* Messages Area */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        border: '1px solid var(--line)',
-        borderRadius: '8px',
-        padding: '12px',
-        marginBottom: '12px',
-        backgroundColor: 'var(--ink)'
-      }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          border: '1px solid var(--line)',
+          borderRadius: '8px',
+          padding: '12px',
+          marginBottom: '12px',
+          backgroundColor: 'var(--ink)',
+        }}
+      >
         {messages.map((message) => (
-          <div key={message.id} style={{
-            marginBottom: '12px',
-            padding: '8px',
-            borderRadius: '6px',
-            backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
-            border: message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)'
-          }}>
-            <div style={{
-              fontSize: '11px',
-              color: 'var(--muted)',
-              marginBottom: '4px',
-              fontWeight: 'bold'
-            }}>
+          <div
+            key={message.id}
+            style={{
+              marginBottom: '12px',
+              padding: '8px',
+              borderRadius: '6px',
+              backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
+              border: message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                color: 'var(--muted)',
+                marginBottom: '4px',
+                fontWeight: 'bold',
+              }}
+            >
               {message.role === 'user' ? '👤 You' : '🤖 AI Assistant'}
               <span style={{ float: 'right', fontWeight: 'normal' }}>
                 {message.timestamp.toLocaleTimeString()}
               </span>
             </div>
+            {message.imageUrl && (
+              <div style={{ marginBottom: '8px' }}>
+                <img
+                  src={message.imageUrl}
+                  alt="Uploaded image"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                  }}
+                />
+              </div>
+            )}
             <div style={{ whiteSpace: 'pre-line', fontSize: '13px', color: 'var(--text)' }}>
               {message.content}
             </div>
           </div>
         ))}
         {isLoading && (
-          <div style={{
-            padding: '8px',
-            fontStyle: 'italic',
-            color: 'var(--muted)',
-            textAlign: 'center'
-          }}>
+          <div
+            style={{
+              padding: '8px',
+              fontStyle: 'italic',
+              color: 'var(--muted)',
+              textAlign: 'center',
+            }}
+          >
             🤖 AI is thinking...
           </div>
         )}
@@ -624,13 +847,13 @@ export default function AIAssistant() {
       {/* Predictive Analytics Section */}
       <PredictiveAnalytics />
 
-      {/* Input Area */}
-      <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Legacy Input Area (kept for backward compatibility) */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask me anything about your fund calculations..."
+          placeholder="Or type a message here..."
           disabled={isLoading}
           style={{
             flex: 1,
@@ -641,7 +864,7 @@ export default function AIAssistant() {
             border: '1px solid var(--line)',
             borderRadius: '8px',
             backgroundColor: 'var(--ink)',
-            color: 'var(--text)'
+            color: 'var(--text)',
           }}
         />
         <button
@@ -652,7 +875,7 @@ export default function AIAssistant() {
             backgroundColor: input.trim() && !isLoading ? 'var(--accent)' : 'var(--panel)',
             color: input.trim() && !isLoading ? 'var(--ink)' : 'var(--muted)',
             border: `1px solid ${input.trim() && !isLoading ? 'var(--accent)' : 'var(--line)'}`,
-            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed'
+            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
           }}
         >
           Send

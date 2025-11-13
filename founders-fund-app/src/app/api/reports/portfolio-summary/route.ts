@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const pdf = generatePortfolioReportFromAllocation(allocationState, allocationOutputs);
 
     // Get PDF as blob
-    const pdfBlob = pdf.getBlob();
+    const pdfBlob = pdf.output('blob');
     const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
 
     // Generate filename
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
                 window: allocationState.window,
                 totalProfit: allocationOutputs.profitTotal,
                 participantCount: Object.keys(allocationOutputs.dollarDays.investors).length + 1,
-              },
+              } as any,
             },
           });
 

@@ -47,7 +47,7 @@ export default function BollingerBands({
 
     // Create series
     if (!upperBandRef.current) {
-      upperBandRef.current = chart.addLineSeries({
+      upperBandRef.current = (chart as any).addLineSeries({
         color: 'rgba(41, 98, 255, 0.5)',
         lineWidth: 1,
         title: 'BB Upper',
@@ -55,7 +55,7 @@ export default function BollingerBands({
     }
 
     if (!middleBandRef.current) {
-      middleBandRef.current = chart.addLineSeries({
+      middleBandRef.current = (chart as any).addLineSeries({
         color: 'rgba(41, 98, 255, 0.8)',
         lineWidth: 2,
         title: `BB Middle (${period})`,
@@ -63,7 +63,7 @@ export default function BollingerBands({
     }
 
     if (!lowerBandRef.current) {
-      lowerBandRef.current = chart.addLineSeries({
+      lowerBandRef.current = (chart as any).addLineSeries({
         color: 'rgba(41, 98, 255, 0.5)',
         lineWidth: 1,
         title: 'BB Lower',
@@ -71,9 +71,15 @@ export default function BollingerBands({
     }
 
     // Set data
-    upperBandRef.current.setData(bbData.upper);
-    middleBandRef.current.setData(bbData.middle);
-    lowerBandRef.current.setData(bbData.lower);
+    if (upperBandRef.current) {
+      upperBandRef.current.setData(bbData.upper);
+    }
+    if (middleBandRef.current) {
+      middleBandRef.current.setData(bbData.middle);
+    }
+    if (lowerBandRef.current) {
+      lowerBandRef.current.setData(bbData.lower);
+    }
 
     return () => {
       if (upperBandRef.current) {

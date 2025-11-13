@@ -11,11 +11,13 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function PATCH(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     // Require ADMIN role
     const { session, error } = await requireRole('ADMIN');
     if (error) return error;
+
+    const { userId } = await params;
 
     const body = await request.json();
     const { email, name, role, password } = body;
@@ -40,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
     });
 
     if (!existingUser) {
@@ -48,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
     }
 
     // Prevent admin from removing their own admin role
-    if (session!.user.id === params.userId && role && role !== 'ADMIN') {
+    if (session!.user.id === userId && role && role !== 'ADMIN') {
       return NextResponse.json({ error: 'Cannot remove your own admin role' }, { status: 400 });
     }
 
@@ -64,7 +66,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
+      where: { id: userId },
       data: updateData,
       select: {
         id: true,
@@ -86,20 +88,22 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     // Require ADMIN role
     const { session, error } = await requireRole('ADMIN');
     if (error) return error;
 
+    const { userId } = await params;
+
     // Prevent admin from deleting themselves
-    if (session!.user.id === params.userId) {
+    if (session!.user.id === userId) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
     });
 
     if (!existingUser) {
@@ -108,7 +112,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { userI
 
     // Delete user (cascade will handle related records)
     await prisma.user.delete({
-      where: { id: params.userId },
+      where: { id: userId },
     });
 
     return NextResponse.json({

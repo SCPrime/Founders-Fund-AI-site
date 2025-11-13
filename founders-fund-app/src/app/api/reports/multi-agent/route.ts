@@ -3,10 +3,10 @@
  * Generate Multi-Agent Consolidated PDF Report (10-15 pages)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { PDFGenerator } from '@/lib/pdfGenerator';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,15 +75,9 @@ export async function POST(request: NextRequest) {
     // Calculate agent metrics
     const agentMetrics = portfolio.agents.map((agent) => {
       const agentTrades = agent.trades;
-      const totalPnl = agentTrades.reduce(
-        (sum, t) => sum + (t.pnl ? Number(t.pnl) : 0),
-        0
-      );
-      const profitableTrades = agentTrades.filter(
-        (t) => t.pnl && Number(t.pnl) > 0
-      ).length;
-      const winRate =
-        agentTrades.length > 0 ? (profitableTrades / agentTrades.length) * 100 : 0;
+      const totalPnl = agentTrades.reduce((sum, t) => sum + (t.pnl ? Number(t.pnl) : 0), 0);
+      const profitableTrades = agentTrades.filter((t) => t.pnl && Number(t.pnl) > 0).length;
+      const winRate = agentTrades.length > 0 ? (profitableTrades / agentTrades.length) * 100 : 0;
 
       const latestPerf = agent.performance[0];
       const currentValue = latestPerf ? Number(latestPerf.totalValue) : Number(agent.allocation);
@@ -124,11 +118,11 @@ export async function POST(request: NextRequest) {
       agents: agentMetrics.sort((a, b) => b.totalPnl - a.totalPnl), // Sort by profit
       chartImages: options.includeCharts
         ? {
-            // Placeholder for chart images
-            // In production, these would be generated from chart-to-image utility
-            performanceChart: undefined,
-            allocationChart: undefined,
-            comparisonChart: undefined,
+            // Chart images would be generated client-side using chartToImage utility
+            // and passed in the request body, or generated server-side if needed
+            performanceChart: body.chartImages?.performanceChart || undefined,
+            allocationChart: body.chartImages?.allocationChart || undefined,
+            comparisonChart: body.chartImages?.comparisonChart || undefined,
           }
         : undefined,
     };
@@ -142,7 +136,7 @@ export async function POST(request: NextRequest) {
     const pdf = generator.generateMultiAgentReport(reportData);
 
     // Get PDF as blob
-    const pdfBlob = pdf.getBlob();
+    const pdfBlob = pdf.output('blob');
     const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
 
     // Generate filename
@@ -199,7 +193,7 @@ export async function POST(request: NextRequest) {
         error: 'Failed to generate multi-agent report',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

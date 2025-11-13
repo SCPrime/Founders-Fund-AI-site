@@ -54,7 +54,7 @@ export default function RSIIndicator({
 
     // Create RSI series
     if (!rsiSeriesRef.current) {
-      rsiSeriesRef.current = chart.addLineSeries({
+      rsiSeriesRef.current = (chart as any).addLineSeries({
         color: '#2962FF',
         lineWidth: 2,
         title: `RSI ${period}`,
@@ -64,7 +64,7 @@ export default function RSIIndicator({
 
     // Create reference lines
     if (!overboughtLineRef.current) {
-      overboughtLineRef.current = chart.addLineSeries({
+      overboughtLineRef.current = (chart as any).addLineSeries({
         color: 'rgba(255, 0, 0, 0.5)',
         lineWidth: 1,
         lineStyle: 2,
@@ -73,7 +73,7 @@ export default function RSIIndicator({
     }
 
     if (!oversoldLineRef.current) {
-      oversoldLineRef.current = chart.addLineSeries({
+      oversoldLineRef.current = (chart as any).addLineSeries({
         color: 'rgba(0, 255, 0, 0.5)',
         lineWidth: 1,
         lineStyle: 2,
@@ -82,7 +82,7 @@ export default function RSIIndicator({
     }
 
     if (!midLineRef.current) {
-      midLineRef.current = chart.addLineSeries({
+      midLineRef.current = (chart as any).addLineSeries({
         color: 'rgba(128, 128, 128, 0.5)',
         lineWidth: 1,
         lineStyle: 2,
@@ -99,27 +99,35 @@ export default function RSIIndicator({
     });
 
     // Set data
-    rsiSeriesRef.current.setData(rsiData);
+    if (rsiSeriesRef.current) {
+      rsiSeriesRef.current.setData(rsiData);
+    }
 
     // Create reference lines data
     if (rsiData.length > 0) {
       const firstTime = rsiData[0].time;
       const lastTime = rsiData[rsiData.length - 1].time;
 
-      overboughtLineRef.current.setData([
-        { time: firstTime, value: overbought },
-        { time: lastTime, value: overbought },
-      ]);
+      if (overboughtLineRef.current) {
+        overboughtLineRef.current.setData([
+          { time: firstTime, value: overbought },
+          { time: lastTime, value: overbought },
+        ]);
+      }
 
-      oversoldLineRef.current.setData([
-        { time: firstTime, value: oversold },
-        { time: lastTime, value: oversold },
-      ]);
+      if (oversoldLineRef.current) {
+        oversoldLineRef.current.setData([
+          { time: firstTime, value: oversold },
+          { time: lastTime, value: oversold },
+        ]);
+      }
 
-      midLineRef.current.setData([
-        { time: firstTime, value: 50 },
-        { time: lastTime, value: 50 },
-      ]);
+      if (midLineRef.current) {
+        midLineRef.current.setData([
+          { time: firstTime, value: 50 },
+          { time: lastTime, value: 50 },
+        ]);
+      }
     }
 
     return () => {
