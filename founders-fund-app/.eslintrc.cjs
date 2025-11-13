@@ -26,6 +26,10 @@ module.exports = {
     'security/detect-object-injection': 'off', // too noisy for typical React patterns
     'jsx-a11y/alt-text': 'warn', // Accessibility
     'jsx-a11y/aria-props': 'warn',
+    
+    // Allow inline styles (common in React, especially for dynamic styles)
+    'react/forbid-dom-props': 'off',
+    'react/no-unknown-property': ['error', { ignore: ['css', 'style'] }],
   },
   settings: {
     'import/resolver': {

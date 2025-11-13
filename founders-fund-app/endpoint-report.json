@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-11-13T20:55:43.610Z",
-  "totalEndpoints": 53,
-  "validEndpoints": 53,
+  "timestamp": "2025-11-13T21:40:50.589Z",
+  "totalEndpoints": 54,
+  "validEndpoints": 54,
   "invalidEndpoints": 0,
   "noMethodsEndpoints": 0,
   "endpoints": [
@@ -161,6 +161,15 @@
         "POST"
       ],
       "file": "calculate\\route.ts",
+      "valid": true
+    },
+    {
+      "path": "/api/chart-drawings",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "file": "chart-drawings\\route.ts",
       "valid": true
     },
     {
@@ -466,6 +475,7 @@
     "auth": 1,
     "backtest": 1,
     "calculate": 1,
+    "chart-drawings": 1,
     "debug-ocr": 1,
     "healthz": 1,
     "integrations": 8,

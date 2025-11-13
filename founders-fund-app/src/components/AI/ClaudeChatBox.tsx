@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import { useFundStore } from '@/store/fundStore';
+import { useEffect, useRef, useState } from 'react';
 
 interface ChatMessage {
   id: string;
@@ -212,7 +212,8 @@ Upload an image by clicking the 📎 button, dragging & dropping, or pasting (Ct
 
       assistantContent += `\nClick "Apply to Calculator" below to populate all fields automatically!`;
     } else if (currentImage) {
-      assistantContent = '❌ Sorry, I couldn\'t extract data from that image. Please try:\n• Uploading a clearer image\n• Ensuring the image contains financial data\n• Using a screenshot of your trading dashboard';
+      assistantContent =
+        "❌ Sorry, I couldn't extract data from that image. Please try:\n• Uploading a clearer image\n• Ensuring the image contains financial data\n• Using a screenshot of your trading dashboard";
     } else {
       // Handle text-only queries (future: integrate with AI analysis)
       assistantContent = `I received your message: "${input}"\n\n(Text-based AI analysis coming soon! For now, I specialize in extracting data from images.)`;
@@ -331,9 +332,7 @@ Upload an image by clicking the 📎 button, dragging & dropping, or pasting (Ct
     <div
       ref={chatContainerRef}
       className={`relative ${
-        isExpanded
-          ? 'fixed inset-0 z-50 bg-gray-900'
-          : 'border border-gray-700 rounded-lg'
+        isExpanded ? 'fixed inset-0 z-50 bg-gray-900' : 'border border-gray-700 rounded-lg'
       }`}
       style={{
         backgroundColor: isExpanded ? '#1a1a1a' : 'var(--panel)',
@@ -354,9 +353,11 @@ Upload an image by clicking the 📎 button, dragging & dropping, or pasting (Ct
           </h3>
         </div>
         <button
+          type="button"
           onClick={toggleExpanded}
           className="px-3 py-1 text-sm text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors"
           title={isExpanded ? 'Exit full screen' : 'Expand to full screen'}
+          aria-label={isExpanded ? 'Exit full screen' : 'Expand to full screen'}
         >
           {isExpanded ? '✕ Exit' : '⛶ Expand'}
         </button>
@@ -421,12 +422,13 @@ Upload an image by clicking the 📎 button, dragging & dropping, or pasting (Ct
             {message.extractedData && (
               <div className="mt-3 p-3 bg-green-900 bg-opacity-20 border border-green-500 rounded">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-green-400">
-                    📊 Extracted Data Available
-                  </span>
+                  <span className="font-semibold text-green-400">📊 Extracted Data Available</span>
                   <button
+                    type="button"
                     onClick={() => applyToCalculator(message.extractedData!)}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition-colors"
+                    aria-label="Apply extracted data to calculator"
+                    title="Apply extracted data to calculator"
                   >
                     Apply to Calculator
                   </button>
@@ -472,30 +474,44 @@ Upload an image by clicking the 📎 button, dragging & dropping, or pasting (Ct
       )}
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-700" style={{ backgroundColor: isExpanded ? '#242424' : 'var(--panel-dark)' }}>
+      <div
+        className="p-4 border-t border-gray-700"
+        style={{ backgroundColor: isExpanded ? '#242424' : 'var(--panel-dark)' }}
+      >
         <div className="flex gap-2">
           {/* Image Upload Button */}
           <input
             ref={fileInputRef}
+            id="claude-chat-image-upload"
             type="file"
             accept="image/*"
             onChange={handleFileSelect}
             className="hidden"
+            aria-label="Upload image for OCR processing"
+            title="Upload image for OCR processing"
           />
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
             title="Upload image (or paste/drag & drop)"
+            aria-label="Upload image (or paste/drag & drop)"
           >
             📎
           </button>
 
           {/* Text Input */}
+          <label htmlFor="claude-chat-text-input" className="sr-only">
+            Chat message input
+          </label>
           <textarea
+            id="claude-chat-text-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask me anything or upload an image..."
+            title="Type your message here"
+            aria-label="Chat message input"
             className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 resize-none focus:outline-none focus:border-cyan-500"
             rows={2}
             disabled={isProcessing}
@@ -503,9 +519,12 @@ Upload an image by clicking the 📎 button, dragging & dropping, or pasting (Ct
 
           {/* Send Button */}
           <button
+            type="button"
             onClick={handleSendMessage}
             disabled={isProcessing || (!input.trim() && !currentImage)}
             className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded font-semibold transition-colors"
+            aria-label="Send message"
+            title="Send message"
           >
             Send
           </button>

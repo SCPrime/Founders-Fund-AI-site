@@ -10,10 +10,7 @@ interface OCRResult {
   aiResponse?: string;
 }
 
-interface OCRError {
-  error: string;
-  details?: string;
-}
+// OCRError interface removed - not used
 
 export default function SimpleOCRUpload() {
   const [isProcessing, setIsProcessing] = useState(false);

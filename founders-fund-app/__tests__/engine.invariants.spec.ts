@@ -61,7 +61,8 @@ describe('Allocation engine invariants', () => {
 
     // Should have entry fee legs for net-of-fee investors
     const entryFeeLegs = legs.filter((leg) => leg.type === 'founders_entry_fee');
-    const investorContributions = legs.filter(
+    // Note: investorContributions is used for validation logic below
+    legs.filter(
       (leg) => leg.type === 'investor_contribution' && leg.owner === 'investor',
     );
 

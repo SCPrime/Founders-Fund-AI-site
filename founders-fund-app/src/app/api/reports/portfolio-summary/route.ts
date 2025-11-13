@@ -6,11 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import {
-  PDFGenerator,
-  generatePortfolioReportFromAllocation,
-  type PortfolioPerformanceReportData,
-} from '@/lib/pdfGenerator';
+import { generatePortfolioReportFromAllocation } from '@/lib/pdfGenerator';
 import type { AllocationState, AllocationOutputs } from '@/types/allocation';
 
 export async function POST(request: NextRequest) {
@@ -80,7 +76,7 @@ export async function POST(request: NextRequest) {
                 window: allocationState.window,
                 totalProfit: allocationOutputs.profitTotal,
                 participantCount: Object.keys(allocationOutputs.dollarDays.investors).length + 1,
-              } as any,
+              } as Record<string, unknown>,
             },
           });
 

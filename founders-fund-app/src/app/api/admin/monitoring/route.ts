@@ -11,13 +11,13 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     // Require ADMIN role
-    const { session, error } = await requireRole('ADMIN');
+    const { error } = await requireRole('ADMIN');
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'all'; // 'errors' | 'metrics' | 'all'
 
-    const response: any = {};
+    const response: Record<string, unknown> = {};
 
     if (type === 'errors' || type === 'all') {
       const limit = parseInt(searchParams.get('errorLimit') || '50');

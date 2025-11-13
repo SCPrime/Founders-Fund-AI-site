@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 const COINBASE_BASE_URL = 'https://api.coinbase.com/v2';
@@ -10,7 +10,7 @@ const COINBASE_BASE_URL = 'https://api.coinbase.com/v2';
  * Note: Requires COINBASE_API_KEY and COINBASE_API_SECRET environment variables
  * This endpoint is optional and requires user authentication setup
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const apiKey = process.env.COINBASE_API_KEY;
     const apiSecret = process.env.COINBASE_API_SECRET;
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format account data
-    const accounts = data.data.map((account: any) => ({
+    const accounts = data.data.map((account: { id: string; name: string; primary: boolean; type: string; currency: { code: string; name: string }; balance: { amount: string; currency: string } }) => ({
       id: account.id || '',
       name: account.name || '',
       currency: account.currency || '',

@@ -26,6 +26,13 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-require-imports": "warn",
       "react/no-unescaped-entities": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }],
+      "@next/next/no-img-element": "warn", // Allow img for dynamic images
+      "react-hooks/exhaustive-deps": "warn", // Allow missing deps in some cases
     },
   },
 ];

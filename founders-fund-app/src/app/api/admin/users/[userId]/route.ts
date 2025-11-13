@@ -23,7 +23,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { email, name, role, password } = body;
 
     // Build update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (email !== undefined) updateData.email = email;
     if (name !== undefined) updateData.name = name;
     if (role !== undefined) {

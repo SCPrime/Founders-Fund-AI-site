@@ -1,6 +1,6 @@
 'use client';
 
-import { useAllocationStore, allocationSelectors } from '@/store/allocationStore';
+import { useAllocationStore } from '@/store/allocationStore';
 import { ExportPDFButton } from '@/components/Reports/ExportPDFButton';
 
 export default function AllocationResults() {

@@ -13,9 +13,9 @@ import { filterAllocationByRole } from '@/lib/privacy';
 function contributionToLeg(r: Contribution): CashflowLeg {
   return {
     id: r.id,
-    owner: r.owner as any, // Prisma LegOwner to Owner type cast
+    owner: r.owner as 'founders' | 'investors', // Prisma LegOwner to Owner type cast
     name: r.name,
-    type: r.type as any, // Prisma LegType to LegType/LegTypeUnion cast
+    type: r.type as 'founders_contribution' | 'investor_contribution' | 'entry_fee', // Prisma LegType to LegType cast
     amount: Number(r.amount),
     ts: r.ts.toISOString(),
     earnsDollarDaysThisWindow: r.earnsDollarDaysThisWindow,

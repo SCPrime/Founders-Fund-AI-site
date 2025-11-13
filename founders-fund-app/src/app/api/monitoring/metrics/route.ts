@@ -7,12 +7,12 @@
 import { requireRole } from '@/lib/auth';
 import cache from '@/lib/cache';
 import { applySecurityHeaders } from '@/lib/security';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Require ADMIN role for metrics
-    const { session, error } = await requireRole('ADMIN');
+    const { error } = await requireRole('ADMIN');
     if (error) return error;
 
     // Get cache stats

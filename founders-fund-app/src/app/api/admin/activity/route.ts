@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     // Require ADMIN role
-    const { session, error } = await requireRole('ADMIN');
+    const { error } = await requireRole('ADMIN');
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -25,24 +25,25 @@ export async function GET(request: NextRequest) {
 
     // Build where clause for activity tracking
     // We'll track activity through various models (Portfolio updates, Agent actions, etc.)
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (userId) {
       where.userId = userId;
     }
 
     if (startDate || endDate) {
-      where.updatedAt = {};
+      const dateFilter: Record<string, Date> = {};
       if (startDate) {
-        where.updatedAt.gte = new Date(startDate);
+        dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        where.updatedAt.lte = new Date(endDate);
+        dateFilter.lte = new Date(endDate);
       }
+      where.updatedAt = dateFilter;
     }
 
     // Get recent portfolio updates (as a proxy for user activity)
-    const [portfolios, total] = await Promise.all([
+    const [portfolios] = await Promise.all([
       prisma.portfolio.findMany({
         where: userId ? { userId } : {},
         skip,

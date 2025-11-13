@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const where: any = { userId };
+    const where: Record<string, unknown> = { userId };
     if (portfolioId) where.portfolioId = portfolioId;
     if (agentId) where.agentId = agentId;
     if (activeOnly) where.isActive = true;

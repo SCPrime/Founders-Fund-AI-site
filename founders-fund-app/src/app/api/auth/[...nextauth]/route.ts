@@ -78,7 +78,7 @@ const authOptions: AuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, trigger }) {
       // Initial sign in - user object is available
       if (user) {
         token.role = user.role;
@@ -103,15 +103,17 @@ const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role as any; // Type cast to UserRole enum
+        session.user.role = token.role as 'FOUNDER' | 'INVESTOR' | 'ADMIN';
         session.user.id = token.id as string;
         session.user.name = token.name as string;
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user }) {
       // For OAuth providers, implement account linking
-      if (account?.provider !== 'credentials' && user.email) {
+      // Note: Currently only credentials provider is implemented
+      // OAuth providers can be added in the future
+      if (user.email) {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email }
         });

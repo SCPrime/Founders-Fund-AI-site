@@ -211,8 +211,7 @@ export async function GET(request: NextRequest) {
           const priceResponse = await fetch(`/api/integrations/coinbase/prices?currency=${pair}`);
 
           if (priceResponse.ok) {
-            const priceData = await priceResponse.json();
-            const currentPrice = parseFloat(priceData.price || '0');
+            await priceResponse.json(); // Price data available but not needed for benchmark generation
 
             // Generate benchmark returns based on historical volatility
             // In production, fetch full historical data from Coinbase Advanced API

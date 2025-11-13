@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     // Require ADMIN role
-    const { session, error } = await requireRole('ADMIN');
+    const { error } = await requireRole('ADMIN');
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (role) {
       where.role = role;
     }
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Require ADMIN role
-    const { session, error } = await requireRole('ADMIN');
+    const { error } = await requireRole('ADMIN');
     if (error) return error;
 
     const body = await request.json();

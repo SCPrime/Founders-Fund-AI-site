@@ -60,7 +60,7 @@ export default function OCRChatBox({
 
   const { addContribution, updateWalletSize, updateUnrealizedPnl, updateConstants } =
     useAllocationStore();
-  const { populateContributions, updateSettings } = useFundStore();
+  const { updateSettings } = useFundStore();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -157,7 +157,7 @@ export default function OCRChatBox({
             enhancedResult.extractedData?.founders &&
             Array.isArray(enhancedResult.extractedData.founders)
           ) {
-            enhancedResult.extractedData.founders.forEach((f: any) => {
+            enhancedResult.extractedData.founders.forEach((f: Record<string, unknown>) => {
               addContribution({
                 name: f.name || 'Founders',
                 ts: f.date || new Date().toISOString().split('T')[0],
@@ -173,7 +173,7 @@ export default function OCRChatBox({
             enhancedResult.extractedData?.investors &&
             Array.isArray(enhancedResult.extractedData.investors)
           ) {
-            enhancedResult.extractedData.investors.forEach((i: any) => {
+            enhancedResult.extractedData.investors.forEach((i: Record<string, unknown>) => {
               addContribution({
                 name: i.name || 'Investor',
                 ts: i.date || new Date().toISOString().split('T')[0],
@@ -253,7 +253,7 @@ export default function OCRChatBox({
           addMessage('assistant', responseText, undefined, extractedData);
           onOCRComplete?.(extractedData);
         }
-      } catch (enhancedError) {
+      } catch {
         // Fallback to basic OCR
         let responseText = '✅ **Basic OCR Complete!**\n\n';
         responseText += `📊 **Extracted:**\n`;
@@ -298,9 +298,6 @@ export default function OCRChatBox({
     setIsLoading(true);
 
     try {
-      // Check if message is a query about OCR data
-      const lastImageMessage = [...messages].reverse().find((m) => m.imageUrl && m.ocrData);
-
       // Use AI tools to process query
       let response = '';
 
@@ -311,7 +308,7 @@ export default function OCRChatBox({
       ) {
         // Use get_snapshot tool
         try {
-          const snapshot = executeAITool('get_snapshot', {}) as any;
+          const snapshot = executeAITool('get_snapshot', {}) as Record<string, unknown>;
           response = '📊 **Current Fund Snapshot:**\n\n';
           response += `• Total Net Profit: $${snapshot.summary?.totalNetProfit?.toLocaleString() || '0'}\n`;
           response += `• Total Contributions: $${snapshot.summary?.totalContributions?.toLocaleString() || '0'}\n`;

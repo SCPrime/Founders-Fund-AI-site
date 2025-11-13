@@ -1,19 +1,19 @@
 /**
  * Chart Drawings API Route
- * 
+ *
  * Handles saving and loading chart drawings/annotations for users
  * Supports portfolio-specific and agent-specific drawings
- * 
+ *
  * GET: Load drawings for a user/portfolio/agent
  * POST: Save drawings for a user/portfolio/agent
- * 
+ *
  * MOD SQUAD TEAM ULTRA - Agent #5 (Chart & Visualization Expert)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { DrawingTool } from '@/components/Charts/types';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import type { DrawingTool } from '@/components/Charts/types';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/chart-drawings
@@ -64,10 +64,18 @@ export async function GET(request: NextRequest) {
     let drawings: DrawingTool[] = [];
     if (chartDrawings.length > 0) {
       const drawingData = chartDrawings[0].drawingData;
+      // Prisma Json type can be array, object, or primitive
       if (Array.isArray(drawingData)) {
-        drawings = drawingData as DrawingTool[];
-      } else if (typeof drawingData === 'object' && drawingData !== null && 'drawings' in drawingData) {
-        drawings = (drawingData as { drawings: DrawingTool[] }).drawings;
+        // Type assertion through unknown for safety
+        drawings = drawingData as unknown as DrawingTool[];
+      } else if (
+        typeof drawingData === 'object' &&
+        drawingData !== null &&
+        'drawings' in drawingData
+      ) {
+        // Handle object with drawings property
+        const dataObj = drawingData as unknown as { drawings: DrawingTool[] };
+        drawings = Array.isArray(dataObj.drawings) ? dataObj.drawings : [];
       }
     }
 
@@ -83,7 +91,7 @@ export async function GET(request: NextRequest) {
         error: 'Failed to load chart drawings',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -113,7 +121,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'Invalid request: drawings must be an array',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -124,19 +132,20 @@ export async function POST(request: NextRequest) {
           {
             error: 'Invalid drawing format: each drawing must have id, type, and points',
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
 
     // Save to database
     // We store all drawings as a single JSON object per user/portfolio/agent combination
+    // Prisma Json type accepts arrays directly
     const chartDrawing = await prisma.chartDrawing.create({
       data: {
         userId,
         portfolioId: portfolioId || null,
         agentId: agentId || null,
-        drawingData: drawings as unknown as Record<string, unknown>,
+        drawingData: drawings as unknown as any, // Prisma Json type accepts any JSON-serializable value
       },
     });
 
@@ -153,8 +162,7 @@ export async function POST(request: NextRequest) {
         error: 'Failed to save chart drawings',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

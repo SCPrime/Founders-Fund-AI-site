@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPriceFeed, type TokenConfig } from '@/lib/priceFeed';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db';
 
 /**
  * POST /api/jobs/update-prices
@@ -133,7 +131,7 @@ export async function POST(request: NextRequest) {
  * GET /api/jobs/update-prices
  * Get status of the price update job
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const priceFeed = getPriceFeed();
     const cacheStats = priceFeed.getCacheStats();
@@ -146,7 +144,7 @@ export async function GET(request: NextRequest) {
       },
       info: 'Use POST to trigger price updates',
     }, { status: 200 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

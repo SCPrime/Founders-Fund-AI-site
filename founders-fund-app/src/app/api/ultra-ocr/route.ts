@@ -341,7 +341,7 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string
 
     if (field === 'timestamp') {
       // For timestamps, take the most common value
-      const counts = values.reduce((acc: Record<string, number>, val: any) => {
+      const counts = values.reduce((acc: Record<string, number>, val: unknown) => {
         const key = String(val);
         acc[key] = (acc[key] || 0) + 1;
         return acc;

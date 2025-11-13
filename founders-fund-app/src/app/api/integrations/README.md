@@ -17,6 +17,7 @@ The integration system provides a unified interface for fetching real-time crypt
 ### DexScreener Integration
 
 #### GET /api/integrations/dexscreener/price
+
 Get current price for a token.
 
 **Query Parameters:**
@@ -41,6 +42,7 @@ Get current price for a token.
 ```
 
 #### GET /api/integrations/dexscreener/chart
+
 Get chart data and trading metrics.
 
 **Query Parameters:**
@@ -49,6 +51,7 @@ Get chart data and trading metrics.
 - `pairAddress` - (optional) Specific pair address
 
 #### GET /api/integrations/dexscreener/pairs
+
 Get all trading pairs and liquidity info.
 
 **Query Parameters:**
@@ -60,6 +63,7 @@ Get all trading pairs and liquidity info.
 **Note:** Requires `DEXTOOLS_API_KEY` environment variable.
 
 #### GET /api/integrations/dextools/token-info
+
 Get token metadata and information.
 
 **Query Parameters:**

@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { condition, threshold, isActive, message } = body;
 
     // Build update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (condition !== undefined) updateData.condition = condition;
     if (threshold !== undefined) updateData.threshold = threshold;
     if (isActive !== undefined) updateData.isActive = isActive;

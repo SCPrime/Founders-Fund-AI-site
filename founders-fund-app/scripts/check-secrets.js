@@ -69,7 +69,7 @@ function scanFile(filePath) {
     }
 
     return findings;
-  } catch (error) {
+  } catch {
     // Ignore files that can't be read
     return [];
   }
@@ -91,7 +91,7 @@ function scanDirectory(dirPath, findings = []) {
         findings.push(...scanFile(itemPath));
       }
     }
-  } catch (error) {
+  } catch {
     // Ignore directories that can't be read
   }
 

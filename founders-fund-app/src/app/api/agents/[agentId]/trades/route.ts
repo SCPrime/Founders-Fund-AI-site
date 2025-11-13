@@ -28,24 +28,9 @@ export async function POST(
       );
     }
 
-    // Calculate trade value
-    const tradeValue = Number(amount) * Number(price);
-
     // Create trade and update agent metrics in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create the trade
-      const trade = await tx.trade.create({
-        data: {
-          agentId,
-          side: side as TradeSide,
-          amount,
-          price,
-          fees: fees || 0,
-          timestamp: timestamp ? new Date(timestamp) : new Date()
-        }
-      });
-
-      // Get agent's current state
+      // Get agent's current state first to calculate PnL
       const agent = await tx.agent.findUnique({
         where: { id: agentId },
         include: {
@@ -59,7 +44,7 @@ export async function POST(
         throw new Error('Agent not found');
       }
 
-      // Calculate PnL for SELL trades
+      // Calculate PnL for SELL trades before creating trade
       let pnl = null;
       if (side === 'SELL') {
         // Simple FIFO cost basis calculation
@@ -67,14 +52,21 @@ export async function POST(
         if (buyTrades.length > 0) {
           const avgBuyPrice = buyTrades.reduce((sum, t) => sum + Number(t.price), 0) / buyTrades.length;
           pnl = (Number(price) - avgBuyPrice) * Number(amount) - Number(fees || 0);
-
-          // Update trade with PnL
-          await tx.trade.update({
-            where: { id: trade.id },
-            data: { pnl }
-          });
         }
       }
+
+      // Create the trade
+      const trade = await tx.trade.create({
+        data: {
+          agentId,
+          side: side as TradeSide,
+          amount,
+          price,
+          fees: fees || 0,
+          timestamp: timestamp ? new Date(timestamp) : new Date(),
+          pnl
+        }
+      });
 
       // Calculate updated metrics
       const allTrades = [...agent.trades, trade];
