@@ -22,7 +22,7 @@ export default function ReportsPage() {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
-  const [portfolioId, setPortfolioId] = useState<string>('');
+  const [portfolioId] = useState<string>('');
   const [benchmark, setBenchmark] = useState<'BTC' | 'ETH' | 'SOL' | null>(null);
 
   // Calculate actual date range based on selection

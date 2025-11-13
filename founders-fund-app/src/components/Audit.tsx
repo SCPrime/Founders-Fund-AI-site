@@ -8,8 +8,8 @@ export default function Audit() {
   // Extract founders data from AllocationOutputs structure
   const founderShare = outputs?.shares?.founders || 0;
   const founderEndCapital = outputs?.endCapital?.founders || 0;
-  const founderRealizedNet = outputs?.realizedNet?.founders || 0;
-  const founderMoonbag = outputs?.moonbag?.founders || 0;
+  // const founderRealizedNet = outputs?.realizedNet?.founders || 0; // Reserved for future use
+  // const founderMoonbag = outputs?.moonbag?.founders || 0; // Reserved for future use
 
   // Calculate total founder contributions (filter by owner='founders')
   const totalFounderContributions = (state.contributions || [])

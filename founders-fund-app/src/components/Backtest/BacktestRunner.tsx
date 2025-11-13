@@ -25,9 +25,9 @@ export default function BacktestRunner() {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
-  const [symbol, setSymbol] = useState('PEPE');
-  const [chain, setChain] = useState('ethereum');
-  const [address, setAddress] = useState('');
+  const [symbol] = useState('PEPE');
+  const [chain] = useState('ethereum');
+  const [address] = useState('');
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -258,7 +258,28 @@ export default function OCRChatBox() {
     }
   };
 
-  const formatSnapshotResponse = (snapshot: any): string => {
+  interface SnapshotSummary {
+    totalNetProfit?: number;
+    totalContributions?: number;
+    totalFees?: number;
+  }
+
+  interface SnapshotData {
+    summary?: SnapshotSummary;
+    contributions?: unknown[];
+    results?: unknown[];
+  }
+
+  interface ValidationIssue {
+    type: string;
+    message: string;
+  }
+
+  interface ValidationData {
+    issues?: ValidationIssue[];
+  }
+
+  const formatSnapshotResponse = (snapshot: SnapshotData | null | undefined): string => {
     if (!snapshot) return '❌ Unable to get snapshot.';
     return (
       `📊 **Current Fund Snapshot**\n\n` +
@@ -269,7 +290,7 @@ export default function OCRChatBox() {
     );
   };
 
-  const formatValidationResponse = (validation: any): string => {
+  const formatValidationResponse = (validation: ValidationData | null | undefined): string => {
     if (!validation) return '❌ Unable to validate.';
     const issues = validation.issues || [];
     if (issues.length === 0) {
@@ -277,7 +298,7 @@ export default function OCRChatBox() {
     }
     return (
       `⚠️ **Validation Results**\n\nFound ${issues.length} issue(s):\n\n` +
-      issues.map((issue: any) => `• ${issue.type}: ${issue.message}`).join('\n')
+      issues.map((issue: ValidationIssue) => `• ${issue.type}: ${issue.message}`).join('\n')
     );
   };
 

@@ -38,7 +38,13 @@ export default function PriceAlertManager({
     loadAlerts();
 
     // Listen for alert triggers
-    const handleAlertTriggered = (event: any) => {
+    interface AlertEvent {
+      alert: {
+        message?: string;
+      };
+    }
+
+    const handleAlertTriggered = (event: AlertEvent) => {
       alert(`Price Alert Triggered!\n${event.alert.message || 'Alert condition met'}`);
       loadAlerts(); // Refresh list
     };

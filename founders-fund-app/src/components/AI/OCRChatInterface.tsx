@@ -37,7 +37,7 @@ export default function OCRChatInterface({ onExtractComplete }: OCRChatInterface
   const dragCounterRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  const { settings, updateSettings, populateContributions } = useFundStore();
+  const { updateSettings, populateContributions } = useFundStore();
   const { setOCRData } = useOCR();
 
   const scrollToBottom = () => {

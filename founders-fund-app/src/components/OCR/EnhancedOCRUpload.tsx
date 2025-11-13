@@ -113,7 +113,7 @@ export default function EnhancedOCRUpload() {
 
       // Enhanced Tesseract configuration for financial documents
       await worker.setParameters({
-        tessedit_pageseg_mode: 6 as unknown as any, // Uniform block of text
+        tessedit_pageseg_mode: 6, // Uniform block of text
         tessedit_char_whitelist:
           '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,%-/$:()/ \n\t',
         tessedit_ocr_engine_mode: '1', // Neural nets LSTM engine

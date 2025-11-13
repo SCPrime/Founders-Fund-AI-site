@@ -11,7 +11,7 @@ export default function RowClassificationAudit() {
     const isFounder = contrib.owner === 'founders';
     // CashflowLeg doesn't have rule/cls - determine from type
     const isNet = contrib.type === 'investor_contribution' || contrib.type === 'seed';
-    const isGross = contrib.type === 'founders_entry_fee' || contrib.type === 'founders_mgmt_fee';
+    // const isGross = contrib.type === 'founders_entry_fee' || contrib.type === 'founders_mgmt_fee'; // Reserved for future use
 
     return {
       ...contrib,

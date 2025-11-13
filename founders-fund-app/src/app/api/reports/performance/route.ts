@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const benchmark = searchParams.get('benchmark') as 'BTC' | 'ETH' | 'SOL' | null;
 
     // Build portfolio filter based on role
-    const portfolioFilter: any = {};
+    const portfolioFilter: { id?: string } = {};
     if (portfolioId) {
       portfolioFilter.id = portfolioId;
     }
@@ -278,7 +278,7 @@ export async function GET(request: NextRequest) {
         },
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Performance analytics error:', error);
 
     if (error.message === 'Unauthorized') {

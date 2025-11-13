@@ -364,21 +364,28 @@ export default function AIAssistant() {
           })),
         );
       }
+      interface InvestorData {
+        name?: string;
+        date: string;
+        amount: number;
+        rule?: string;
+      }
+
       if (data.investors) {
         combinedData.push(
-          ...data.investors.map((i: any) => ({
+          ...data.investors.map((i: InvestorData) => ({
             name: i.name || 'Investor',
             date: i.date,
             amount: i.amount,
             rule: i.rule || 'net',
-            cls: 'investor',
+            cls: 'investor' as const,
           })),
         );
       }
 
       // Push to fund store using populateContributions
       if (combinedData.length > 0) {
-        populateContributions(combinedData as any);
+        populateContributions(combinedData);
       }
 
       let message = '✅ **OCR Data Successfully Pushed to Fund Store!**\n\n';
@@ -523,14 +530,28 @@ export default function AIAssistant() {
           // Prepare contributions for fund store
           const combinedData = [];
 
+          interface FounderData {
+            name?: string;
+            date: string;
+            amount: number;
+            rule?: string;
+          }
+
+          interface InvestorData {
+            name?: string;
+            date: string;
+            amount: number;
+            rule?: string;
+          }
+
           if (extractedData.founders && extractedData.founders.length > 0) {
             combinedData.push(
-              ...extractedData.founders.map((f: any) => ({
+              ...extractedData.founders.map((f: FounderData) => ({
                 name: f.name || 'Founder',
                 date: f.date,
                 amount: f.amount,
                 rule: f.rule || 'net',
-                cls: 'founder',
+                cls: 'founder' as const,
               })),
             );
             addMessage(
@@ -541,12 +562,12 @@ export default function AIAssistant() {
 
           if (extractedData.investors && extractedData.investors.length > 0) {
             combinedData.push(
-              ...extractedData.investors.map((i: any) => ({
+              ...extractedData.investors.map((i: InvestorData) => ({
                 name: i.name || 'Investor',
                 date: i.date,
                 amount: i.amount,
                 rule: i.rule || 'net',
-                cls: 'investor',
+                cls: 'investor' as const,
               })),
             );
             addMessage(
@@ -557,7 +578,7 @@ export default function AIAssistant() {
 
           // Auto-populate contributions to fund store
           if (combinedData.length > 0) {
-            populateContributions(combinedData as any);
+            populateContributions(combinedData);
           }
 
           if (extractedData.settings) {
