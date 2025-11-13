@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FinancialMetrics } from '../types';
 import { calculateFinancialMetrics } from '../utils/indicatorCalculations';
 
@@ -32,7 +32,10 @@ function MetricCard({ label, value, format, description, theme, positive }: Metr
       case 'percentage':
         return `${value.toFixed(2)}%`;
       case 'number':
-        return value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        return value.toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
       case 'ratio':
         return value.toFixed(4);
       default:
@@ -42,9 +45,7 @@ function MetricCard({ label, value, format, description, theme, positive }: Metr
 
   const getColorClass = () => {
     if (positive === undefined) return isDark ? 'text-white' : 'text-gray-900';
-    return positive
-      ? 'text-green-500'
-      : 'text-red-500';
+    return positive ? 'text-green-500' : 'text-red-500';
   };
 
   return (
@@ -54,12 +55,8 @@ function MetricCard({ label, value, format, description, theme, positive }: Metr
       } hover:shadow-lg transition-shadow`}
       title={description}
     >
-      <div className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-        {label}
-      </div>
-      <div className={`text-2xl font-bold ${getColorClass()}`}>
-        {formatValue()}
-      </div>
+      <div className={`text-sm mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{label}</div>
+      <div className={`text-2xl font-bold ${getColorClass()}`}>{formatValue()}</div>
       <div className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
         {description}
       </div>
@@ -103,7 +100,9 @@ export default function MetricsPanel({
 
   if (loading || !metrics) {
     return (
-      <div className={`p-8 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+      <div
+        className={`p-8 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
+      >
         <div className="text-center">
           <div className={isDark ? 'text-gray-400' : 'text-gray-600'}>
             {loading ? 'Calculating metrics...' : 'No data available'}
@@ -206,7 +205,9 @@ export default function MetricsPanel({
   ];
 
   return (
-    <div className={`p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+    <div
+      className={`p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
+    >
       <div className="flex justify-between items-center mb-6">
         <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
           Financial Metrics Dashboard
@@ -240,13 +241,22 @@ export default function MetricsPanel({
           </p>
           <p>
             Risk Assessment:{' '}
-            <span className={`font-medium ${
-              metrics.sharpeRatio > 2 ? 'text-green-500' :
-              metrics.sharpeRatio > 1 ? 'text-yellow-500' : 'text-red-500'
-            }`}>
-              {metrics.sharpeRatio > 2 ? 'Excellent' :
-               metrics.sharpeRatio > 1 ? 'Good' :
-               metrics.sharpeRatio > 0 ? 'Fair' : 'Poor'}
+            <span
+              className={`font-medium ${
+                metrics.sharpeRatio > 2
+                  ? 'text-green-500'
+                  : metrics.sharpeRatio > 1
+                    ? 'text-yellow-500'
+                    : 'text-red-500'
+              }`}
+            >
+              {metrics.sharpeRatio > 2
+                ? 'Excellent'
+                : metrics.sharpeRatio > 1
+                  ? 'Good'
+                  : metrics.sharpeRatio > 0
+                    ? 'Fair'
+                    : 'Poor'}
             </span>
           </p>
         </div>

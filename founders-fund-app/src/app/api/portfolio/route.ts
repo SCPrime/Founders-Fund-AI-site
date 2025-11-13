@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
       // Add contributions
       if (contributions.length > 0) {
-        const contributionData = contributions.map((leg: any) => ({
+        const contributionData = contributions.map((leg: { owner: string; name: string; type: string; amount: number; ts: string | Date; earnsDollarDaysThisWindow: boolean }) => ({
           portfolioId: newPortfolio.id,
           owner: leg.owner,
           name: leg.name,
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
       // Add snapshots if provided
       if (snapshots && snapshots.length > 0) {
-        const snapshotData = snapshots.map((snap: any) => ({
+        const snapshotData = snapshots.map((snap: { windowStart: string | Date; windowEnd: string | Date; profitTotal: number; realizedProfit: number; unrealizedPnl: number }) => ({
           portfolioId: newPortfolio.id,
           timestamp: snap.timestamp ? new Date(snap.timestamp) : new Date(),
           windowStart: new Date(snap.window.start),

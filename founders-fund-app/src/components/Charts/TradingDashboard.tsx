@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import DrawingTools from './DrawingTools';
 import FullScreenChart from './FullScreenChart';
 import IndicatorSelector from './IndicatorSelector';
 import TimeFrameSelector from './TimeFrameSelector';
-import DrawingTools from './DrawingTools';
-import { CandleData, IndicatorConfig, TimeFrame, DrawingTool } from './types';
+import { CandleData, DrawingTool, IndicatorConfig, TimeFrame } from './types';
 
 interface TradingDashboardProps {
   initialData?: CandleData[];
@@ -149,20 +149,26 @@ export default function TradingDashboard({
         </div>
 
         {/* Info Panel */}
-        <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}>
-          <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <div
+          className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}
+        >
+          <h3
+            className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             Active Indicators
           </h3>
           <div className="flex flex-wrap gap-2">
-            {indicators.filter(i => i.enabled).map(indicator => (
-              <span
-                key={indicator.id}
-                className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
-              >
-                {indicator.name}
-              </span>
-            ))}
-            {indicators.filter(i => i.enabled).length === 0 && (
+            {indicators
+              .filter((i) => i.enabled)
+              .map((indicator) => (
+                <span
+                  key={indicator.id}
+                  className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
+                >
+                  {indicator.name}
+                </span>
+              ))}
+            {indicators.filter((i) => i.enabled).length === 0 && (
               <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
                 No indicators active. Select from the Indicators menu above.
               </span>
@@ -171,15 +177,30 @@ export default function TradingDashboard({
         </div>
 
         {/* Usage Instructions */}
-        <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}>
-          <h3 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+        <div
+          className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-300'}`}
+        >
+          <h3
+            className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+          >
             Quick Guide
           </h3>
-          <ul className={`list-disc list-inside space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-            <li>Click <strong>Indicators</strong> to add technical indicators (RSI, MACD, Bollinger Bands, etc.)</li>
-            <li>Use <strong>Time Frame</strong> buttons to change candle intervals</li>
-            <li>Click <strong>Drawing Tools</strong> to add trend lines, support/resistance zones</li>
-            <li>Press <strong>F11</strong> or click Fullscreen button for immersive chart view</li>
+          <ul
+            className={`list-disc list-inside space-y-1 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+          >
+            <li>
+              Click <strong>Indicators</strong> to add technical indicators (RSI, MACD, Bollinger
+              Bands, etc.)
+            </li>
+            <li>
+              Use <strong>Time Frame</strong> buttons to change candle intervals
+            </li>
+            <li>
+              Click <strong>Drawing Tools</strong> to add trend lines, support/resistance zones
+            </li>
+            <li>
+              Press <strong>F11</strong> or click Fullscreen button for immersive chart view
+            </li>
             <li>Scroll to zoom, drag to pan the chart</li>
             <li>Save your preferences and drawings for future sessions</li>
           </ul>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { IndicatorConfig } from './types';
 
 interface IndicatorSelectorProps {
@@ -45,8 +45,8 @@ export default function IndicatorSelector({
   const toggleIndicator = (id: string) => {
     setIndicators((prev) =>
       prev.map((indicator) =>
-        indicator.id === id ? { ...indicator, enabled: !indicator.enabled } : indicator
-      )
+        indicator.id === id ? { ...indicator, enabled: !indicator.enabled } : indicator,
+      ),
     );
   };
 
@@ -74,9 +74,7 @@ export default function IndicatorSelector({
   };
 
   const resetIndicators = () => {
-    setIndicators(
-      AVAILABLE_INDICATORS.map((indicator) => ({ ...indicator, enabled: false }))
-    );
+    setIndicators(AVAILABLE_INDICATORS.map((indicator) => ({ ...indicator, enabled: false })));
   };
 
   return (

@@ -17,7 +17,8 @@ export async function GET() {
     });
     response.headers.set('Cache-Control', 'no-store, max-age=0');
     return response;
-  } catch (e: any) {
-    return NextResponse.json({ ok: true, db: false, error: e?.message ?? 'db error' }, { status: 200 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'db error';
+    return NextResponse.json({ ok: true, db: false, error: errorMessage }, { status: 200 });
   }
 }

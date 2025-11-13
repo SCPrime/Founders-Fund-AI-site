@@ -15,7 +15,7 @@
 export function calculateSharpeRatio(
   returns: number[],
   riskFreeRate: number = 0.04,
-  periodsPerYear: number = 252
+  periodsPerYear: number = 252,
 ): number {
   if (returns.length === 0) return 0;
 
@@ -44,12 +44,12 @@ export function calculateSharpeRatio(
 export function calculateSortinoRatio(
   returns: number[],
   riskFreeRate: number = 0.04,
-  periodsPerYear: number = 252
+  periodsPerYear: number = 252,
 ): number {
   if (returns.length === 0) return 0;
 
   const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
-  const downsideReturns = returns.filter(r => r < 0);
+  const downsideReturns = returns.filter((r) => r < 0);
   const downsideDeviation = calculateStandardDeviation(downsideReturns);
 
   if (downsideDeviation === 0) return 0;
@@ -68,10 +68,7 @@ export function calculateSortinoRatio(
  * @param periodsPerYear - Number of periods per year
  * @returns Calmar ratio
  */
-export function calculateCalmarRatio(
-  returns: number[],
-  periodsPerYear: number = 252
-): number {
+export function calculateCalmarRatio(returns: number[], periodsPerYear: number = 252): number {
   if (returns.length === 0) return 0;
 
   const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
@@ -95,8 +92,8 @@ export function calculateMaxDrawdown(returns: number[]): number {
 
   // Convert returns to cumulative equity curve
   let cumulative = 1;
-  const equityCurve = returns.map(r => {
-    cumulative *= (1 + r);
+  const equityCurve = returns.map((r) => {
+    cumulative *= 1 + r;
     return cumulative;
   });
 
@@ -127,8 +124,8 @@ export function calculateCurrentDrawdown(returns: number[]): number {
   if (returns.length === 0) return 0;
 
   let cumulative = 1;
-  const equityCurve = returns.map(r => {
-    cumulative *= (1 + r);
+  const equityCurve = returns.map((r) => {
+    cumulative *= 1 + r;
     return cumulative;
   });
 
@@ -148,7 +145,7 @@ export function calculateCurrentDrawdown(returns: number[]): number {
  */
 export function calculateAlphaBeta(
   portfolioReturns: number[],
-  benchmarkReturns: number[]
+  benchmarkReturns: number[],
 ): { alpha: number; beta: number } {
   if (portfolioReturns.length === 0 || portfolioReturns.length !== benchmarkReturns.length) {
     return { alpha: 0, beta: 0 };
@@ -185,10 +182,7 @@ export function calculateAlphaBeta(
  * @param confidenceLevel - Confidence level (e.g., 0.95 for 95%, 0.99 for 99%)
  * @returns VaR as a negative value (e.g., -0.05 means 5% loss)
  */
-export function calculateVaR(
-  returns: number[],
-  confidenceLevel: number = 0.95
-): number {
+export function calculateVaR(returns: number[], confidenceLevel: number = 0.95): number {
   if (returns.length === 0) return 0;
 
   const sortedReturns = [...returns].sort((a, b) => a - b);
@@ -205,14 +199,11 @@ export function calculateVaR(
  * @param confidenceLevel - Confidence level
  * @returns CVaR as a negative value
  */
-export function calculateCVaR(
-  returns: number[],
-  confidenceLevel: number = 0.95
-): number {
+export function calculateCVaR(returns: number[], confidenceLevel: number = 0.95): number {
   if (returns.length === 0) return 0;
 
   const var95 = calculateVaR(returns, confidenceLevel);
-  const worstReturns = returns.filter(r => r <= var95);
+  const worstReturns = returns.filter((r) => r <= var95);
 
   if (worstReturns.length === 0) return var95;
 
@@ -231,7 +222,7 @@ export function calculateCVaR(
 export function calculateRollingVolatility(
   returns: number[],
   windowSize: number = 30,
-  periodsPerYear: number = 252
+  periodsPerYear: number = 252,
 ): number[] {
   if (returns.length < windowSize) return [];
 
@@ -254,7 +245,7 @@ export function calculateRollingVolatility(
  * @returns 2D correlation matrix
  */
 export function calculateCorrelationMatrix(
-  returnsSeries: Record<string, number[]>
+  returnsSeries: Record<string, number[]>,
 ): Record<string, Record<string, number>> {
   const names = Object.keys(returnsSeries);
   const matrix: Record<string, Record<string, number>> = {};
@@ -265,10 +256,7 @@ export function calculateCorrelationMatrix(
       if (name1 === name2) {
         matrix[name1][name2] = 1;
       } else {
-        matrix[name1][name2] = calculateCorrelation(
-          returnsSeries[name1],
-          returnsSeries[name2]
-        );
+        matrix[name1][name2] = calculateCorrelation(returnsSeries[name1], returnsSeries[name2]);
       }
     }
   }
@@ -284,10 +272,7 @@ export function calculateCorrelationMatrix(
  * @param returns2 - Second return series
  * @returns Correlation coefficient (-1 to 1)
  */
-export function calculateCorrelation(
-  returns1: number[],
-  returns2: number[]
-): number {
+export function calculateCorrelation(returns1: number[], returns2: number[]): number {
   if (returns1.length === 0 || returns1.length !== returns2.length) {
     return 0;
   }
@@ -323,7 +308,7 @@ export function calculateStandardDeviation(values: number[]): number {
   if (values.length === 0) return 0;
 
   const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-  const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+  const squaredDiffs = values.map((v) => Math.pow(v - mean, 2));
   const variance = squaredDiffs.reduce((sum, v) => sum + v, 0) / values.length;
 
   return Math.sqrt(variance);
@@ -339,7 +324,7 @@ export function calculateStandardDeviation(values: number[]): number {
 export function calculateWinRate(returns: number[]): number {
   if (returns.length === 0) return 0;
 
-  const wins = returns.filter(r => r > 0).length;
+  const wins = returns.filter((r) => r > 0).length;
   return (wins / returns.length) * 100;
 }
 
@@ -353,8 +338,8 @@ export function calculateWinRate(returns: number[]): number {
 export function calculateProfitFactor(returns: number[]): number {
   if (returns.length === 0) return 0;
 
-  const grossProfit = returns.filter(r => r > 0).reduce((sum, r) => sum + r, 0);
-  const grossLoss = Math.abs(returns.filter(r => r < 0).reduce((sum, r) => sum + r, 0));
+  const grossProfit = returns.filter((r) => r > 0).reduce((sum, r) => sum + r, 0);
+  const grossLoss = Math.abs(returns.filter((r) => r < 0).reduce((sum, r) => sum + r, 0));
 
   if (grossLoss === 0) return grossProfit > 0 ? Infinity : 0;
 
@@ -373,16 +358,12 @@ export function calculateAvgWinLoss(returns: number[]): {
 } {
   if (returns.length === 0) return { avgWin: 0, avgLoss: 0 };
 
-  const wins = returns.filter(r => r > 0);
-  const losses = returns.filter(r => r < 0);
+  const wins = returns.filter((r) => r > 0);
+  const losses = returns.filter((r) => r < 0);
 
-  const avgWin = wins.length > 0
-    ? wins.reduce((sum, r) => sum + r, 0) / wins.length
-    : 0;
+  const avgWin = wins.length > 0 ? wins.reduce((sum, r) => sum + r, 0) / wins.length : 0;
 
-  const avgLoss = losses.length > 0
-    ? losses.reduce((sum, r) => sum + r, 0) / losses.length
-    : 0;
+  const avgLoss = losses.length > 0 ? losses.reduce((sum, r) => sum + r, 0) / losses.length : 0;
 
   return { avgWin, avgLoss };
 }
@@ -400,7 +381,7 @@ export function calculateTimeWeightedReturn(portfolioValues: number[]): number {
   let product = 1;
   for (let i = 1; i < portfolioValues.length; i++) {
     const periodReturn = (portfolioValues[i] - portfolioValues[i - 1]) / portfolioValues[i - 1];
-    product *= (1 + periodReturn);
+    product *= 1 + periodReturn;
   }
 
   return (product - 1) * 100; // Return as percentage
@@ -430,7 +411,7 @@ export function calculateConcentrationRisk(allocations: number[]): number {
  */
 export function calculateLiquidityScore(
   positionValues: number[],
-  tradingVolumes: number[]
+  tradingVolumes: number[],
 ): number {
   if (positionValues.length === 0 || positionValues.length !== tradingVolumes.length) {
     return 0;
@@ -478,7 +459,7 @@ export interface PerformanceSummary {
 export function generatePerformanceSummary(
   returns: number[],
   benchmarkReturns?: number[],
-  periodsPerYear: number = 252
+  periodsPerYear: number = 252,
 ): PerformanceSummary {
   const { avgWin, avgLoss } = calculateAvgWinLoss(returns);
 

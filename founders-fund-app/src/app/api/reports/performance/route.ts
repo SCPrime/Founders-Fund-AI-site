@@ -286,7 +286,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to calculate performance analytics', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to calculate performance analytics',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 },
     );
   }

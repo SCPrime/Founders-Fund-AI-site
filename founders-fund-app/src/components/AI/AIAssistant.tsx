@@ -3,7 +3,7 @@
 import { useOCR } from '@/context/OCRContext';
 import { aiTools, executeAITool } from '@/lib/aiTools';
 import { useFundStore } from '@/store/fundStore';
-import type { Contribution } from '@/types/fund';
+import type { Contribution as FundContribution } from '@/types/fund';
 import { useEffect, useRef, useState } from 'react';
 import OCRChatInterface from './OCRChatInterface';
 import OCRProcessor from './OCRProcessor';
@@ -16,11 +16,6 @@ interface Message {
   content: string;
   imageUrl?: string;
   timestamp: Date;
-}
-
-interface Contribution {
-  date: string;
-  amount: number;
 }
 
 interface ValidationIssue {
@@ -43,7 +38,7 @@ interface SimulationResult {
 }
 
 interface SnapshotData {
-  contributions: Contribution[];
+  contributions: FundContribution[];
   settings: {
     walletSize: number;
     realizedProfit: number;
@@ -89,12 +84,13 @@ export default function AIAssistant() {
     scrollToBottom();
   }, [messages]);
 
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
+  const addMessage = (role: 'user' | 'assistant', content: string, imageUrl?: string) => {
     const newMessage: Message = {
       id: `${role}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role,
       content,
       timestamp: new Date(),
+      imageUrl,
     };
     setMessages((prev) => [...prev, newMessage]);
   };
@@ -158,7 +154,7 @@ export default function AIAssistant() {
 
     response += `**Contributions:** ${snapshot.contributions.length} entries\n`;
     const totalContributions = snapshot.contributions.reduce(
-      (sum: number, c: Contribution) => sum + c.amount,
+      (sum: number, c: FundContribution) => sum + c.amount,
       0,
     );
     response += `• Total Amount: $${totalContributions.toLocaleString()}\n`;
@@ -240,112 +236,38 @@ export default function AIAssistant() {
     }
   };
 
-  const getSnapshot = async () => {
-    setIsLoading(true);
-    addMessage('user', '📊 Get fund snapshot');
-
-    try {
-      const analysis = await analyzeWithAI('', 'get_snapshot');
-      addMessage('assistant', analysis);
-    } catch (error) {
-      addMessage(
-        'assistant',
-        `❌ Snapshot error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const validateCurrentData = async () => {
-    setIsLoading(true);
-    addMessage('user', '🔍 Validate current data');
-
-    try {
-      const analysis = await analyzeWithAI('', 'validate_fund');
-      addMessage('assistant', analysis);
-    } catch (error) {
-      addMessage(
-        'assistant',
-        `❌ Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const runSimulation = async () => {
-    setIsLoading(true);
-    addMessage('user', '🎯 Run simulation');
-
-    try {
-      // Example simulation - double Laura's contributions
-      const simulation = executeAITool('simulate', {
-        contributionChanges: [
-          {
-            action: 'add',
-            contribution: {
-              name: 'Laura (Simulated)',
-              date: '2025-09-15',
-              amount: 10000,
-              rule: 'net',
-              cls: 'investor',
-            },
-          },
-        ],
-      }) as SimulationResult;
-
-      let response = '🎯 **Simulation Results**\n\n';
-      response += `**Current Results:**\n`;
-      response += `• Total Net Profit: $${simulation.currentSummary.totalNetProfit.toLocaleString()}\n`;
-      response += `• Total Contributions: $${simulation.currentSummary.totalContributions.toLocaleString()}\n\n`;
-
-      response += `**Simulated Results:**\n`;
-      response += `• Total Net Profit: $${simulation.simulatedSummary.totalNetProfit.toLocaleString()}\n`;
-      response += `• Total Contributions: $${simulation.simulatedSummary.totalContributions.toLocaleString()}\n\n`;
-
-      const profitDiff =
-        simulation.simulatedSummary.totalNetProfit - simulation.currentSummary.totalNetProfit;
-      response += `**Impact:** ${profitDiff >= 0 ? '+' : ''}$${profitDiff.toLocaleString()} net profit change`;
-
-      addMessage('assistant', response);
-    } catch (error) {
-      addMessage(
-        'assistant',
-        `❌ Simulation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const pushOCRToCalculator = () => {
-    if (!ocrData.extractedData) {
-      addMessage(
-        'assistant',
-        '❌ No OCR data available. Please upload and process an image first.',
-      );
+  const pushOCRToCalculator = async () => {
+    if (!ocrData?.extractedData) {
+      addMessage('assistant', '❌ No OCR data available to push to calculator.');
       return;
     }
 
-    addMessage('user', '📊 Push OCR data to calculator');
+    setIsLoading(true);
+    addMessage('assistant', '📊 Pushing OCR data to calculator...');
 
     try {
-      const data = ocrData.extractedData;
+      const data = ocrData.extractedData as Record<string, unknown>;
 
-      // Update fund store settings
+      // Update settings if available
       if (data.settings) {
+        const settings = data.settings as Record<string, unknown>;
         const settingsUpdates: Record<string, number> = {};
-        if (data.settings.walletSize) settingsUpdates.walletSize = Number(data.settings.walletSize);
-        if (data.settings.realizedProfit)
-          settingsUpdates.realizedProfit = Number(data.settings.realizedProfit);
-        if (data.settings.moonbagUnreal)
-          settingsUpdates.moonbagUnreal = Number(data.settings.moonbagUnreal);
-        if (data.settings.moonbagFounderPct)
-          settingsUpdates.moonbagFounderPct = Number(data.settings.moonbagFounderPct);
-        if (data.settings.mgmtFeePct) settingsUpdates.mgmtFeePct = Number(data.settings.mgmtFeePct);
-        if (data.settings.entryFeePct)
-          settingsUpdates.entryFeePct = Number(data.settings.entryFeePct);
+
+        if (settings.walletSize && Number(settings.walletSize) > 0) {
+          settingsUpdates.walletSize = Math.round(Number(settings.walletSize));
+        }
+        if (settings.realizedProfit && Number(settings.realizedProfit) > 0) {
+          settingsUpdates.realizedProfit = Math.round(Number(settings.realizedProfit));
+        }
+        if (settings.moonbagUnreal && Number(settings.moonbagUnreal) > 0) {
+          settingsUpdates.moonbagUnreal = Math.round(Number(settings.moonbagUnreal));
+        }
+        if (settings.mgmtFeePct && Number(settings.mgmtFeePct) >= 0) {
+          settingsUpdates.mgmtFeePct = Number(settings.mgmtFeePct);
+        }
+        if (settings.entryFeePct && Number(settings.entryFeePct) >= 0) {
+          settingsUpdates.entryFeePct = Number(settings.entryFeePct);
+        }
 
         if (Object.keys(settingsUpdates).length > 0) {
           updateSettings(settingsUpdates);
@@ -353,34 +275,32 @@ export default function AIAssistant() {
       }
 
       // Combine founders and investors for the table
-      const combinedData: Omit<Contribution, 'id'>[] = [];
+      const combinedData: Omit<FundContribution, 'id'>[] = [];
       if (data.founders) {
         combinedData.push(
-          ...data.founders.map((f: Record<string, unknown>) => ({
-            name: (typeof f.name === 'string' ? f.name : 'Founder') || 'Founder',
-            date: (typeof f.date === 'string' ? f.date : '') || '',
-            amount: (typeof f.amount === 'number' ? f.amount : 0) || 0,
-            rule: ((typeof f.rule === 'string' ? f.rule : 'net') || 'net') as 'net' | 'gross',
-            cls: 'founder' as const,
-          })),
+          ...(data.founders as Array<Record<string, unknown>>).map(
+            (f: Record<string, unknown>) => ({
+              name: (typeof f.name === 'string' ? f.name : 'Founder') || 'Founder',
+              date: (typeof f.date === 'string' ? f.date : '') || '',
+              amount: (typeof f.amount === 'number' ? f.amount : 0) || 0,
+              rule: ((typeof f.rule === 'string' ? f.rule : 'net') || 'net') as 'net' | 'gross',
+              cls: 'founder' as const,
+            }),
+          ),
         );
-      }
-      interface InvestorData {
-        name?: string;
-        date: string;
-        amount: number;
-        rule?: string;
       }
 
       if (data.investors) {
         combinedData.push(
-          ...data.investors.map((i: InvestorData) => ({
-          name: i.name || 'Investor',
-          date: i.date,
-          amount: i.amount,
-            rule: (i.rule || 'net') as 'net' | 'gross',
-            cls: 'investor' as const,
-          })),
+          ...(data.investors as Array<Record<string, unknown>>).map(
+            (i: Record<string, unknown>) => ({
+              name: (typeof i.name === 'string' ? i.name : 'Investor') || 'Investor',
+              date: (typeof i.date === 'string' ? i.date : '') || '',
+              amount: (typeof i.amount === 'number' ? i.amount : 0) || 0,
+              rule: ((typeof i.rule === 'string' ? i.rule : 'net') || 'net') as 'net' | 'gross',
+              cls: 'investor' as const,
+            }),
+          ),
         );
       }
 
@@ -393,720 +313,287 @@ export default function AIAssistant() {
 
       if (data.settings) {
         message += '⚙️ **Updated Settings:**\n';
-        if (data.settings.walletSize)
-          message += `💰 Wallet Size: $${data.settings.walletSize.toLocaleString()}\n`;
-        if (data.settings.realizedProfit)
-          message += `📈 Realized Profit: $${data.settings.realizedProfit.toLocaleString()}\n`;
-        if (data.settings.moonbagUnreal)
-          message += `🌙 Moonbag: $${data.settings.moonbagUnreal.toLocaleString()}\n`;
-        if (data.settings.mgmtFeePct)
-          message += `💼 Management Fee: ${data.settings.mgmtFeePct}%\n`;
-        if (data.settings.entryFeePct) message += `💼 Entry Fee: ${data.settings.entryFeePct}%\n`;
+        const settings = data.settings as Record<string, unknown>;
+        if (settings.walletSize)
+          message += `• Wallet Size: $${Number(settings.walletSize).toLocaleString()}\n`;
+        if (settings.realizedProfit)
+          message += `• Realized Profit: $${Number(settings.realizedProfit).toLocaleString()}\n`;
+        if (settings.moonbagUnreal)
+          message += `• Unrealized Profit: $${Number(settings.moonbagUnreal).toLocaleString()}\n`;
       }
 
       if (combinedData.length > 0) {
-        message += `\n👥 **Populated ${combinedData.length} entries** in the Founders & Investors table.\n`;
+        message += `\n📊 **Pushed ${combinedData.length} Contribution${combinedData.length > 1 ? 's' : ''}:**\n`;
+        combinedData.slice(0, 5).forEach((contrib) => {
+          message += `• ${contrib.name}: $${contrib.amount.toLocaleString()} (${contrib.cls})\n`;
+        });
+        if (combinedData.length > 5) {
+          message += `• ... and ${combinedData.length - 5} more\n`;
+        }
       }
-
-      message +=
-        '\n🔄 **Switch to the Calculator tab** to see all the updated data and automatic calculations!';
 
       addMessage('assistant', message);
     } catch (error) {
       addMessage(
         'assistant',
-        `❌ Error pushing data to fund store: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `❌ Error pushing data: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // If using new chat interface, render it
-  if (useChatInterface) {
-    return (
-      <div
-        className="panel"
-        style={{ minHeight: '600px', display: 'flex', flexDirection: 'column' }}
-      >
-        <div
+  return (
+    <div className="panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        <button
+          className="btn"
+          onClick={() => setUseChatInterface(!useChatInterface)}
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '16px',
+            backgroundColor: useChatInterface ? 'var(--accent)' : 'var(--panel)',
+            color: useChatInterface ? 'var(--ink)' : 'var(--text)',
           }}
         >
-          <h2>AI Assistant</h2>
-          <button
-            onClick={() => setUseChatInterface(false)}
-            style={{
-              padding: '6px 12px',
-              fontSize: '12px',
-              backgroundColor: 'var(--panel)',
-              color: 'var(--text)',
-              border: '1px solid var(--line)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-            title="Switch to classic interface"
-          >
-            🔄 Classic Mode
-          </button>
-        </div>
+          {useChatInterface ? '📱 Chat Interface' : '📋 Legacy Interface'}
+        </button>
+      </div>
+
+      {useChatInterface ? (
         <OCRChatInterface
           onExtractComplete={(data) => {
             console.log('OCR Chat extraction complete:', data);
           }}
         />
-      </div>
-    );
-  }
-
-  return (
-    <div className="panel" style={{ minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-        }}
-      >
-        <h2>AI Assistant</h2>
-        <button
-          onClick={() => setUseChatInterface(true)}
-          style={{
-            padding: '6px 12px',
-            fontSize: '12px',
-            backgroundColor: 'var(--accent)',
-            color: 'var(--ink)',
-            border: '1px solid var(--accent)',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-          }}
-          title="Switch to new chat interface with image upload"
-        >
-          💬 Chat Mode
-        </button>
-      </div>
-
-      {/* Quick Actions */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <button className="btn" onClick={getSnapshot} disabled={isLoading}>
-          📊 Get Snapshot
-        </button>
-        <button className="btn" onClick={validateCurrentData} disabled={isLoading}>
-          🔍 Validate Data
-        </button>
-        <button className="btn" onClick={runSimulation} disabled={isLoading}>
-          🎯 Run Simulation
-        </button>
-        {ocrData.extractedData && (
-          <button
-            onClick={pushOCRToCalculator}
-            disabled={isLoading}
-            style={{
-              padding: '6px 12px',
-              fontSize: '12px',
-              backgroundColor: 'var(--good)',
-              color: 'var(--text)',
-              border: '1px solid var(--good)',
-              borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            📊 Push OCR to Fund Store
-          </button>
-        )}
-      </div>
-
-      {/* OCR Processor */}
-      <OCRProcessor
-        onOCRComplete={(extractedData) => {
-          addMessage(
-            'assistant',
-            '🎯 OCR Processing Complete! Extracted financial data from your image.',
-          );
-
-          // Prepare contributions for fund store
-          const combinedData = [];
-
-          interface FounderData {
-            name?: string;
-            date: string;
-            amount: number;
-            rule?: string;
-          }
-
-          interface InvestorData {
-            name?: string;
-            date: string;
-            amount: number;
-            rule?: string;
-          }
-
-          if (extractedData.founders && extractedData.founders.length > 0) {
-            combinedData.push(
-              ...extractedData.founders.map((f: FounderData) => ({
-              name: f.name || 'Founder',
-                ts: f.date || new Date().toISOString().split('T')[0],
-                amount: f.amount || 0,
-                owner: 'founders' as const,
-                type: 'seed' as const,
-                earnsDollarDaysThisWindow: true,
-              })),
-            );
-            addMessage(
-              'assistant',
-              `✅ Processed ${extractedData.founders.length} founder entries!`,
-            );
-          }
-
-          if (extractedData.investors && extractedData.investors.length > 0) {
-            combinedData.push(
-              ...extractedData.investors.map((i) => ({
-              name: i.name || 'Investor',
-                date: i.date || new Date().toISOString().split('T')[0],
-                amount: i.amount || 0,
-              rule: i.rule || 'net',
-                cls: 'investor' as const,
-              })),
-            );
-            addMessage(
-              'assistant',
-              `✅ Processed ${extractedData.investors.length} investor entries!`,
-            );
-          }
-
-          // Auto-populate contributions to fund store
-          if (combinedData.length > 0) {
-            populateContributions(combinedData);
-          }
-
-          if (extractedData.settings) {
-            // Update fund store settings with proper validation
-            const settingsUpdates: Record<string, number> = {};
-
-            if (
-              extractedData.settings.walletSize &&
-              Number(extractedData.settings.walletSize) > 0
-            ) {
-              settingsUpdates.walletSize = Math.round(Number(extractedData.settings.walletSize));
-            }
-            if (
-              extractedData.settings.realizedProfit &&
-              Number(extractedData.settings.realizedProfit) > 0
-            ) {
-              settingsUpdates.realizedProfit = Math.round(
-                Number(extractedData.settings.realizedProfit),
+      ) : (
+        <>
+          <OCRProcessor
+            onOCRComplete={(extractedData) => {
+              addMessage(
+                'assistant',
+                `✅ OCR extraction complete! Found ${Object.keys(extractedData).length} data fields.`,
               );
-            }
-            if (
-              extractedData.settings.unrealizedProfit &&
-              Number(extractedData.settings.unrealizedProfit) > 0
-            ) {
-              settingsUpdates.moonbagUnreal = Math.round(
-                Number(extractedData.settings.unrealizedProfit),
-              );
-            }
-            if (
-              extractedData.settings.moonbagUnreal &&
-              Number(extractedData.settings.moonbagUnreal) > 0
-            ) {
-              settingsUpdates.moonbagUnreal = Math.round(
-                Number(extractedData.settings.moonbagUnreal),
-              );
-            }
-            if (
-              extractedData.settings.moonbagFounderPct &&
-              Number(extractedData.settings.moonbagFounderPct) >= 0 &&
-              Number(extractedData.settings.moonbagFounderPct) <= 100
-            ) {
-              settingsUpdates.moonbagFounderPct = Number(extractedData.settings.moonbagFounderPct);
-            }
-            if (
-              extractedData.settings.mgmtFeePct &&
-              Number(extractedData.settings.mgmtFeePct) >= 0 &&
-              Number(extractedData.settings.mgmtFeePct) <= 100
-            ) {
-              settingsUpdates.mgmtFeePct = Number(extractedData.settings.mgmtFeePct);
-            }
-            if (
-              extractedData.settings.entryFeePct &&
-              Number(extractedData.settings.entryFeePct) >= 0 &&
-              Number(extractedData.settings.entryFeePct) <= 100
-            ) {
-              settingsUpdates.entryFeePct = Number(extractedData.settings.entryFeePct);
-            }
-
-            if (Object.keys(settingsUpdates).length > 0) {
-              updateSettings(settingsUpdates);
-            }
-
-            let settingsMessage = '⚙️ **Fund Settings Updated:**\n\n';
-            if (settingsUpdates.walletSize) {
-              settingsMessage += `💰 **Wallet Size:** $${settingsUpdates.walletSize.toLocaleString()}\n`;
-            }
-            if (settingsUpdates.realizedProfit) {
-              settingsMessage += `📈 **Realized Profit:** $${settingsUpdates.realizedProfit.toLocaleString()}\n`;
-            }
-            if (settingsUpdates.moonbagUnreal) {
-              const unrealizedAmount = settingsUpdates.moonbagUnreal;
-              settingsMessage += `🌙 **Unrealized Profit (Moonbag):** $${unrealizedAmount.toLocaleString()}\n`;
-              settingsMessage += `   • ${settings.moonbagFounderPct}% to founders: $${Math.round(unrealizedAmount * (settings.moonbagFounderPct / 100)).toLocaleString()}\n`;
-              settingsMessage += `   • ${100 - settings.moonbagFounderPct}% to investors (time-weighted): $${Math.round(unrealizedAmount * ((100 - settings.moonbagFounderPct) / 100)).toLocaleString()}\n`;
-            }
-            if (settingsUpdates.mgmtFeePct || settingsUpdates.entryFeePct) {
-              settingsMessage += `💼 **Fee Structure:**\n`;
-              if (settingsUpdates.mgmtFeePct) {
-                settingsMessage += `   • Management Fee: ${settingsUpdates.mgmtFeePct}% (investors pay → founders receive)\n`;
-              }
-              if (settingsUpdates.entryFeePct) {
-                settingsMessage += `   • Entry Fee: ${settingsUpdates.entryFeePct}% (investors pay → founders receive)\n`;
-              }
-            }
-            if (extractedData.settings.transactionStats) {
-              interface TransactionStats {
-                totalTransactions?: number;
-                averageAmount?: number;
-                [key: string]: unknown;
-              }
-              const stats = extractedData.settings.transactionStats as TransactionStats | undefined;
-              settingsMessage += `📊 **Trading Performance:** ${stats.winning}W/${stats.losing}L (${stats.winRate.toFixed(1)}% win rate)\n`;
-            }
-
-            addMessage('assistant', settingsMessage);
-          }
-
-          addMessage(
-            'assistant',
-            '🚀 **All Done!** Your financial document has been processed and the data has been automatically populated into the fund store with real-time calculations. Check the main Calculator tab to see the results.',
-          );
-        }}
-        onError={(error) => {
-          addMessage('assistant', `❌ OCR Error: ${error}`);
-        }}
-      />
-
-      {/* Extracted Data Display */}
-      {ocrData.extractedData && (
-        <div
-          style={{
-          marginBottom: '16px',
-          padding: '16px',
-          backgroundColor: 'var(--panel)',
-          border: '2px solid var(--accent)',
-            borderRadius: '8px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
             }}
-          >
-            <h3 style={{ margin: 0, color: 'var(--accent)' }}>📊 Extracted Data Ready</h3>
-            <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-              Confidence: {ocrData.confidence || 0}%
-            </span>
-          </div>
-
-          {/* Data Summary */}
-          <div
-            style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-              marginBottom: '16px',
+            onError={(error) => {
+              addMessage('assistant', `❌ OCR Error: ${error}`);
             }}
-          >
-            {Object.entries(ocrData.extractedData || {}).map(([key, value]) => (
+          />
+
+          {ocrData?.extractedData && (
+            <div
+              style={{
+                padding: '16px',
+                backgroundColor: 'var(--panel)',
+                border: '1px solid var(--line)',
+                borderRadius: '8px',
+                marginBottom: '12px',
+              }}
+            >
               <div
-                key={key}
                 style={{
-                backgroundColor: 'var(--ink)',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                  border: '1px solid var(--line)',
-                }}
-              >
-                <div
-                  style={{
-                  fontSize: '10px',
-                  color: 'var(--muted)',
-                  textTransform: 'uppercase',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
-                </div>
-                <div
-                  style={{
                   fontSize: '14px',
-                  color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {value !== null && value !== undefined
-                    ? typeof value === 'number' &&
-                      (key.includes('Value') || key.includes('PNL') || key.includes('Balance'))
-                      ? `$${value.toLocaleString()}`
-                      : String(value)
-                    : 'Not Found'}
-                </div>
+                  fontWeight: 'bold',
+                  marginBottom: '12px',
+                  color: 'var(--text)',
+                }}
+              >
+                📊 Extracted Data Preview
               </div>
-            ))}
-          </div>
 
-          {/* Push Button */}
-          <button
-            onClick={pushOCRToCalculator}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              backgroundColor: 'var(--good)',
-              color: 'var(--text)',
-              border: '2px solid var(--good)',
-              borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.6 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}
-          >
-            {isLoading
-              ? '⏳ Pushing to Fund Store...'
-              : '📊 Push Data to Calculator & Verify Calculations'}
-          </button>
-
-          <div
-            style={{
-            marginTop: '8px',
-            fontSize: '12px',
-            color: 'var(--muted)',
-              textAlign: 'center',
-            }}
-          >
-            This will populate the calculator tables and trigger real-time calculations
-          </div>
-        </div>
-      )}
-
-      {/* Messages Area */}
-      <div
-        style={{
-        flex: 1,
-        overflowY: 'auto',
-        border: '1px solid var(--line)',
-        borderRadius: '8px',
-        padding: '12px',
-        marginBottom: '12px',
-          backgroundColor: 'var(--ink)',
-        }}
-      >
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            style={{
-            marginBottom: '12px',
-            padding: '8px',
-            borderRadius: '6px',
-            backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
-              border: message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)',
-            }}
-          >
-            <div
-              style={{
-              fontSize: '11px',
-              color: 'var(--muted)',
-              marginBottom: '4px',
-                fontWeight: 'bold',
-              }}
-            >
-              {message.role === 'user' ? '👤 You' : '🤖 AI Assistant'}
-              <span style={{ float: 'right', fontWeight: 'normal' }}>
-                {message.timestamp.toLocaleTimeString()}
-              </span>
-            </div>
-            {message.imageUrl && (
-              <div style={{ marginBottom: '8px' }}>
-                <img
-                  src={message.imageUrl}
-                  alt="Uploaded image"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '300px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                  }}
-                />
-              </div>
-            )}
-            <div style={{ whiteSpace: 'pre-line', fontSize: '13px', color: 'var(--text)' }}>
-              {message.content}
-            </div>
-          </div>
-        ))}
-        {isLoading && (
-          <div
-            style={{
-            padding: '8px',
-            fontStyle: 'italic',
-            color: 'var(--muted)',
-              textAlign: 'center',
-            }}
-          >
-            🤖 AI is thinking...
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Smart Validation Section */}
-      <SmartValidation />
-
-      {/* Predictive Analytics Section */}
-      <PredictiveAnalytics />
-
-      {/* Legacy Input Area (kept for backward compatibility) */}
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Or type a message here..."
-          disabled={isLoading}
-          style={{
-            flex: 1,
-            minHeight: '40px',
-            maxHeight: '100px',
-            resize: 'vertical',
-            padding: '8px',
-            border: '1px solid var(--line)',
-            borderRadius: '8px',
-            backgroundColor: 'var(--ink)',
-            color: 'var(--text)',
-          }}
-        />
-        <button
-          className="btn"
-          onClick={handleSendMessage}
-          disabled={!input.trim() || isLoading}
-          style={{
-            backgroundColor: input.trim() && !isLoading ? 'var(--accent)' : 'var(--panel)',
-            color: input.trim() && !isLoading ? 'var(--ink)' : 'var(--muted)',
-            border: `1px solid ${input.trim() && !isLoading ? 'var(--accent)' : 'var(--line)'}`,
-            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Send
-        </button>
-      </div>
-    </div>
-  );
-}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
-              marginBottom: '16px',
-            }}
-          >
-            {Object.entries(ocrData.extractedData || {}).map(([key, value]) => (
               <div
-                key={key}
                 style={{
-                  backgroundColor: 'var(--ink)',
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--line)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                {Object.entries(ocrData.extractedData || {}).map(([key, value]) => (
+                  <div
+                    key={key}
+                    style={{
+                      backgroundColor: 'var(--ink)',
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--line)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'var(--muted)',
+                        textTransform: 'uppercase',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        color:
+                          value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {value !== null && value !== undefined
+                        ? typeof value === 'number' &&
+                          (key.includes('Value') || key.includes('PNL') || key.includes('Balance'))
+                          ? `$${value.toLocaleString()}`
+                          : String(value)
+                        : 'Not Found'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={pushOCRToCalculator}
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '12px 24px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: 'var(--good)',
+                  color: 'var(--text)',
+                  border: '2px solid var(--good)',
+                  borderRadius: '8px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  opacity: isLoading ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+              >
+                {isLoading
+                  ? '⏳ Pushing to Fund Store...'
+                  : '📊 Push Data to Calculator & Verify Calculations'}
+              </button>
+
+              <div
+                style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  color: 'var(--muted)',
+                  textAlign: 'center',
+                }}
+              >
+                This will populate the calculator tables and trigger real-time calculations
+              </div>
+            </div>
+          )}
+
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              border: '1px solid var(--line)',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '12px',
+              backgroundColor: 'var(--ink)',
+            }}
+          >
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                style={{
+                  marginBottom: '12px',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  backgroundColor:
+                    message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
+                  border:
+                    message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '10px',
+                    fontSize: '11px',
                     color: 'var(--muted)',
-                    textTransform: 'uppercase',
                     marginBottom: '4px',
-                  }}
-                >
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
-                </div>
-                <div
-                  style={{
-                    fontSize: '14px',
-                    color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
                     fontWeight: 'bold',
                   }}
                 >
-                  {value !== null && value !== undefined
-                    ? typeof value === 'number' &&
-                      (key.includes('Value') || key.includes('PNL') || key.includes('Balance'))
-                      ? `$${value.toLocaleString()}`
-                      : String(value)
-                    : 'Not Found'}
+                  {message.role === 'user' ? '👤 You' : '🤖 AI Assistant'}
+                  <span style={{ float: 'right', fontWeight: 'normal' }}>
+                    {message.timestamp.toLocaleTimeString()}
+                  </span>
+                </div>
+                {message.imageUrl && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <img
+                      src={message.imageUrl}
+                      alt="Uploaded image"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                      }}
+                    />
+                  </div>
+                )}
+                <div style={{ whiteSpace: 'pre-line', fontSize: '13px', color: 'var(--text)' }}>
+                  {message.content}
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Push Button */}
-          <button
-            onClick={pushOCRToCalculator}
-            disabled={isLoading}
-            style={{
-              width: '100%',
-              padding: '12px 24px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              backgroundColor: 'var(--good)',
-              color: 'var(--text)',
-              border: '2px solid var(--good)',
-              borderRadius: '8px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.6 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-            }}
-          >
-            {isLoading
-              ? '⏳ Pushing to Fund Store...'
-              : '📊 Push Data to Calculator & Verify Calculations'}
-          </button>
-
-          <div
-            style={{
-              marginTop: '8px',
-              fontSize: '12px',
-              color: 'var(--muted)',
-              textAlign: 'center',
-            }}
-          >
-            This will populate the calculator tables and trigger real-time calculations
-          </div>
-        </div>
-      )}
-
-      {/* Messages Area */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          border: '1px solid var(--line)',
-          borderRadius: '8px',
-          padding: '12px',
-          marginBottom: '12px',
-          backgroundColor: 'var(--ink)',
-        }}
-      >
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            style={{
-              marginBottom: '12px',
-              padding: '8px',
-              borderRadius: '6px',
-              backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
-              border: message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '11px',
-                color: 'var(--muted)',
-                marginBottom: '4px',
-                fontWeight: 'bold',
-              }}
-            >
-              {message.role === 'user' ? '👤 You' : '🤖 AI Assistant'}
-              <span style={{ float: 'right', fontWeight: 'normal' }}>
-                {message.timestamp.toLocaleTimeString()}
-              </span>
-            </div>
-            {message.imageUrl && (
-              <div style={{ marginBottom: '8px' }}>
-                <img
-                  src={message.imageUrl}
-                  alt="Uploaded image"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '300px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                  }}
-                />
+            {isLoading && (
+              <div
+                style={{
+                  padding: '8px',
+                  fontStyle: 'italic',
+                  color: 'var(--muted)',
+                  textAlign: 'center',
+                }}
+              >
+                🤖 AI is thinking...
               </div>
             )}
-            <div style={{ whiteSpace: 'pre-line', fontSize: '13px', color: 'var(--text)' }}>
-              {message.content}
-            </div>
+            <div ref={messagesEndRef} />
           </div>
-        ))}
-        {isLoading && (
-          <div
-            style={{
-              padding: '8px',
-              fontStyle: 'italic',
-              color: 'var(--muted)',
-              textAlign: 'center',
-            }}
-          >
-            🤖 AI is thinking...
+
+          <SmartValidation />
+
+          <PredictiveAnalytics />
+
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Or type a message here..."
+              disabled={isLoading}
+              style={{
+                flex: 1,
+                minHeight: '40px',
+                maxHeight: '100px',
+                resize: 'vertical',
+                padding: '8px',
+                border: '1px solid var(--line)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--ink)',
+                color: 'var(--text)',
+              }}
+            />
+            <button
+              className="btn"
+              onClick={handleSendMessage}
+              disabled={!input.trim() || isLoading}
+              style={{
+                backgroundColor: input.trim() && !isLoading ? 'var(--accent)' : 'var(--panel)',
+                color: input.trim() && !isLoading ? 'var(--ink)' : 'var(--muted)',
+                border: `1px solid ${input.trim() && !isLoading ? 'var(--accent)' : 'var(--line)'}`,
+                cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+              }}
+            >
+              Send
+            </button>
           </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Smart Validation Section */}
-      <SmartValidation />
-
-      {/* Predictive Analytics Section */}
-      <PredictiveAnalytics />
-
-      {/* Legacy Input Area (kept for backward compatibility) */}
-      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Or type a message here..."
-          disabled={isLoading}
-          style={{
-            flex: 1,
-            minHeight: '40px',
-            maxHeight: '100px',
-            resize: 'vertical',
-            padding: '8px',
-            border: '1px solid var(--line)',
-            borderRadius: '8px',
-            backgroundColor: 'var(--ink)',
-            color: 'var(--text)',
-          }}
-        />
-        <button
-          className="btn"
-          onClick={handleSendMessage}
-          disabled={!input.trim() || isLoading}
-          style={{
-            backgroundColor: input.trim() && !isLoading ? 'var(--accent)' : 'var(--panel)',
-            color: input.trim() && !isLoading ? 'var(--ink)' : 'var(--muted)',
-            border: `1px solid ${input.trim() && !isLoading ? 'var(--accent)' : 'var(--line)'}`,
-            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Send
-        </button>
-      </div>
+        </>
+      )}
     </div>
   );
 }
