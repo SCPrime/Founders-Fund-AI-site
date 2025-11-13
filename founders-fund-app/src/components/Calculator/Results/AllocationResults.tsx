@@ -1,6 +1,7 @@
 'use client';
 
 import { useAllocationStore, allocationSelectors } from '@/store/allocationStore';
+import { ExportPDFButton } from '@/components/Reports/ExportPDFButton';
 
 export default function AllocationResults() {
   const {
@@ -96,16 +97,35 @@ export default function AllocationResults() {
 
   return (
     <div className="panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <h2>Allocation Results</h2>
-        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
-          {isComputing ? (
-            <span style={{ color: 'var(--warn)' }}>🔄 Computing...</span>
-          ) : lastComputeTime ? (
-            <span>Updated: {new Date(lastComputeTime).toLocaleTimeString()}</span>
-          ) : (
-            <span>Not calculated</span>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {outputs && (
+            <ExportPDFButton
+              reportType="portfolio-performance"
+              allocationState={state}
+              allocationOutputs={outputs}
+              label="Export Portfolio PDF"
+              style={{
+                padding: '8px 16px',
+                fontSize: '12px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            />
           )}
+          <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+            {isComputing ? (
+              <span style={{ color: 'var(--warn)' }}>🔄 Computing...</span>
+            ) : lastComputeTime ? (
+              <span>Updated: {new Date(lastComputeTime).toLocaleTimeString()}</span>
+            ) : (
+              <span>Not calculated</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -146,12 +166,13 @@ export default function AllocationResults() {
               <th className="right">Mgmt Fee</th>
               <th className="right">Moonbag</th>
               <th className="right">End Capital</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {allParticipants.length === 0 ? (
               <tr>
-                <td colSpan={9} className="muted" style={{ textAlign: 'center', padding: '20px' }}>
+                <td colSpan={10} className="muted" style={{ textAlign: 'center', padding: '20px' }}>
                   {isComputing ? 'Computing results...' : 'No participants found. Add contributions to see results.'}
                 </td>
               </tr>
@@ -209,6 +230,26 @@ export default function AllocationResults() {
                       )}
                     </td>
                     <td className="right">{formatCurrency(participant.endCapital)}</td>
+                    <td>
+                      {participant.type === 'investor' && (
+                        <ExportPDFButton
+                          reportType="individual-investor"
+                          allocationState={state}
+                          allocationOutputs={outputs}
+                          investorName={participant.name}
+                          label="PDF"
+                          style={{
+                            padding: '4px 8px',
+                            fontSize: '10px',
+                            backgroundColor: '#16a34a',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                          }}
+                        />
+                      )}
+                    </td>
                   </tr>
                 ))}
 
@@ -256,6 +297,7 @@ export default function AllocationResults() {
                   <td className="right">
                     <strong>{formatCurrency(totals.endCapital)}</strong>
                   </td>
+                  <td>-</td>
                 </tr>
               </>
             )}

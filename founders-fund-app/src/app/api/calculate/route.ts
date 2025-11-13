@@ -6,6 +6,8 @@ import type { Contribution } from '@prisma/client';
 import type { AllocationState, AllocationOutputs, Leg } from '@/types/allocation';
 import { prisma } from '@/lib/prisma';
 import { BASELINE_PORTFOLIO_ID } from '@/lib/constants';
+import { requireAuth } from '@/lib/auth';
+import { filterAllocationByRole } from '@/lib/privacy';
 
 // Convert Prisma Contribution to AllocationState Leg format
 function contributionToLeg(r: Contribution): Leg {
@@ -45,6 +47,12 @@ async function mergeWithBaseline(clientState: AllocationState): Promise<Allocati
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check - require user to be logged in
+    const { session, error: authError } = await requireAuth();
+    if (authError) {
+      return authError;
+    }
+
     // Rate limiting - 20 requests per minute per IP for calculations
     const headersList = headers();
     const ip = headersList.get('x-forwarded-for')?.split(',')[0] ??
@@ -94,7 +102,14 @@ export async function POST(request: NextRequest) {
 
     const outputs: AllocationOutputs = AllocationEngine.recompute(mergedState);
 
-    const response = NextResponse.json(outputs);
+    // Apply privacy filtering based on user role
+    const filteredOutputs = filterAllocationByRole(outputs, {
+      userId: session!.user.id,
+      userRole: session!.user.role,
+      userName: session!.user.name,
+    });
+
+    const response = NextResponse.json(filteredOutputs);
 
     // Set rate limiting headers
     Object.entries(rateLimitHeaders).forEach(([key, value]) => {

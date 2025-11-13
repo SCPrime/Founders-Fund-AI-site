@@ -1,0 +1,179 @@
+{
+  "project": {
+    "name": "Founders Fund AI Site",
+    "description": "Trading bot with OCR PNL extraction and performance tracking",
+    "version": "1.0.0",
+    "owner": "Dr. SC Prime",
+    "created": "2025-11-12"
+  },
+  "services": {
+    "frontend": {
+      "name": "Next.js Frontend",
+      "port": 3000,
+      "url": "http://localhost:3000",
+      "health_check": "http://localhost:3000/api/healthz",
+      "directory": "founders-fund-app",
+      "agent": "Cursor Claude #1",
+      "tech_stack": ["Next.js 15", "React", "TypeScript", "Tailwind CSS"]
+    },
+    "api": {
+      "name": "Vercel API Routes",
+      "port": 3000,
+      "url": "http://localhost:3000/api",
+      "health_check": "http://localhost:3000/api/healthz",
+      "directory": "founders-fund-app/app/api",
+      "agent": "Cursor Claude #1 & Terminal Claude (shared)",
+      "tech_stack": ["Next.js API Routes", "TypeScript"]
+    },
+    "ocr_worker": {
+      "name": "OCR Worker Service",
+      "port": 8080,
+      "url": "http://localhost:8080",
+      "health_check": "http://localhost:8080/health",
+      "directory": "founders-fund-app/ocr-worker",
+      "agent": "Terminal Claude",
+      "tech_stack": ["Python", "OpenAI GPT-4 Vision"]
+    },
+    "database": {
+      "name": "PostgreSQL",
+      "port": 5432,
+      "url": "postgresql://localhost:5432",
+      "agent": "Terminal Claude",
+      "tech_stack": ["PostgreSQL", "Prisma ORM"]
+    }
+  },
+  "agent_domains": {
+    "cursor_claude_1": {
+      "name": "Cursor Claude #1 (Frontend & Full-Stack)",
+      "specialties": ["Frontend", "TypeScript", "React", "Next.js", "UI/UX"],
+      "directories": [
+        "founders-fund-app/src",
+        "founders-fund-app/app",
+        "founders-fund-app/components",
+        "founders-fund-app/public"
+      ],
+      "file_patterns": ["*.tsx", "*.ts", "*.css", "*.json"],
+      "never_touch": ["founders-fund-app/ocr-worker/**/*.py", "*.py"]
+    },
+    "terminal_claude": {
+      "name": "Terminal Claude (Backend & DevOps)",
+      "specialties": ["Python", "Backend", "DevOps", "Database", "Infrastructure"],
+      "directories": [
+        "founders-fund-app/ocr-worker",
+        "founders-fund-app/prisma",
+        "scripts"
+      ],
+      "file_patterns": ["*.py", "*.sql", "*.sh", "*.yml", "Dockerfile"],
+      "never_touch": ["founders-fund-app/src/**/*.tsx", "founders-fund-app/app/**/*.tsx"]
+    },
+    "desktop_claude": {
+      "name": "Desktop Claude (Strategic Advisor)",
+      "specialties": ["Architecture", "Planning", "Documentation", "Strategy"],
+      "directories": ["docs", "*.md"],
+      "file_patterns": ["*.md", "*.txt"],
+      "never_touch": []
+    }
+  },
+  "shared_files": {
+    "coordination_required": [
+      "package.json",
+      "package-lock.json",
+      ".env",
+      ".env.example",
+      "docker-compose.yml",
+      "mod_squad.config.json",
+      ".github/workflows/*.yml",
+      "README.md",
+      "MOD_SQUAD_LIVE_FEED.md"
+    ],
+    "protocol": {
+      "post_intent": true,
+      "wait_time_minutes": 2,
+      "announce_completion": true,
+      "verification_required": true
+    }
+  },
+  "validation": {
+    "pre_commit_checks": {
+      "enabled": true,
+      "scripts": [
+        "npm run lint",
+        "npm run type-check",
+        "python scripts/repo_audit.py"
+      ]
+    },
+    "port_consistency": {
+      "enabled": true,
+      "enforce": true,
+      "dangerous_ports": [80, 443],
+      "recommended_ports": {
+        "frontend": 3000,
+        "backend": 8000,
+        "ocr_worker": 8080,
+        "database": 5432
+      }
+    },
+    "encoding": {
+      "no_emojis_in_scripts": true,
+      "use_utf8": true,
+      "windows_cp1252_safe": true
+    }
+  },
+  "coordination": {
+    "live_feed": {
+      "file": "MOD_SQUAD_LIVE_FEED.md",
+      "update_frequency_minutes": 30,
+      "required_sections": [
+        "CURRENT TEAM STATUS",
+        "ACTIVE WORK STREAMS",
+        "PROJECT CONTEXT",
+        "RECENT COMPLETIONS",
+        "BLOCKERS"
+      ]
+    },
+    "protocols": {
+      "read_before_write": true,
+      "announce_intent": true,
+      "update_progress": true,
+      "flag_blockers": true,
+      "celebrate_wins": true
+    }
+  },
+  "performance_targets": {
+    "velocity_multiplier": "3-4x",
+    "parallel_agents": 2,
+    "zero_conflicts": true,
+    "test_pass_rate": "100%",
+    "deployment_frequency": "multiple per day"
+  },
+  "priority_tasks": {
+    "p0_critical": [
+      "Ensure all services are running and healthy",
+      "Fix any broken functionality"
+    ],
+    "p1_high": [
+      "Add Discord/Slack notifications for PNL alerts",
+      "Backtest MACD vs RSI for volatility filter",
+      "Implement automated portfolio rebalancing"
+    ],
+    "p2_medium": [
+      "Create performance analytics dashboard",
+      "Add more comprehensive tests",
+      "Improve error handling"
+    ],
+    "p3_low": [
+      "Documentation improvements",
+      "Code refactoring",
+      "Performance optimizations"
+    ]
+  },
+  "deployment": {
+    "production_url": "https://founders-fund-8a160pzf7-scprimes-projects.vercel.app",
+    "staging_url": null,
+    "provider": "Vercel",
+    "auto_deploy": true,
+    "branch": "main"
+  },
+  "mod_squad_version": "2.0",
+  "last_updated": "2025-11-12T19:30:00Z"
+}

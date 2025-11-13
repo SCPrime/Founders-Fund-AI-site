@@ -1,5 +1,5 @@
 // Prisma Schema for Founders Fund Allocation System
-// Simplified schema focusing on core Portfolio, Contribution, and Snapshot models
+// Complete schema for AI-powered investment management platform
 
 generator client {
   provider = "prisma-client-js"
@@ -10,27 +10,99 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User model: Authentication and role-based access control
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String?
+  role         UserRole
+  portfolios   Portfolio[]
+  chatMessages ChatMessage[]
+  accounts     Account[]
+  sessions     Session[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([email])
+}
+
+// NextAuth.js Account model
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// NextAuth.js Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// NextAuth.js VerificationToken model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum UserRole {
+  FOUNDER
+  INVESTOR
+  ADMIN
+}
+
 // Portfolio model: one per saved scenario or user session
 model Portfolio {
-  id            String         @id @default(cuid())
-  name          String
-  totalValue    Decimal?       @db.Decimal(18, 2) // currency precision
-  targetReturn  Decimal?       @db.Decimal(5, 2)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  contributions Contribution[] @relation("PortfolioContributions")
-  snapshots     Snapshot[]     @relation("PortfolioSnapshots")
+  id                   String                @id @default(cuid())
+  name                 String
+  userId               String?
+  owner                User?                 @relation(fields: [userId], references: [id])
+  totalValue           Decimal?              @db.Decimal(18, 2) // currency precision
+  targetReturn         Decimal?              @db.Decimal(5, 2)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  contributions        Contribution[]        @relation("PortfolioContributions")
+  snapshots            Snapshot[]            @relation("PortfolioSnapshots")
+  agents               Agent[]
+  scanReports          ScanReport[]
+  allocations          Allocation[]
+  reports              Report[]
+  performanceSnapshots PerformanceSnapshot[]
 
   @@index([name])
+  @@index([userId])
 }
 
 // Contribution model: records an investment or cashflow leg
 model Contribution {
   id                        String     @id @default(cuid())
-  portfolioId               String?    // optional to allow baseline data
+  portfolioId               String? // optional to allow baseline data
   portfolio                 Portfolio? @relation("PortfolioContributions", fields: [portfolioId], references: [id], onDelete: Cascade)
-  owner                     String     // "founders" or "investor"
-  name                      String     // investor name or "Founders"
+  owner                     String // "founders" or "investor"
+  name                      String // investor name or "Founders"
   type                      LegType
   amount                    Decimal    @db.Decimal(18, 2)
   ts                        DateTime   @db.Timestamptz(6) // timezone-aware
@@ -61,16 +133,149 @@ model Snapshot {
 
 // Scan model: records OCR scan history with image + parsed data + contributions
 model Scan {
-  id             String   @id @default(cuid())
-  portfolioId    String?  // can be your baseline or any future portfolio
-  imageUrl       String?  // optional: set when Vercel Blob enabled
-  ocrText        String?
-  ai             Json?    // raw AI parse result
-  contributions  Json?    // contributions we committed from this scan
-  userLabel      String?  // optional: "Binance Aug 01", etc.
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  portfolioId   String? // can be your baseline or any future portfolio
+  imageUrl      String? // optional: set when Vercel Blob enabled
+  ocrText       String?
+  ai            Json? // raw AI parse result
+  contributions Json? // contributions we committed from this scan
+  userLabel     String? // optional: "Binance Aug 01", etc.
+  createdAt     DateTime @default(now())
 
   @@index([portfolioId, createdAt])
+}
+
+// Agent model: AI trading agents (10-20 meme coin agents)
+model Agent {
+  id          String             @id @default(cuid())
+  portfolioId String
+  portfolio   Portfolio          @relation(fields: [portfolioId], references: [id])
+  name        String
+  symbol      String
+  strategy    Json
+  deployed    DateTime           @default(now())
+  status      AgentStatus
+  allocation  Decimal            @db.Decimal(18, 2)
+  trades      Trade[]
+  performance AgentPerformance[]
+  scans       ScanReport[]
+
+  @@index([portfolioId])
+  @@index([status])
+}
+
+enum AgentStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+// Trade model: Track all buy/sell transactions
+model Trade {
+  id        String    @id @default(cuid())
+  agentId   String
+  agent     Agent     @relation(fields: [agentId], references: [id])
+  timestamp DateTime  @default(now())
+  side      TradeSide
+  amount    Decimal   @db.Decimal(18, 8)
+  price     Decimal   @db.Decimal(18, 8)
+  fees      Decimal   @db.Decimal(18, 8)
+  pnl       Decimal?  @db.Decimal(18, 2)
+
+  @@index([agentId, timestamp])
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+// AgentPerformance model: Time-series performance metrics
+model AgentPerformance {
+  id            String   @id @default(cuid())
+  agentId       String
+  agent         Agent    @relation(fields: [agentId], references: [id])
+  timestamp     DateTime @default(now())
+  totalValue    Decimal  @db.Decimal(18, 2)
+  realizedPnl   Decimal  @db.Decimal(18, 2)
+  unrealizedPnl Decimal  @db.Decimal(18, 2)
+  winRate       Decimal  @db.Decimal(5, 2)
+  sharpeRatio   Decimal? @db.Decimal(10, 4)
+  maxDrawdown   Decimal? @db.Decimal(18, 2)
+
+  @@index([agentId, timestamp])
+}
+
+// ScanReport model: Enhanced scan reports with AI analysis
+model ScanReport {
+  id            String     @id @default(cuid())
+  portfolioId   String?
+  portfolio     Portfolio? @relation(fields: [portfolioId], references: [id])
+  agentId       String?
+  agent         Agent?     @relation(fields: [agentId], references: [id])
+  type          ReportType
+  timestamp     DateTime   @default(now())
+  imageUrl      String?
+  thumbnailUrl  String?
+  extractedData Json
+  chartData     Json?
+  text          String?    @db.Text
+  metadata      Json
+  tags          String[]
+
+  @@index([portfolioId, timestamp])
+  @@index([agentId, timestamp])
+}
+
+enum ReportType {
+  TRADING_DASHBOARD
+  PERFORMANCE_REPORT
+  CHART_IMAGE
+  TEXT_REPORT
+  MULTI_PAGE_PDF
+}
+
+// Allocation model: Track allocation history per portfolio/user
+model Allocation {
+  id             String    @id @default(cuid())
+  portfolioId    String
+  portfolio      Portfolio @relation(fields: [portfolioId], references: [id])
+  userId         String
+  windowStart    DateTime
+  windowEnd      DateTime
+  realizedProfit Decimal   @db.Decimal(18, 2)
+  unrealizedPnl  Decimal   @db.Decimal(18, 2)
+  managementFee  Decimal?  @db.Decimal(18, 2)
+  endCapital     Decimal   @db.Decimal(18, 2)
+  createdAt      DateTime  @default(now())
+
+  @@index([portfolioId, windowEnd])
+  @@index([userId, windowEnd])
+}
+
+// ChatMessage model: AI chat history for user interactions
+model ChatMessage {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  role         String
+  content      String   @db.Text
+  functionCall Json?
+  timestamp    DateTime @default(now())
+
+  @@index([userId, timestamp])
+}
+
+// ChartDrawing model: Store user's chart annotations and drawings
+model ChartDrawing {
+  id          String   @id @default(cuid())
+  userId      String
+  portfolioId String?
+  agentId     String?
+  drawingData Json
+  timestamp   DateTime @default(now())
+
+  @@index([userId])
 }
 
 enum LegType {
@@ -82,4 +287,112 @@ enum LegType {
   moonbag_founders
   moonbag_investor
   draw
+}
+
+// Report model: Store generated PDF reports with metadata
+model Report {
+  id            String       @id @default(cuid())
+  portfolioId   String?
+  portfolio     Portfolio?   @relation(fields: [portfolioId], references: [id])
+  userId        String?
+  agentId       String?
+  reportType    ReportFormat
+  title         String
+  description   String?
+  fileUrl       String? // URL if stored in Vercel Blob or S3
+  fileBlob      Bytes? // Binary data if stored in DB
+  fileSize      Int? // Size in bytes
+  fileName      String
+  mimeType      String       @default("application/pdf")
+  metadata      Json? // Additional metadata (date ranges, filters, etc.)
+  generatedAt   DateTime     @default(now())
+  expiresAt     DateTime? // Optional expiration date
+  downloadCount Int          @default(0)
+
+  @@index([portfolioId, generatedAt])
+  @@index([userId, generatedAt])
+  @@index([agentId, generatedAt])
+  @@index([reportType, generatedAt])
+}
+
+enum ReportFormat {
+  INDIVIDUAL_INVESTOR
+  PORTFOLIO_PERFORMANCE
+  AGENT_PERFORMANCE
+  AGENT_COMPARISON
+  TRADE_HISTORY
+  MULTI_AGENT_CONSOLIDATED
+  CUSTOM
+}
+
+// PerformanceSnapshot model: Daily aggregated portfolio/agent metrics
+model PerformanceSnapshot {
+  id              String    @id @default(cuid())
+  portfolioId     String
+  portfolio       Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  date            DateTime  @db.Date
+  totalValue      Decimal   @db.Decimal(18, 2)
+  totalAllocation Decimal   @db.Decimal(18, 2)
+  realizedPnl     Decimal   @db.Decimal(18, 2)
+  unrealizedPnl   Decimal   @db.Decimal(18, 2)
+  dailyReturn     Decimal?  @db.Decimal(10, 6)
+  sharpeRatio     Decimal?  @db.Decimal(10, 4)
+  sortinoRatio    Decimal?  @db.Decimal(10, 4)
+  maxDrawdown     Decimal?  @db.Decimal(10, 4)
+  volatility      Decimal?  @db.Decimal(10, 4)
+  var95           Decimal?  @db.Decimal(10, 4)
+  cvar95          Decimal?  @db.Decimal(10, 4)
+  winRate         Decimal?  @db.Decimal(5, 2)
+  profitFactor    Decimal?  @db.Decimal(10, 4)
+  totalTrades     Int       @default(0)
+  totalFees       Decimal   @db.Decimal(18, 2)
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+
+  @@unique([portfolioId, date])
+  @@index([portfolioId, date])
+  @@index([date])
+}
+
+// BenchmarkPrice model: Store historical benchmark prices (BTC, ETH, SOL)
+model BenchmarkPrice {
+  id        String   @id @default(cuid())
+  symbol    String // BTC, ETH, SOL
+  date      DateTime @db.Date
+  price     Decimal  @db.Decimal(18, 8)
+  volume24h Decimal? @db.Decimal(18, 2)
+  marketCap Decimal? @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+
+  @@unique([symbol, date])
+  @@index([symbol, date])
+}
+
+// PriceAlert model: Real-time price monitoring and alert system
+model PriceAlert {
+  id          String         @id @default(cuid())
+  userId      String
+  portfolioId String?
+  agentId     String?
+  symbol      String
+  chain       String
+  address     String
+  condition   AlertCondition
+  threshold   Decimal        @db.Decimal(18, 8)
+  isActive    Boolean        @default(true)
+  message     String?
+  createdAt   DateTime       @default(now())
+  triggeredAt DateTime?
+
+  @@index([userId, isActive])
+  @@index([symbol, isActive])
+  @@index([portfolioId])
+  @@index([agentId])
+}
+
+enum AlertCondition {
+  ABOVE
+  BELOW
+  CHANGE_UP
+  CHANGE_DOWN
 }

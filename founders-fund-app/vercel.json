@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "crons": [
+    {
+      "path": "/api/jobs/update-prices",
+      "schedule": "*/30 * * * * *"
+    }
+  ],
   "functions": {
     "app/api/ocr/route.ts": {
       "maxDuration": 30

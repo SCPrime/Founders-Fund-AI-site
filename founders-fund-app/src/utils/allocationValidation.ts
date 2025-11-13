@@ -177,23 +177,31 @@ function validateEntryFeesReconciliation(
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  // Sum investor contributions (gross) this window
-  let investorContributionsGross = 0;
+  // Sum investor contributions (net) and entry fees this window
+  let investorContributionsNet = 0;
   let foundersEntryFees = 0;
 
   for (const leg of expandedLegs) {
     // Only count legs within this window
     if (leg.ts >= window.start && leg.ts <= window.end) {
       if (leg.type === 'investor_contribution') {
-        // This is net amount, need to calculate gross
-        investorContributionsGross += leg.amount / (1 - 0.10); // Reverse calculate
+        // This is the NET amount (90% of gross) after entry fee deduction
+        investorContributionsNet += leg.amount;
       } else if (leg.type === 'founders_entry_fee') {
         foundersEntryFees += leg.amount;
       }
     }
   }
 
-  const expectedEntryFees = investorContributionsGross * 0.10;
+  // Gross = Net + Entry Fees (since entry fee is 10% of gross, net is 90% of gross)
+  // If Gross = G, then Net = 0.9*G and EntryFee = 0.1*G
+  // Therefore: G = Net + EntryFee, and EntryFee should equal Net / 9
+  const calculatedGross = investorContributionsNet + foundersEntryFees;
+  const expectedEntryFees = calculatedGross * 0.10;
+
+  // Alternative check: entry fees should be 1/9 of net (since net is 9 parts, fee is 1 part)
+  const expectedFromNet = investorContributionsNet / 9.0;
+
   if (Math.abs(foundersEntryFees - expectedEntryFees) > TOLERANCE) {
     errors.push({
       type: 'error',

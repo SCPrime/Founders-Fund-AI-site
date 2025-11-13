@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import { rateLimit } from '@/lib/rateLimit';
 import { put } from '@vercel/blob';
 import { BASELINE_PORTFOLIO_ID } from '@/lib/constants';
+import { requireAuth } from '@/lib/auth';
+import { canAccessPortfolio } from '@/lib/privacy';
 
 export const runtime = 'nodejs';
 
@@ -51,6 +53,12 @@ async function upsertContribution(c: IncomingContribution, portfolioId: string) 
 }
 
 export async function POST(req: NextRequest) {
+  // Authentication check - require user to be logged in
+  const { session, error: authError } = await requireAuth();
+  if (authError) {
+    return authError;
+  }
+
   // Rate limit: 10 saves/min/IP
   const ip = headers().get('x-forwarded-for') ?? 'unknown';
   const rl = rateLimit(`scan-save:${ip}`, 10, 60_000);
@@ -76,6 +84,29 @@ export async function POST(req: NextRequest) {
   const ocrText: string | undefined = meta.ocrText;
   const ai: any = meta.ai ?? null;
   const contributions: IncomingContribution[] = Array.isArray(meta.contributions) ? meta.contributions : [];
+
+  // Authorization check - verify user has access to this portfolio
+  if (portfolioId !== BASELINE_PORTFOLIO_ID) {
+    const portfolio = await prisma.portfolio.findUnique({
+      where: { id: portfolioId },
+      select: { userId: true },
+    });
+
+    if (portfolio) {
+      const canAccess = canAccessPortfolio(portfolio.userId, {
+        userId: session!.user.id,
+        userRole: session!.user.role,
+        userName: session!.user.name,
+      });
+
+      if (!canAccess) {
+        return NextResponse.json(
+          { error: 'Forbidden. You do not have access to this portfolio.' },
+          { status: 403 }
+        );
+      }
+    }
+  }
 
   // Try to store the image in Vercel Blob if token is configured; otherwise skip gracefully
   let imageUrl: string | undefined;

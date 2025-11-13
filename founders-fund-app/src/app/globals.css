@@ -18,55 +18,89 @@ html, body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   margin: 0;
   padding: 0;
-}
-/* Layout */
-.wrap {
-  max-width: 1240px;
-  margin: 18px auto;
-  padding: 0 14px;
+  font-size: 13px; /* Reduced from default 16px */
 }
 
-/* Status indicators */
+/* Custom Scrollbar Styling - Thin & Elegant */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a3b4d;
+  border-radius: 4px;
+  border: 2px solid var(--bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4b5d;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3b4d var(--bg);
+}
+/* Layout - Ultra Compact */
+.wrap {
+  max-width: 1240px;
+  margin: 8px auto; /* Reduced from 18px */
+  padding: 0 8px; /* Reduced from 14px */
+}
+
+/* Status indicators - Compact */
 .status {
   background: var(--ink);
   border: 1px solid #223047;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
+  border-radius: 6px; /* Reduced from 10px */
+  padding: 6px 8px; /* Reduced from 10px 12px */
+  margin-bottom: 6px; /* Reduced from 12px */
   display: flex;
-  gap: 10px;
+  gap: 6px; /* Reduced from 10px */
   align-items: center;
   flex-wrap: wrap;
 }
 
 .status .dot {
-  width: 10px;
-  height: 10px;
+  width: 8px; /* Reduced from 10px */
+  height: 8px; /* Reduced from 10px */
   border-radius: 50%;
   display: inline-block;
-  margin-right: 6px;
+  margin-right: 4px; /* Reduced from 6px */
 }
 
 .dot.ok { background: var(--good); }
 .dot.warn { background: var(--warn); }
 .dot.bad { background: var(--bad); }
 
-/* Typography */
+/* Typography - Ultra Compact Margins */
 h1 {
-  font-size: 24px;
-  margin: 8px 0 12px;
+  font-size: 20px;
+  margin: 4px 0 6px; /* Reduced from 6px 0 10px */
   text-align: center;
   color: var(--text);
 }
 
 h2 {
-  font-size: 18px;
-  margin: 16px 0 10px;
+  font-size: 15px;
+  margin: 8px 0 4px; /* Reduced from 12px 0 8px */
+  color: #d7e0ea;
+}
+
+h3 {
+  font-size: 13px;
+  margin: 6px 0 3px; /* Reduced from 10px 0 6px */
   color: #d7e0ea;
 }
 
 .small {
-  font-size: 12px;
+  font-size: 11px; /* Reduced from 12px */
   color: #cbd5e1;
 }
 
@@ -74,11 +108,11 @@ h2 {
   color: var(--muted);
 }
 
-/* Navigation */
+/* Navigation - Compact */
 .tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 4px; /* Reduced from 8px */
+  margin-bottom: 6px; /* Reduced from 12px */
   flex-wrap: wrap;
 }
 
@@ -86,7 +120,7 @@ h2 {
   background: #172133;
   border: 1px solid #283753;
   border-radius: 999px;
-  padding: 8px 12px;
+  padding: 5px 10px; /* Reduced from 8px 12px */
   cursor: pointer;
   font-weight: 600;
   color: #cfe2ff;
@@ -98,42 +132,44 @@ h2 {
   color: #fff;
 }
 
-/* Panels and containers */
+/* Panels and containers - Ultra Compact */
 .panel {
   background: var(--panel);
   border: 1px solid #1f2937;
-  border-radius: 10px;
-  padding: 16px;
-  margin: 12px 0;
+  border-radius: 6px; /* Reduced from 8px */
+  padding: 8px; /* Reduced from 12px */
+  margin: 6px 0; /* Reduced from 10px */
 }
 
-/* Forms and inputs */
+/* Forms and inputs - Compact */
 .grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 12px;
+  gap: 8px; /* Reduced from 12px */
   align-items: end;
 }
 
 label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 2px; /* Reduced from 3px */
 }
 
 input[type="number"],
 input[type="text"],
 input[type="date"],
+input[type="email"],
+input[type="password"],
 select,
 textarea {
   width: 100%;
   background: var(--ink);
   color: var(--text);
   border: 1px solid #263043;
-  padding: 9px 10px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 5px 7px; /* Reduced from 7px 9px */
+  border-radius: 4px; /* Reduced from 6px */
+  font-size: 13px;
   font-family: system-ui;
   transition: border-color 0.2s ease;
 }
@@ -145,17 +181,17 @@ textarea:focus {
   border-color: var(--accent);
 }
 
-/* Buttons */
+/* Buttons - Compact */
 .btn {
   background: #172133;
   color: var(--text);
   border: 1px solid #283753;
-  padding: 9px 12px;
-  border-radius: 8px;
+  padding: 5px 8px; /* Reduced from 7px 10px */
+  border-radius: 4px; /* Reduced from 6px */
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .btn:hover {
@@ -177,12 +213,12 @@ textarea:focus {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   min-width: 980px;
 }
 
 th, td {
-  padding: 8px 6px;
+  padding: 4px 4px; /* Reduced from 6px 5px */
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
@@ -224,61 +260,61 @@ th {
   font-size: 11px;
   border: 1px solid #334155;
   border-radius: 999px;
-  padding: 1px 6px;
+  padding: 1px 5px; /* Reduced from 1px 6px */
   color: #cbd5e1;
 }
 
 .pill {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 1px 6px; /* Reduced from 2px 8px */
   border-radius: 999px;
   font-size: 12px;
   border: 1px solid #334155;
   color: #cbd5e1;
-  margin: 4px 8px 0 0;
+  margin: 2px 4px 0 0; /* Reduced from 4px 8px */
 }
 
 .chip {
   border: 1px solid #334155;
   background: var(--ink);
   border-radius: 999px;
-  padding: 4px 8px;
+  padding: 3px 6px; /* Reduced from 4px 8px */
   font-size: 12px;
 }
 
-/* Alerts and warnings */
+/* Alerts and warnings - Compact */
 .warnbox {
   border: 1px solid #635015;
   background: #2b2315;
   color: #f6e4b4;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-top: 8px;
+  border-radius: 4px; /* Reduced from 8px */
+  padding: 5px 7px; /* Reduced from 8px 10px */
+  margin-top: 4px; /* Reduced from 8px */
 }
 
-/* Charts and graphics */
+/* Charts and graphics - Compact */
 canvas {
   background: var(--ink);
   border: 1px solid #253347;
-  border-radius: 8px;
+  border-radius: 4px; /* Reduced from 8px */
 }
 
 .legend {
-  margin-top: 6px;
+  margin-top: 4px; /* Reduced from 6px */
   display: flex;
-  gap: 12px;
+  gap: 8px; /* Reduced from 12px */
   flex-wrap: wrap;
 }
 
 .lg {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px; /* Reduced from 6px */
 }
 
 .sw {
-  width: 12px;
-  height: 12px;
+  width: 10px; /* Reduced from 12px */
+  height: 10px; /* Reduced from 12px */
   border-radius: 2px;
   display: inline-block;
 }
@@ -286,22 +322,22 @@ canvas {
 #ocrCanvas {
   max-width: 100%;
   display: block;
-  margin-top: 8px;
+  margin-top: 4px; /* Reduced from 8px */
   background: var(--bg);
-  border-radius: 8px;
+  border-radius: 4px; /* Reduced from 8px */
   border: 1px dashed #2a3b55;
 }
 
-/* Utility classes */
+/* Utility classes - Compact */
 .hr {
   height: 1px;
   background: var(--line);
-  margin: 12px 0;
+  margin: 6px 0; /* Reduced from 12px */
 }
 
 .row {
   display: flex;
-  gap: 10px;
+  gap: 6px; /* Reduced from 10px */
   align-items: center;
   flex-wrap: wrap;
 }

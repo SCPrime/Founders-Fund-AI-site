@@ -42,17 +42,24 @@ export class AllocationEngine {
       beforeCalc: 'profitTotal not calculated yet'
     });
 
-    // Calculate total capital deployed (start capital + contributions)
-    const totalStartCapital = constants.INVESTOR_SEED_BASELINE; // This includes all baseline capital
-    const totalContributions = contributions.reduce((sum, contrib) => {
-      return sum + (contrib.earnsDollarDaysThisWindow ? contrib.amount : 0);
+    // Calculate capital deployed IN THIS WINDOW ONLY (not all-time)
+    const totalStartCapital = constants.INVESTOR_SEED_BASELINE; // Capital at window start
+
+    // CRITICAL FIX: Only count contributions that happened DURING this window
+    // Contributions before the window are already part of totalStartCapital
+    const inWindowContributions = contributions.reduce((sum, contrib) => {
+      // Only count if contribution date is within or after window start
+      if (contrib.ts >= window.start && contrib.ts <= window.end) {
+        return sum + contrib.amount;
+      }
+      return sum;
     }, 0);
 
     // Use comprehensive wallet identity like working calculator
     let profitTotal = 0;
     if (walletSizeEndOfWindow > 0) {
-      // profitCore = wallet - startCapital - contributions - unrealized (comprehensive accounting)
-      profitTotal = walletSizeEndOfWindow - totalStartCapital - totalContributions - unrealizedPnlEndOfWindow;
+      // FIXED: profit = wallet - startCapital - IN_WINDOW_contributions - unrealized
+      profitTotal = walletSizeEndOfWindow - totalStartCapital - inWindowContributions - unrealizedPnlEndOfWindow;
     } else {
       // Fallback: if no wallet size, profit must be explicitly set to prevent negatives
       profitTotal = 0; // Default to 0 instead of negative
@@ -66,10 +73,10 @@ export class AllocationEngine {
       profitTotal,
       realizedProfit,
       totalStartCapital,
-      totalContributions,
-      calculation: `max(0, ${walletSizeEndOfWindow} - ${totalStartCapital} - ${totalContributions} - ${unrealizedPnlEndOfWindow}) = ${profitTotal}`,
+      inWindowContributions,
+      calculation: `max(0, ${walletSizeEndOfWindow} - ${totalStartCapital} - ${inWindowContributions} - ${unrealizedPnlEndOfWindow}) = ${profitTotal}`,
       realizedCalc: `max(0, ${profitTotal}) = ${realizedProfit}`,
-      clamped: profitTotal === 0 && (walletSizeEndOfWindow - totalStartCapital - totalContributions - unrealizedPnlEndOfWindow) < 0
+      clamped: profitTotal === 0 && (walletSizeEndOfWindow - totalStartCapital - inWindowContributions - unrealizedPnlEndOfWindow) < 0
     });
 
     // §3.2 Build effective legs (auto-legs + timing)

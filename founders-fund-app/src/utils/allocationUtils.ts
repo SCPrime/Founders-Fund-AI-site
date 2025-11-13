@@ -27,19 +27,20 @@ export function expandEntryFeeLegs(
   for (const leg of inputLegs) {
     // Add the original leg (may be modified for investor contributions)
     if (leg.type === 'investor_contribution') {
-      // For investor contributions, create net contribution and entry fee legs
-      const grossAmount = leg.amount / (1 - entryFeeRate); // Reverse calculate gross
-      const entryFeeAmount = grossAmount * entryFeeRate;
-      const netAmount = grossAmount - entryFeeAmount;
+      // CRITICAL FIX: leg.amount is GROSS (total deposit amount)
+      // We need to split it into net (90%) and entry fee (10%)
+      const grossAmount = leg.amount; // Input is gross
+      const entryFeeAmount = grossAmount * entryFeeRate; // 10% fee
+      const netAmount = grossAmount - entryFeeAmount; // 90% to investor
 
-      // Add net investor contribution
+      // Add net investor contribution (what investor gets credit for)
       expandedLegs.push({
         ...leg,
         amount: netAmount,
         earnsDollarDaysThisWindow: true
       });
 
-      // Add corresponding founders entry fee
+      // Add corresponding founders entry fee (what founders receive)
       expandedLegs.push({
         id: `${leg.id}_entry_fee`,
         owner: 'founders',
@@ -50,7 +51,7 @@ export function expandEntryFeeLegs(
         earnsDollarDaysThisWindow: true
       });
     } else {
-      // Add leg as-is
+      // Add leg as-is (founders seed, mgmt fees, etc.)
       expandedLegs.push(leg);
     }
   }
