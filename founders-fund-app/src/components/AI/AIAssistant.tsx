@@ -3,6 +3,7 @@
 import { useOCR } from '@/context/OCRContext';
 import { aiTools, executeAITool } from '@/lib/aiTools';
 import { useFundStore } from '@/store/fundStore';
+import type { Contribution } from '@/types/fund';
 import { useEffect, useRef, useState } from 'react';
 import OCRChatInterface from './OCRChatInterface';
 import OCRProcessor from './OCRProcessor';
@@ -352,7 +353,6 @@ export default function AIAssistant() {
       }
 
       // Combine founders and investors for the table
-      import type { Contribution } from '@/types/fund';
       const combinedData: Omit<Contribution, 'id'>[] = [];
       if (data.founders) {
         combinedData.push(
@@ -375,9 +375,9 @@ export default function AIAssistant() {
       if (data.investors) {
         combinedData.push(
           ...data.investors.map((i: InvestorData) => ({
-            name: i.name || 'Investor',
-            date: i.date,
-            amount: i.amount,
+          name: i.name || 'Investor',
+          date: i.date,
+          amount: i.amount,
             rule: (i.rule || 'net') as 'net' | 'gross',
             cls: 'investor' as const,
           })),
@@ -548,7 +548,7 @@ export default function AIAssistant() {
           if (extractedData.founders && extractedData.founders.length > 0) {
             combinedData.push(
               ...extractedData.founders.map((f: FounderData) => ({
-                name: f.name || 'Founder',
+              name: f.name || 'Founder',
                 ts: f.date || new Date().toISOString().split('T')[0],
                 amount: f.amount || 0,
                 owner: 'founders' as const,
@@ -565,10 +565,10 @@ export default function AIAssistant() {
           if (extractedData.investors && extractedData.investors.length > 0) {
             combinedData.push(
               ...extractedData.investors.map((i) => ({
-                name: i.name || 'Investor',
+              name: i.name || 'Investor',
                 date: i.date || new Date().toISOString().split('T')[0],
                 amount: i.amount || 0,
-                rule: i.rule || 'net',
+              rule: i.rule || 'net',
                 cls: 'investor' as const,
               })),
             );
@@ -692,10 +692,10 @@ export default function AIAssistant() {
       {ocrData.extractedData && (
         <div
           style={{
-            marginBottom: '16px',
-            padding: '16px',
-            backgroundColor: 'var(--panel)',
-            border: '2px solid var(--accent)',
+          marginBottom: '16px',
+          padding: '16px',
+          backgroundColor: 'var(--panel)',
+          border: '2px solid var(--accent)',
             borderRadius: '8px',
           }}
         >
@@ -716,9 +716,9 @@ export default function AIAssistant() {
           {/* Data Summary */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '12px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px',
               marginBottom: '16px',
             }}
           >
@@ -726,17 +726,17 @@ export default function AIAssistant() {
               <div
                 key={key}
                 style={{
-                  backgroundColor: 'var(--ink)',
-                  padding: '8px 12px',
-                  borderRadius: '4px',
+                backgroundColor: 'var(--ink)',
+                padding: '8px 12px',
+                borderRadius: '4px',
                   border: '1px solid var(--line)',
                 }}
               >
                 <div
                   style={{
-                    fontSize: '10px',
-                    color: 'var(--muted)',
-                    textTransform: 'uppercase',
+                  fontSize: '10px',
+                  color: 'var(--muted)',
+                  textTransform: 'uppercase',
                     marginBottom: '4px',
                   }}
                 >
@@ -744,8 +744,8 @@ export default function AIAssistant() {
                 </div>
                 <div
                   style={{
-                    fontSize: '14px',
-                    color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
+                  fontSize: '14px',
+                  color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
                     fontWeight: 'bold',
                   }}
                 >
@@ -788,9 +788,9 @@ export default function AIAssistant() {
 
           <div
             style={{
-              marginTop: '8px',
-              fontSize: '12px',
-              color: 'var(--muted)',
+            marginTop: '8px',
+            fontSize: '12px',
+            color: 'var(--muted)',
               textAlign: 'center',
             }}
           >
@@ -802,12 +802,12 @@ export default function AIAssistant() {
       {/* Messages Area */}
       <div
         style={{
-          flex: 1,
-          overflowY: 'auto',
-          border: '1px solid var(--line)',
-          borderRadius: '8px',
-          padding: '12px',
-          marginBottom: '12px',
+        flex: 1,
+        overflowY: 'auto',
+        border: '1px solid var(--line)',
+        borderRadius: '8px',
+        padding: '12px',
+        marginBottom: '12px',
           backgroundColor: 'var(--ink)',
         }}
       >
@@ -815,18 +815,18 @@ export default function AIAssistant() {
           <div
             key={message.id}
             style={{
-              marginBottom: '12px',
-              padding: '8px',
-              borderRadius: '6px',
-              backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
+            marginBottom: '12px',
+            padding: '8px',
+            borderRadius: '6px',
+            backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
               border: message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)',
             }}
           >
             <div
               style={{
-                fontSize: '11px',
-                color: 'var(--muted)',
-                marginBottom: '4px',
+              fontSize: '11px',
+              color: 'var(--muted)',
+              marginBottom: '4px',
                 fontWeight: 'bold',
               }}
             >
@@ -857,9 +857,9 @@ export default function AIAssistant() {
         {isLoading && (
           <div
             style={{
-              padding: '8px',
-              fontStyle: 'italic',
-              color: 'var(--muted)',
+            padding: '8px',
+            fontStyle: 'italic',
+            color: 'var(--muted)',
               textAlign: 'center',
             }}
           >
@@ -912,10 +912,6 @@ export default function AIAssistant() {
     </div>
   );
 }
-
-          </div>
-
-          {/* Data Summary */}
           <div
             style={{
               display: 'grid',
