@@ -44,9 +44,9 @@ export default function FullScreenChart({
   height = 600,
   indicators = [],
   drawings = [],
-  onIndicatorToggle,
-  onDrawingAdd,
-  onDrawingRemove,
+  onIndicatorToggle: _onIndicatorToggle,
+  onDrawingAdd: _onDrawingAdd,
+  onDrawingRemove: _onDrawingRemove,
 }: FullScreenChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getPriceAlertManager, PriceAlert, AlertCondition, createPriceAlert } from '@/lib/priceAlerts';
+import { AlertCondition, getPriceAlertManager, PriceAlert } from '@/lib/priceAlerts';
+import React, { useEffect, useState } from 'react';
 
 interface PriceAlertManagerProps {
   userId: string;
@@ -147,11 +147,16 @@ export default function PriceAlertManager({
 
   const getConditionLabel = (condition: string) => {
     switch (condition) {
-      case 'ABOVE': return 'Price Above';
-      case 'BELOW': return 'Price Below';
-      case 'CHANGE_UP': return 'Price Up By';
-      case 'CHANGE_DOWN': return 'Price Down By';
-      default: return condition;
+      case 'ABOVE':
+        return 'Price Above';
+      case 'BELOW':
+        return 'Price Below';
+      case 'CHANGE_UP':
+        return 'Price Up By';
+      case 'CHANGE_DOWN':
+        return 'Price Down By';
+      default:
+        return condition;
     }
   };
 
@@ -182,7 +187,10 @@ export default function PriceAlertManager({
 
       {/* Create Alert Form */}
       {showCreateForm && (
-        <form onSubmit={handleCreateAlert} className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+        <form
+          onSubmit={handleCreateAlert}
+          className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50"
+        >
           <h3 className="text-lg font-semibold mb-4">Create New Alert</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -253,7 +261,9 @@ export default function PriceAlertManager({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Custom Message (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Custom Message (Optional)
+              </label>
               <input
                 type="text"
                 value={formMessage}
@@ -296,7 +306,9 @@ export default function PriceAlertManager({
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg font-semibold text-gray-900">{alert.symbol}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getConditionColor(alert.condition)}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getConditionColor(alert.condition)}`}
+                    >
                       {getConditionLabel(alert.condition)}
                     </span>
                     {alert.isActive ? (
@@ -311,14 +323,15 @@ export default function PriceAlertManager({
                   </div>
 
                   <p className="text-sm text-gray-600 mb-1">
-                    {getConditionLabel(alert.condition)}: <span className="font-semibold">
-                      {alert.condition.includes('CHANGE') ? `${alert.threshold}%` : `$${alert.threshold}`}
+                    {getConditionLabel(alert.condition)}:{' '}
+                    <span className="font-semibold">
+                      {alert.condition.includes('CHANGE')
+                        ? `${alert.threshold}%`
+                        : `$${alert.threshold}`}
                     </span>
                   </p>
 
-                  {alert.message && (
-                    <p className="text-sm text-gray-500 italic">{alert.message}</p>
-                  )}
+                  {alert.message && <p className="text-sm text-gray-500 italic">{alert.message}</p>}
 
                   <p className="text-xs text-gray-400 mt-2">
                     Created: {new Date(alert.createdAt!).toLocaleString()}

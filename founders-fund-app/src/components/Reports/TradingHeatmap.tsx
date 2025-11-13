@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface TradingHeatmapProps {
   dateRange: {
@@ -121,13 +121,13 @@ export default function TradingHeatmap({ dateRange, portfolioId }: TradingHeatma
   const dates: string[] = [];
 
   // Get unique dates
-  const uniqueDates = [...new Set(tradeFrequency.map(f => f.date))].sort().slice(-7);
+  const uniqueDates = [...new Set(tradeFrequency.map((f) => f.date))].sort().slice(-7);
 
-  uniqueDates.forEach(date => {
+  uniqueDates.forEach((date) => {
     const dayData = new Array(24).fill(0);
     tradeFrequency
-      .filter(f => f.date === date)
-      .forEach(f => {
+      .filter((f) => f.date === date)
+      .forEach((f) => {
         dayData[f.hour] = f.count;
       });
     heatmapData.push(dayData);
@@ -167,7 +167,9 @@ export default function TradingHeatmap({ dateRange, portfolioId }: TradingHeatma
 
       {/* Trade Frequency Heatmap */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Trade Frequency Heatmap (Last 7 Days)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Trade Frequency Heatmap (Last 7 Days)
+        </h3>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -252,10 +254,7 @@ export default function TradingHeatmap({ dateRange, portfolioId }: TradingHeatma
                 new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
               }
             />
-            <YAxis
-              stroke="#6b7280"
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
-            />
+            <YAxis stroke="#6b7280" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`} />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'white',
@@ -286,9 +285,7 @@ export default function TradingHeatmap({ dateRange, portfolioId }: TradingHeatma
                   <div className="text-green-600 font-semibold">
                     +${token.totalPnl.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {token.winRate.toFixed(1)}% win rate
-                  </div>
+                  <div className="text-sm text-gray-500">{token.winRate.toFixed(1)}% win rate</div>
                 </div>
               </div>
             ))}
@@ -310,9 +307,7 @@ export default function TradingHeatmap({ dateRange, portfolioId }: TradingHeatma
                   <div className="text-red-600 font-semibold">
                     ${token.totalPnl.toLocaleString()}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {token.winRate.toFixed(1)}% win rate
-                  </div>
+                  <div className="text-sm text-gray-500">{token.winRate.toFixed(1)}% win rate</div>
                 </div>
               </div>
             ))}

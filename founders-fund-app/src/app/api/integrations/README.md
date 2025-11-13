@@ -71,6 +71,7 @@ Get token metadata and information.
 - `address` - Token contract address
 
 #### GET /api/integrations/dextools/holders
+
 Get holder distribution analysis.
 
 **Query Parameters:**
@@ -93,6 +94,7 @@ Get holder distribution analysis.
 ```
 
 #### GET /api/integrations/dextools/transactions
+
 Get recent trades and transaction history.
 
 **Query Parameters:**
@@ -104,6 +106,7 @@ Get recent trades and transaction history.
 ### Coinbase Integration
 
 #### GET /api/integrations/coinbase/prices
+
 Get prices for major cryptocurrencies (fallback source).
 
 **Query Parameters:**
@@ -122,6 +125,7 @@ Get prices for major cryptocurrencies (fallback source).
 ```
 
 #### GET /api/integrations/coinbase/accounts
+
 Get account balances (optional, requires authentication).
 
 **Note:** Requires `COINBASE_API_KEY` and `COINBASE_API_SECRET`.

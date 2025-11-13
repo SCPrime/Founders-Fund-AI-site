@@ -3,11 +3,12 @@
  * Generate Portfolio Summary PDF Report
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { generatePortfolioReportFromAllocation } from '@/lib/pdfGenerator';
-import type { AllocationState, AllocationOutputs } from '@/types/allocation';
+import type { AllocationOutputs, AllocationState } from '@/types/allocation';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,10 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Validate inputs
     if (!allocationState || !allocationOutputs) {
-      return NextResponse.json(
-        { error: 'Missing required allocation data' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required allocation data' }, { status: 400 });
     }
 
     // Generate PDF
@@ -76,7 +74,7 @@ export async function POST(request: NextRequest) {
                 window: allocationState.window,
                 totalProfit: allocationOutputs.profitTotal,
                 participantCount: Object.keys(allocationOutputs.dollarDays.investors).length + 1,
-              } as Record<string, unknown>,
+              } as unknown as Prisma.InputJsonValue,
             },
           });
 
@@ -104,7 +102,7 @@ export async function POST(request: NextRequest) {
         error: 'Failed to generate portfolio summary report',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

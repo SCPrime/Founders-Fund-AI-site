@@ -7,13 +7,15 @@ interface AgentSettingsPanelProps {
   currentStrategy: Record<string, unknown>;
   onClose: () => void;
   onUpdate: () => void;
+  onError?: (error: string) => void;
 }
 
 export default function AgentSettingsPanel({
   agentId,
   currentStrategy,
   onClose,
-  onUpdate
+  onUpdate,
+  onError: _onError
 }: AgentSettingsPanelProps) {
   const [strategy, setStrategy] = useState(JSON.stringify(currentStrategy, null, 2));
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function AgentSettingsPanel({
       let parsedStrategy;
       try {
         parsedStrategy = JSON.parse(strategy);
-      } catch (parseError) {
+      } catch {
         throw new Error('Invalid JSON format');
       }
 

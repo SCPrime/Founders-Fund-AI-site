@@ -37,7 +37,7 @@ interface OCRChatBoxProps {
 export default function OCRChatBox({
   onMessage,
   onOCRComplete,
-  onError,
+  onError: _onError,
   onAutoPopulate,
   className = '',
 }: OCRChatBoxProps) {
@@ -58,8 +58,7 @@ export default function OCRChatBox({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { addContribution, updateWalletSize, updateUnrealizedPnl, updateConstants } =
-    useAllocationStore();
+  const { addContribution, updateWalletSize, updateUnrealizedPnl } = useAllocationStore();
   const { updateSettings } = useFundStore();
 
   const scrollToBottom = () => {
@@ -159,8 +158,10 @@ export default function OCRChatBox({
           ) {
             enhancedResult.extractedData.founders.forEach((f: Record<string, unknown>) => {
               addContribution({
-                name: f.name || 'Founders',
-                ts: f.date || new Date().toISOString().split('T')[0],
+                name: (typeof f.name === 'string' ? f.name : 'Founders') || 'Founders',
+                ts:
+                  (typeof f.date === 'string' ? f.date : new Date().toISOString().split('T')[0]) ||
+                  new Date().toISOString().split('T')[0],
                 amount: Number(f.amount) || 0,
                 owner: 'founders',
                 type: f.rule === 'gross' ? 'founders_entry_fee' : 'seed',
@@ -175,8 +176,10 @@ export default function OCRChatBox({
           ) {
             enhancedResult.extractedData.investors.forEach((i: Record<string, unknown>) => {
               addContribution({
-                name: i.name || 'Investor',
-                ts: i.date || new Date().toISOString().split('T')[0],
+                name: (typeof i.name === 'string' ? i.name : 'Investor') || 'Investor',
+                ts:
+                  (typeof i.date === 'string' ? i.date : new Date().toISOString().split('T')[0]) ||
+                  new Date().toISOString().split('T')[0],
                 amount: Number(i.amount) || 0,
                 owner: 'investor',
                 type: 'investor_contribution',
@@ -309,13 +312,15 @@ export default function OCRChatBox({
         // Use get_snapshot tool
         try {
           const snapshot = executeAITool('get_snapshot', {}) as Record<string, unknown>;
+          const summary = snapshot.summary as Record<string, unknown> | undefined;
+          const results = snapshot.results as unknown[] | undefined;
           response = '📊 **Current Fund Snapshot:**\n\n';
-          response += `• Total Net Profit: $${snapshot.summary?.totalNetProfit?.toLocaleString() || '0'}\n`;
-          response += `• Total Contributions: $${snapshot.summary?.totalContributions?.toLocaleString() || '0'}\n`;
-          if (snapshot.results?.length) {
-            response += `• Participants: ${snapshot.results.length}\n`;
+          response += `• Total Net Profit: $${typeof summary?.totalNetProfit === 'number' ? summary.totalNetProfit.toLocaleString() : '0'}\n`;
+          response += `• Total Contributions: $${typeof summary?.totalContributions === 'number' ? summary.totalContributions.toLocaleString() : '0'}\n`;
+          if (Array.isArray(results) && results.length > 0) {
+            response += `• Participants: ${results.length}\n`;
           }
-        } catch (e) {
+        } catch {
           response =
             'I can help you analyze your fund data. Try asking about specific metrics or run a calculation first.';
         }

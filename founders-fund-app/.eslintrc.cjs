@@ -11,7 +11,7 @@ module.exports = {
     'plugin:import/recommended',
     'plugin:security/recommended',
     'plugin:sonarjs/recommended',
-    'prettier'
+    'prettier',
   ],
   rules: {
     // Keep noise low but useful
@@ -26,10 +26,15 @@ module.exports = {
     'security/detect-object-injection': 'off', // too noisy for typical React patterns
     'jsx-a11y/alt-text': 'warn', // Accessibility
     'jsx-a11y/aria-props': 'warn',
-    
+
     // Allow inline styles (common in React, especially for dynamic styles)
     'react/forbid-dom-props': 'off',
     'react/no-unknown-property': ['error', { ignore: ['css', 'style'] }],
+    '@next/next/no-css-tags': 'off', // Allow CSS imports
+    'sonarjs/no-inline-styles': 'off', // Allow inline styles in React
+    // Disable style-related warnings from various plugins
+    'react-native/no-inline-styles': 'off',
+    'react/jsx-no-duplicate-props': 'error',
   },
   settings: {
     'import/resolver': {

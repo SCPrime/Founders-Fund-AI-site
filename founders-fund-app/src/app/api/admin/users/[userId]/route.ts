@@ -11,7 +11,10 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> },
+) {
   try {
     // Require ADMIN role
     const { session, error } = await requireRole('ADMIN');
@@ -88,7 +91,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> },
+) {
   try {
     // Require ADMIN role
     const { session, error } = await requireRole('ADMIN');

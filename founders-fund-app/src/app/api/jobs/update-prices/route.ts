@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getPriceFeed, type TokenConfig } from '@/lib/priceFeed';
-import { prisma } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * POST /api/jobs/update-prices
@@ -20,10 +19,7 @@ export async function POST(request: NextRequest) {
     const expectedKey = process.env.CRON_SECRET || process.env.API_SECRET;
 
     if (expectedKey && apiKey !== expectedKey) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const startTime = Date.now();
@@ -102,18 +98,21 @@ export async function POST(request: NextRequest) {
 
     const duration = Date.now() - startTime;
 
-    return NextResponse.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      duration: `${duration}ms`,
-      stats: {
-        totalTokens: agentTokens.length,
-        successfulUpdates: updates.length,
-        failedUpdates: errors.length,
+    return NextResponse.json(
+      {
+        success: true,
+        timestamp: new Date().toISOString(),
+        duration: `${duration}ms`,
+        stats: {
+          totalTokens: agentTokens.length,
+          successfulUpdates: updates.length,
+          failedUpdates: errors.length,
+        },
+        updates,
+        errors: errors.length > 0 ? errors : undefined,
       },
-      updates,
-      errors: errors.length > 0 ? errors : undefined,
-    }, { status: 200 });
+      { status: 200 },
+    );
   } catch (error) {
     console.error('[Price Update Job] Fatal error:', error);
     return NextResponse.json(
@@ -122,7 +121,7 @@ export async function POST(request: NextRequest) {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -136,18 +135,18 @@ export async function GET() {
     const priceFeed = getPriceFeed();
     const cacheStats = priceFeed.getCacheStats();
 
-    return NextResponse.json({
-      status: 'ready',
-      cache: {
-        size: cacheStats.size,
-        entries: cacheStats.entries,
-      },
-      info: 'Use POST to trigger price updates',
-    }, { status: 200 });
-  } catch {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      {
+        status: 'ready',
+        cache: {
+          size: cacheStats.size,
+          entries: cacheStats.entries,
+        },
+        info: 'Use POST to trigger price updates',
+      },
+      { status: 200 },
     );
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

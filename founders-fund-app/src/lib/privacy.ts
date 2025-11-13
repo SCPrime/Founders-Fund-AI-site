@@ -237,7 +237,7 @@ export function canModifyResource(
  */
 export function sanitizeUserData<T extends { passwordHash?: string }>(
   user: T,
-  context: PrivacyContext,
+  _context: PrivacyContext,
 ): Omit<T, 'passwordHash'> {
   const { passwordHash, ...safeUser } = user;
   return safeUser;

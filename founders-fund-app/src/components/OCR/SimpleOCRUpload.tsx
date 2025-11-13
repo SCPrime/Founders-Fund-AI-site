@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import { useAllocationStore } from '@/store/allocationStore';
+import { useRef, useState } from 'react';
 
 interface OCRResult {
   walletSize: number;
@@ -52,7 +52,6 @@ export default function SimpleOCRUpload() {
 
       console.log('OCR processing successful:', data);
       setResult(data);
-
     } catch (err) {
       console.error('OCR upload failed:', err);
       setError(err instanceof Error ? err.message : 'Upload failed');
@@ -113,7 +112,10 @@ export default function SimpleOCRUpload() {
   return (
     <div className="panel">
       <h3>📸 Screenshot Upload & OCR</h3>
-      <p>Upload a screenshot of your account balance to automatically extract wallet size and unrealized P&L.</p>
+      <p>
+        Upload a screenshot of your account balance to automatically extract wallet size and
+        unrealized P&L.
+      </p>
 
       {/* Upload Area */}
       <div
@@ -130,7 +132,7 @@ export default function SimpleOCRUpload() {
           cursor: isProcessing ? 'not-allowed' : 'pointer',
           backgroundColor: dragOver ? 'var(--background-secondary)' : 'transparent',
           transition: 'all 0.2s ease',
-          marginBottom: '20px'
+          marginBottom: '20px',
         }}
       >
         <input
@@ -151,7 +153,9 @@ export default function SimpleOCRUpload() {
         ) : (
           <div>
             <div style={{ fontSize: '48px', marginBottom: '10px' }}>📁</div>
-            <p><strong>Click to upload</strong> or drag & drop an image</p>
+            <p>
+              <strong>Click to upload</strong> or drag & drop an image
+            </p>
             <small>Supports PNG, JPG, GIF, WebP</small>
           </div>
         )}
@@ -159,52 +163,64 @@ export default function SimpleOCRUpload() {
 
       {/* Error Display */}
       {error && (
-        <div className="error-message" style={{
-          padding: '12px',
-          backgroundColor: 'var(--error-bg)',
-          border: '1px solid var(--error)',
-          borderRadius: '4px',
-          color: 'var(--error)',
-          marginBottom: '20px'
-        }}>
+        <div
+          className="error-message"
+          style={{
+            padding: '12px',
+            backgroundColor: 'var(--error-bg)',
+            border: '1px solid var(--error)',
+            borderRadius: '4px',
+            color: 'var(--error)',
+            marginBottom: '20px',
+          }}
+        >
           <strong>Error:</strong> {error}
         </div>
       )}
 
       {/* Results Display */}
       {result && (
-        <div className="results-panel" style={{
-          padding: '20px',
-          backgroundColor: 'var(--background-secondary)',
-          borderRadius: '8px',
-          marginBottom: '20px'
-        }}>
+        <div
+          className="results-panel"
+          style={{
+            padding: '20px',
+            backgroundColor: 'var(--background-secondary)',
+            borderRadius: '8px',
+            marginBottom: '20px',
+          }}
+        >
           <h4>📊 Extracted Data</h4>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '20px',
-            marginBottom: '20px'
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '20px',
+              marginBottom: '20px',
+            }}
+          >
             <div>
               <label>💰 Wallet Size</label>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: 'var(--success)'
-              }}>
+              <div
+                style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: 'var(--success)',
+                }}
+              >
                 ${result.walletSize.toLocaleString()}
               </div>
             </div>
 
             <div>
               <label>📈 Unrealized P&L</label>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: result.unrealized >= 0 ? 'var(--success)' : 'var(--error)'
-              }}>
+              <div
+                style={{
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: result.unrealized >= 0 ? 'var(--success)' : 'var(--error)',
+                }}
+              >
                 {result.unrealized >= 0 ? '+' : ''}${result.unrealized.toLocaleString()}
               </div>
             </div>
@@ -212,41 +228,38 @@ export default function SimpleOCRUpload() {
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <button
-              className="btn btn-primary"
-              onClick={applyResults}
-              style={{ flex: 1 }}
-            >
+            <button className="btn btn-primary" onClick={applyResults} style={{ flex: 1 }}>
               ✅ Apply to Portfolio
             </button>
-            <button
-              className="btn btn-secondary"
-              onClick={clearResults}
-            >
+            <button className="btn btn-secondary" onClick={clearResults}>
               ❌ Clear
             </button>
           </div>
 
           {/* Debug Info (collapsible) */}
           <details style={{ marginTop: '15px' }}>
-            <summary style={{ cursor: 'pointer', fontSize: '14px' }}>
-              🔍 Debug Information
-            </summary>
-            <div style={{
-              marginTop: '10px',
-              fontSize: '12px',
-              backgroundColor: 'var(--background)',
-              padding: '10px',
-              borderRadius: '4px',
-              maxHeight: '200px',
-              overflow: 'auto'
-            }}>
-              <div><strong>AI Response:</strong></div>
+            <summary style={{ cursor: 'pointer', fontSize: '14px' }}>🔍 Debug Information</summary>
+            <div
+              style={{
+                marginTop: '10px',
+                fontSize: '12px',
+                backgroundColor: 'var(--background)',
+                padding: '10px',
+                borderRadius: '4px',
+                maxHeight: '200px',
+                overflow: 'auto',
+              }}
+            >
+              <div>
+                <strong>AI Response:</strong>
+              </div>
               <pre style={{ whiteSpace: 'pre-wrap', marginBottom: '10px' }}>
                 {result.aiResponse || 'No AI response'}
               </pre>
 
-              <div><strong>OCR Text (first 300 chars):</strong></div>
+              <div>
+                <strong>OCR Text (first 300 chars):</strong>
+              </div>
               <pre style={{ whiteSpace: 'pre-wrap' }}>
                 {result.ocrText?.substring(0, 300) || 'No OCR text'}
                 {(result.ocrText?.length || 0) > 300 && '...'}
@@ -257,11 +270,14 @@ export default function SimpleOCRUpload() {
       )}
 
       {/* Instructions */}
-      <div className="instructions" style={{
-        fontSize: '14px',
-        color: 'var(--text-secondary)',
-        marginTop: '20px'
-      }}>
+      <div
+        className="instructions"
+        style={{
+          fontSize: '14px',
+          color: 'var(--text-secondary)',
+          marginTop: '20px',
+        }}
+      >
         <h5>💡 Tips for Best Results:</h5>
         <ul style={{ marginLeft: '20px' }}>
           <li>Use clear, high-resolution screenshots</li>
@@ -287,8 +303,12 @@ export default function SimpleOCRUpload() {
         }
 
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
 
         .error-message {
@@ -300,13 +320,23 @@ export default function SimpleOCRUpload() {
         }
 
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
 
         @keyframes slideIn {
-          from { transform: translateY(-10px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+          from {
+            transform: translateY(-10px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
       `}</style>
     </div>

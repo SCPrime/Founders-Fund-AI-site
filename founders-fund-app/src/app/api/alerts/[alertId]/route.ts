@@ -6,8 +6,8 @@
  * - DELETE: Delete alert
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
   params: Promise<{
@@ -24,10 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!alert) {
-      return NextResponse.json(
-        { error: 'Alert not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Alert not found' }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -49,10 +46,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('Error fetching alert:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch alert' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch alert' }, { status: 500 });
   }
 }
 
@@ -76,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       if (!validConditions.includes(condition)) {
         return NextResponse.json(
           { error: 'Invalid condition. Must be one of: ' + validConditions.join(', ') },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -106,10 +100,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('Error updating alert:', error);
-    return NextResponse.json(
-      { error: 'Failed to update alert' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update alert' }, { status: 500 });
   }
 }
 
@@ -126,9 +117,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('Error deleting alert:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete alert' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete alert' }, { status: 500 });
   }
 }

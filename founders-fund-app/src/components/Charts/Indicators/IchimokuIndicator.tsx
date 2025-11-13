@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { IChartApi, ISeriesApi } from 'lightweight-charts';
-import { CandleData, IchimokuData } from '../types';
+import { useEffect, useRef } from 'react';
+import type { CandleData } from '../types';
 import { calculateIchimoku } from '../utils/indicatorCalculations';
 
 interface IchimokuIndicatorProps {
@@ -41,7 +41,7 @@ export default function IchimokuIndicator({
   useEffect(() => {
     if (!visible || !chart || data.length === 0) {
       // Remove series if not visible
-      Object.values(seriesRefs.current).forEach(series => {
+      Object.values(seriesRefs.current).forEach((series) => {
         if (series) {
           chart.removeSeries(series);
         }
@@ -57,7 +57,13 @@ export default function IchimokuIndicator({
     }
 
     // Calculate Ichimoku data
-    const ichimokuData = calculateIchimoku(data, tenkanPeriod, kijunPeriod, senkouBPeriod, displacement);
+    const ichimokuData = calculateIchimoku(
+      data,
+      tenkanPeriod,
+      kijunPeriod,
+      senkouBPeriod,
+      displacement,
+    );
 
     // Create or update series
     if (!seriesRefs.current.tenkan) {
@@ -119,7 +125,7 @@ export default function IchimokuIndicator({
 
     return () => {
       // Cleanup
-      Object.values(seriesRefs.current).forEach(series => {
+      Object.values(seriesRefs.current).forEach((series) => {
         if (series) {
           chart.removeSeries(series);
         }

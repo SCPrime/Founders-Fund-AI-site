@@ -1,16 +1,10 @@
 'use client';
 
-import { useAllocationStore } from '@/store/allocationStore';
 import { ExportPDFButton } from '@/components/Reports/ExportPDFButton';
+import { useAllocationStore } from '@/store/allocationStore';
 
 export default function AllocationResults() {
-  const {
-    state,
-    outputs,
-    validationErrors,
-    isComputing,
-    lastComputeTime
-  } = useAllocationStore();
+  const { state, outputs, validationErrors, isComputing, lastComputeTime } = useAllocationStore();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -25,7 +19,7 @@ export default function AllocationResults() {
     return `${percent.toFixed(1)}%`;
   };
 
-  const hasErrors = validationErrors.some(issue => issue.type === 'error');
+  const hasErrors = validationErrors.some((issue) => issue.type === 'error');
 
   if (!outputs) {
     return (
@@ -33,7 +27,9 @@ export default function AllocationResults() {
         <h2>Allocation Results</h2>
         <div className="tablewrap">
           <div style={{ textAlign: 'center', padding: '20px', color: 'var(--muted)' }}>
-            {isComputing ? 'Computing allocations...' : 'No data available. Add contributions to see results.'}
+            {isComputing
+              ? 'Computing allocations...'
+              : 'No data available. Add contributions to see results.'}
           </div>
         </div>
       </div>
@@ -64,7 +60,7 @@ export default function AllocationResults() {
       realizedNet: outputs.realizedNet.founders,
       managementFee: outputs.managementFees.foundersCarryTotal,
       moonbag: outputs.moonbag.founders,
-      endCapital: outputs.endCapital.founders
+      endCapital: outputs.endCapital.founders,
     });
   }
 
@@ -80,7 +76,7 @@ export default function AllocationResults() {
         realizedNet: outputs.realizedNet.investors[name] || 0,
         managementFee: -(outputs.managementFees.investors[name] || 0), // Negative because they pay
         moonbag: outputs.moonbag.investors[name] || 0,
-        endCapital: outputs.endCapital.investors[name] || 0
+        endCapital: outputs.endCapital.investors[name] || 0,
       });
     }
   });
@@ -88,16 +84,33 @@ export default function AllocationResults() {
   // Calculate totals
   const totals = {
     dollarDays: outputs.dollarDays.total,
-    realizedGross: outputs.realizedGross.founders + Object.values(outputs.realizedGross.investors).reduce((s, v) => s + v, 0),
-    realizedNet: outputs.realizedNet.founders + Object.values(outputs.realizedNet.investors).reduce((s, v) => s + v, 0),
-    managementFees: outputs.managementFees.foundersCarryTotal - Object.values(outputs.managementFees.investors).reduce((s, v) => s + v, 0),
-    moonbag: outputs.moonbag.founders + Object.values(outputs.moonbag.investors).reduce((s, v) => s + v, 0),
-    endCapital: outputs.endCapital.founders + Object.values(outputs.endCapital.investors).reduce((s, v) => s + v, 0)
+    realizedGross:
+      outputs.realizedGross.founders +
+      Object.values(outputs.realizedGross.investors).reduce((s, v) => s + v, 0),
+    realizedNet:
+      outputs.realizedNet.founders +
+      Object.values(outputs.realizedNet.investors).reduce((s, v) => s + v, 0),
+    managementFees:
+      outputs.managementFees.foundersCarryTotal -
+      Object.values(outputs.managementFees.investors).reduce((s, v) => s + v, 0),
+    moonbag:
+      outputs.moonbag.founders +
+      Object.values(outputs.moonbag.investors).reduce((s, v) => s + v, 0),
+    endCapital:
+      outputs.endCapital.founders +
+      Object.values(outputs.endCapital.investors).reduce((s, v) => s + v, 0),
   };
 
   return (
     <div className="panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '10px',
+        }}
+      >
         <h2>Allocation Results</h2>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {outputs && (
@@ -130,26 +143,28 @@ export default function AllocationResults() {
       </div>
 
       <div className="small">
-        Window: {state.window.start} to {state.window.end} |
-        Total Profit: {formatCurrency(outputs.profitTotal)} |
-        Realized: {formatCurrency(outputs.realizedProfit)} |
-        Unrealized: {formatCurrency(outputs.profitTotal - outputs.realizedProfit)} |
-        Mgmt Fee: {formatPercent(state.constants.MGMT_FEE_RATE * 100)} |
-        Entry Fee: {formatPercent(state.constants.ENTRY_FEE_RATE * 100)}
+        Window: {state.window.start} to {state.window.end} | Total Profit:{' '}
+        {formatCurrency(outputs.profitTotal)} | Realized: {formatCurrency(outputs.realizedProfit)} |
+        Unrealized: {formatCurrency(outputs.profitTotal - outputs.realizedProfit)} | Mgmt Fee:{' '}
+        {formatPercent(state.constants.MGMT_FEE_RATE * 100)} | Entry Fee:{' '}
+        {formatPercent(state.constants.ENTRY_FEE_RATE * 100)}
       </div>
 
       {/* Error Warning */}
       {hasErrors && (
-        <div style={{
-          padding: '8px 12px',
-          backgroundColor: '#ffebee',
-          border: '1px solid #f44336',
-          borderRadius: '4px',
-          color: '#c62828',
-          fontSize: '12px',
-          marginTop: '8px'
-        }}>
-          ❌ <strong>Allocation errors detected</strong> - Results may be inaccurate. Check validation panel.
+        <div
+          style={{
+            padding: '8px 12px',
+            backgroundColor: '#ffebee',
+            border: '1px solid #f44336',
+            borderRadius: '4px',
+            color: '#c62828',
+            fontSize: '12px',
+            marginTop: '8px',
+          }}
+        >
+          ❌ <strong>Allocation errors detected</strong> - Results may be inaccurate. Check
+          validation panel.
         </div>
       )}
 
@@ -173,7 +188,9 @@ export default function AllocationResults() {
             {allParticipants.length === 0 ? (
               <tr>
                 <td colSpan={10} className="muted" style={{ textAlign: 'center', padding: '20px' }}>
-                  {isComputing ? 'Computing results...' : 'No participants found. Add contributions to see results.'}
+                  {isComputing
+                    ? 'Computing results...'
+                    : 'No participants found. Add contributions to see results.'}
                 </td>
               </tr>
             ) : (
@@ -184,18 +201,20 @@ export default function AllocationResults() {
                     className={participant.type === 'founders' ? 'founder-row' : 'investor-row'}
                     style={{
                       opacity: isComputing ? 0.6 : 1,
-                      transition: 'opacity 0.2s'
+                      transition: 'opacity 0.2s',
                     }}
                   >
                     <td>
                       <strong>{participant.name}</strong>
                     </td>
                     <td>
-                      <span style={{
-                        color: participant.type === 'founders' ? '#4CAF50' : '#2196f3',
-                        fontWeight: 'bold',
-                        fontSize: '12px'
-                      }}>
+                      <span
+                        style={{
+                          color: participant.type === 'founders' ? '#4CAF50' : '#2196f3',
+                          fontWeight: 'bold',
+                          fontSize: '12px',
+                        }}
+                      >
                         {participant.type === 'founders' ? 'FOUNDER' : 'INVESTOR'}
                       </span>
                     </td>
@@ -209,15 +228,30 @@ export default function AllocationResults() {
                     </td>
                     <td className="right">{formatCurrency(participant.realizedGross)}</td>
                     <td className="right">
-                      <strong style={{
-                        color: participant.realizedNet > 0 ? '#4CAF50' : participant.realizedNet < 0 ? '#f44336' : 'inherit'
-                      }}>
+                      <strong
+                        style={{
+                          color:
+                            participant.realizedNet > 0
+                              ? '#4CAF50'
+                              : participant.realizedNet < 0
+                                ? '#f44336'
+                                : 'inherit',
+                        }}
+                      >
                         {formatCurrency(participant.realizedNet)}
                       </strong>
                     </td>
-                    <td className="right" style={{
-                      color: participant.managementFee > 0 ? '#4CAF50' : participant.managementFee < 0 ? '#f44336' : 'inherit'
-                    }}>
+                    <td
+                      className="right"
+                      style={{
+                        color:
+                          participant.managementFee > 0
+                            ? '#4CAF50'
+                            : participant.managementFee < 0
+                              ? '#f44336'
+                              : 'inherit',
+                      }}
+                    >
                       {formatCurrency(participant.managementFee)}
                     </td>
                     <td className="right">
@@ -254,11 +288,14 @@ export default function AllocationResults() {
                 ))}
 
                 {/* Totals Row */}
-                <tr className="total-row" style={{
-                  borderTop: '2px solid var(--line)',
-                  fontWeight: 'bold',
-                  backgroundColor: 'var(--panel)'
-                }}>
+                <tr
+                  className="total-row"
+                  style={{
+                    borderTop: '2px solid var(--line)',
+                    fontWeight: 'bold',
+                    backgroundColor: 'var(--panel)',
+                  }}
+                >
                   <td>
                     <strong>TOTALS</strong>
                     <br />
@@ -277,10 +314,17 @@ export default function AllocationResults() {
                     <strong>{formatCurrency(totals.realizedGross)}</strong>
                   </td>
                   <td className="right">
-                    <strong style={{
-                      color: totals.realizedNet > 0 ? '#4CAF50' : totals.realizedNet < 0 ? '#f44336' : 'inherit',
-                      fontSize: '18px'
-                    }}>
+                    <strong
+                      style={{
+                        color:
+                          totals.realizedNet > 0
+                            ? '#4CAF50'
+                            : totals.realizedNet < 0
+                              ? '#f44336'
+                              : 'inherit',
+                        fontSize: '18px',
+                      }}
+                    >
                       {formatCurrency(totals.realizedNet)}
                     </strong>
                   </td>
@@ -307,16 +351,18 @@ export default function AllocationResults() {
 
       {/* Summary Cards */}
       {allParticipants.length > 0 && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '12px',
-          marginTop: '16px',
-          padding: '12px',
-          backgroundColor: 'var(--ink)',
-          border: '1px solid var(--line)',
-          borderRadius: '6px'
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '12px',
+            marginTop: '16px',
+            padding: '12px',
+            backgroundColor: 'var(--ink)',
+            border: '1px solid var(--line)',
+            borderRadius: '6px',
+          }}
+        >
           <div>
             <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Profit Distribution</div>
             <div style={{ fontWeight: 'bold', color: 'var(--text)' }}>
@@ -346,10 +392,16 @@ export default function AllocationResults() {
           </div>
           <div>
             <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Validation</div>
-            <div style={{
-              fontWeight: 'bold',
-              color: hasErrors ? 'var(--bad)' : validationErrors.length > 0 ? 'var(--warn)' : 'var(--good)'
-            }}>
+            <div
+              style={{
+                fontWeight: 'bold',
+                color: hasErrors
+                  ? 'var(--bad)'
+                  : validationErrors.length > 0
+                    ? 'var(--warn)'
+                    : 'var(--good)',
+              }}
+            >
               {hasErrors ? '❌ Errors' : validationErrors.length > 0 ? '⚠️ Warnings' : '✅ Valid'}
             </div>
             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
@@ -360,7 +412,8 @@ export default function AllocationResults() {
       )}
 
       <div className="small" style={{ marginTop: '8px', color: 'var(--muted)' }}>
-        💡 <strong>Powered by AllocationEngine:</strong> Real-time time-weighted calculations with comprehensive validation
+        💡 <strong>Powered by AllocationEngine:</strong> Real-time time-weighted calculations with
+        comprehensive validation
       </div>
     </div>
   );

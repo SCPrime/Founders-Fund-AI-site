@@ -100,7 +100,12 @@ export async function GET() {
         return sum + Number(p.totalValue);
       }
       const latestSnapshot = p.snapshots[0];
-      return sum + (latestSnapshot ? Number(latestSnapshot.realizedProfit) + Number(latestSnapshot.unrealizedPnl) : 0);
+      return (
+        sum +
+        (latestSnapshot
+          ? Number(latestSnapshot.realizedProfit) + Number(latestSnapshot.unrealizedPnl)
+          : 0)
+      );
     }, 0);
 
     // Get agent performance summary from recent performance snapshots

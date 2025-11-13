@@ -6,9 +6,9 @@
 
 'use client';
 
-import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import type { IndividualInvestorReportData } from '@/lib/pdfGenerator';
+import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import React from 'react';
 
 // Register fonts (optional - for better typography)
 // Font.register({
@@ -160,7 +160,9 @@ export const IndividualInvestorPDF: React.FC<IndividualInvestorPDFProps> = ({ da
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Entry Fees Paid:</Text>
-            <Text style={[styles.value, styles.negativeValue]}>{formatCurrency(data.entryFees)}</Text>
+            <Text style={[styles.value, styles.negativeValue]}>
+              {formatCurrency(data.entryFees)}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Dollar-Days Accumulated:</Text>
@@ -168,7 +170,9 @@ export const IndividualInvestorPDF: React.FC<IndividualInvestorPDFProps> = ({ da
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Portfolio Share:</Text>
-            <Text style={[styles.value, styles.positiveValue]}>{formatPercent(data.sharePercent)}</Text>
+            <Text style={[styles.value, styles.positiveValue]}>
+              {formatPercent(data.sharePercent)}
+            </Text>
           </View>
         </View>
 
@@ -181,11 +185,18 @@ export const IndividualInvestorPDF: React.FC<IndividualInvestorPDFProps> = ({ da
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Management Fee:</Text>
-            <Text style={[styles.value, styles.negativeValue]}>{formatCurrency(data.managementFee)}</Text>
+            <Text style={[styles.value, styles.negativeValue]}>
+              {formatCurrency(data.managementFee)}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Realized Net:</Text>
-            <Text style={[styles.value, data.realizedNet >= 0 ? styles.positiveValue : styles.negativeValue]}>
+            <Text
+              style={[
+                styles.value,
+                data.realizedNet >= 0 ? styles.positiveValue : styles.negativeValue,
+              ]}
+            >
               {formatCurrency(data.realizedNet)}
             </Text>
           </View>
@@ -195,11 +206,15 @@ export const IndividualInvestorPDF: React.FC<IndividualInvestorPDFProps> = ({ da
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>End Capital:</Text>
-            <Text style={[styles.value, styles.positiveValue]}>{formatCurrency(data.endCapital)}</Text>
+            <Text style={[styles.value, styles.positiveValue]}>
+              {formatCurrency(data.endCapital)}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>ROI:</Text>
-            <Text style={[styles.value, data.roi >= 0 ? styles.positiveValue : styles.negativeValue]}>
+            <Text
+              style={[styles.value, data.roi >= 0 ? styles.positiveValue : styles.negativeValue]}
+            >
               {formatPercent(data.roi)}
             </Text>
           </View>
@@ -219,7 +234,9 @@ export const IndividualInvestorPDF: React.FC<IndividualInvestorPDFProps> = ({ da
                 <View key={index} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 1.5 }]}>{contribution.date}</Text>
                   <Text style={[styles.tableCell, { flex: 2 }]}>{contribution.type}</Text>
-                  <Text style={[styles.tableCell, { flex: 1.5 }]}>{formatCurrency(contribution.amount)}</Text>
+                  <Text style={[styles.tableCell, { flex: 1.5 }]}>
+                    {formatCurrency(contribution.amount)}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -233,8 +250,8 @@ export const IndividualInvestorPDF: React.FC<IndividualInvestorPDFProps> = ({ da
         {/* Privacy Notice */}
         <View style={styles.privacyNotice}>
           <Text style={styles.privacyText}>
-            Privacy Notice: This report contains only your investment data. Information about other investors
-            is not included to maintain privacy and confidentiality.
+            Privacy Notice: This report contains only your investment data. Information about other
+            investors is not included to maintain privacy and confidentiality.
           </Text>
         </View>
 

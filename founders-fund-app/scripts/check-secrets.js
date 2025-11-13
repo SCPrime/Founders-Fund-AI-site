@@ -3,9 +3,8 @@
 // Lightweight alternative to gitleaks for basic patterns
 
 import { readFileSync, readdirSync, statSync } from 'fs';
-import { join, extname } from 'path';
+import { dirname, extname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,25 +13,15 @@ const PATTERNS = {
   'OpenAI API Key': /sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}/g,
   'Anthropic API Key': /sk-ant-api[0-9]{2}-[A-Za-z0-9_-]{93}/g,
   'Generic API Key': /(api[_-]?key|apikey)\s*[:=]\s*['"]?[a-f0-9]{32,}['"]?/gi,
-  'Database URL': /(database_url|db_url)\s*[:=]\s*['"]?(postgres|postgresql|mysql):\/\/[^@\s]+:[^@\s]+@[^\/\s]+\/[^\s'"]+['"]?/gi,
+  'Database URL':
+    /(database_url|db_url)\s*[:=]\s*['"]?(postgres|postgresql|mysql):\/\/[^@\s]+:[^@\s]+@[^\/\s]+\/[^\s'"]+['"]?/gi,
   'JWT Secret': /(jwt[_-]?secret|nextauth[_-]?secret)\s*[:=]\s*['"]?[a-z0-9_-]{32,}['"]?/gi,
   'Private Key': /-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/g,
 };
 
-const IGNORED_DIRS = [
-  'node_modules',
-  '.next',
-  '.git',
-  'dist',
-  'build',
-  '.vercel',
-];
+const IGNORED_DIRS = ['node_modules', '.next', '.git', 'dist', 'build', '.vercel'];
 
-const IGNORED_FILES = [
-  '.env.example',
-  'README.md',
-  'DEPLOYMENT.md',
-];
+const IGNORED_FILES = ['.env.example', 'README.md', 'DEPLOYMENT.md'];
 
 const CHECK_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.json', '.env', '.yml', '.yaml'];
 
@@ -59,9 +48,10 @@ function scanFile(filePath) {
           file: filePath,
           pattern: patternName,
           matches: matches.length,
-          lines: content.split('\n').map((line, index) =>
-            regex.test(line) ? index + 1 : null
-          ).filter(Boolean)
+          lines: content
+            .split('\n')
+            .map((line, index) => (regex.test(line) ? index + 1 : null))
+            .filter(Boolean),
         });
       }
       // Reset regex
@@ -110,7 +100,7 @@ function main() {
   } else {
     console.log(`❌ Found ${findings.length} potential secret(s):\n`);
 
-    findings.forEach(finding => {
+    findings.forEach((finding) => {
       console.log(`File: ${finding.file}`);
       console.log(`Pattern: ${finding.pattern}`);
       console.log(`Lines: ${finding.lines.join(', ')}`);

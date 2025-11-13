@@ -6,8 +6,8 @@
  * - POST: Create new alert
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +18,7 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get('activeOnly') === 'true';
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
     const where: Record<string, unknown> = { userId };
@@ -34,7 +31,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const formattedAlerts = alerts.map(alert => ({
+    const formattedAlerts = alerts.map((alert) => ({
       id: alert.id,
       userId: alert.userId,
       portfolioId: alert.portfolioId,
@@ -56,10 +53,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching alerts:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch alerts' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
   }
 }
 
@@ -67,24 +61,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const {
-      userId,
-      portfolioId,
-      agentId,
-      symbol,
-      chain,
-      address,
-      condition,
-      threshold,
-      message,
-    } = body;
+    const { userId, portfolioId, agentId, symbol, chain, address, condition, threshold, message } =
+      body;
 
     // Validate required fields
     if (!userId || !symbol || !chain || !address || !condition || threshold === undefined) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Validate condition
@@ -92,7 +74,7 @@ export async function POST(request: NextRequest) {
     if (!validConditions.includes(condition)) {
       return NextResponse.json(
         { error: 'Invalid condition. Must be one of: ' + validConditions.join(', ') },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,28 +94,28 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      alert: {
-        id: alert.id,
-        userId: alert.userId,
-        portfolioId: alert.portfolioId,
-        agentId: alert.agentId,
-        symbol: alert.symbol,
-        chain: alert.chain,
-        address: alert.address,
-        condition: alert.condition,
-        threshold: Number(alert.threshold),
-        isActive: alert.isActive,
-        message: alert.message,
-        createdAt: alert.createdAt.toISOString(),
+    return NextResponse.json(
+      {
+        alert: {
+          id: alert.id,
+          userId: alert.userId,
+          portfolioId: alert.portfolioId,
+          agentId: alert.agentId,
+          symbol: alert.symbol,
+          chain: alert.chain,
+          address: alert.address,
+          condition: alert.condition,
+          threshold: Number(alert.threshold),
+          isActive: alert.isActive,
+          message: alert.message,
+          createdAt: alert.createdAt.toISOString(),
+        },
+        message: 'Alert created successfully',
       },
-      message: 'Alert created successfully',
-    }, { status: 201 });
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error creating alert:', error);
-    return NextResponse.json(
-      { error: 'Failed to create alert' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create alert' }, { status: 500 });
   }
 }

@@ -72,20 +72,20 @@ export default function AIChatPage() {
           <h3 className="text-lg font-semibold text-blue-400 mb-2">📖 How to Use</h3>
           <ol className="list-decimal list-inside space-y-2 text-gray-300">
             <li>
-              <strong>Upload an image:</strong> Use the 📎 button, drag & drop, or paste (Ctrl+V)
-              to upload a screenshot of your trading dashboard or PnL statement
+              <strong>Upload an image:</strong> Use the 📎 button, drag & drop, or paste (Ctrl+V) to
+              upload a screenshot of your trading dashboard or PnL statement
             </li>
             <li>
-              <strong>Wait for OCR processing:</strong> The AI will analyze your image using
-              Claude + GPT-4o Vision (95-98% accuracy)
+              <strong>Wait for OCR processing:</strong> The AI will analyze your image using Claude
+              + GPT-4o Vision (95-98% accuracy)
             </li>
             <li>
               <strong>Review extracted data:</strong> Check the founders, investors, and settings
               extracted from your image
             </li>
             <li>
-              <strong>Apply to calculator:</strong> Click the &ldquo;Apply to Calculator&rdquo; button to
-              auto-populate all fields
+              <strong>Apply to calculator:</strong> Click the &ldquo;Apply to Calculator&rdquo;
+              button to auto-populate all fields
             </li>
             <li>
               <strong>Ask questions:</strong> Type messages to query the extracted data or get
@@ -115,8 +115,7 @@ export default function AIChatPage() {
               morphological operations)
             </div>
             <div>
-              <strong>Auto-Population:</strong> Integrates with fundStore (Zustand state
-              management)
+              <strong>Auto-Population:</strong> Integrates with fundStore (Zustand state management)
             </div>
           </div>
         </div>
