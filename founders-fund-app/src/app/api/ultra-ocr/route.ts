@@ -1,10 +1,9 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
 
 // Ultra-high accuracy OCR with ensemble approach
 // Target: 95-98% confidence for trading dashboard extraction
-
 
 interface ModelResult {
   data: Record<string, unknown>;
@@ -41,13 +40,13 @@ export async function POST(request: NextRequest) {
       const startTime = Date.now();
       try {
         const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: 'gpt-4o',
           messages: [
             {
-              role: "user",
+              role: 'user',
               content: [
                 {
-                  type: "text",
+                  type: 'text',
                   text: `You are an expert financial data extraction AI with 99.9% accuracy requirements.
 
 MISSION: Extract trading dashboard data with SURGICAL precision.
@@ -86,17 +85,17 @@ Return ONLY this JSON structure:
   "losses": number,
   "timestamp": "MM/DD/YYYY or null",
   "extractionConfidence": number (1-100)
-}`
+}`,
                 },
                 {
-                  type: "image_url",
-                  image_url: { url: `data:${mimeType};base64,${base64}` }
-                }
-              ]
-            }
+                  type: 'image_url',
+                  image_url: { url: `data:${mimeType};base64,${base64}` },
+                },
+              ],
+            },
           ],
           max_tokens: 500,
-          temperature: 0
+          temperature: 0,
         });
 
         const gptResult = parseAIResponse(response.choices[0]?.message?.content || '{}', 'GPT-4o');
@@ -104,7 +103,7 @@ Return ONLY this JSON structure:
           data: gptResult,
           confidence: Number(gptResult.extractionConfidence) || 70,
           model: 'GPT-4o',
-          processingTime: Date.now() - startTime
+          processingTime: Date.now() - startTime,
         });
         processingDetails.push(`GPT-4o extraction completed (${Date.now() - startTime}ms)`);
       } catch (error) {
@@ -119,14 +118,14 @@ Return ONLY this JSON structure:
       const startTime = Date.now();
       try {
         const response = await anthropic.messages.create({
-          model: "claude-3-sonnet-20240229",
+          model: 'claude-3-sonnet-20240229',
           max_tokens: 500,
           messages: [
             {
-              role: "user",
+              role: 'user',
               content: [
                 {
-                  type: "text",
+                  type: 'text',
                   text: `FINANCIAL OCR SPECIALIST - MAXIMUM ACCURACY MODE
 
 You are analyzing a trading dashboard screenshot. Your goal is 95%+ extraction accuracy.
@@ -160,27 +159,30 @@ Output format:
   "losses": extracted_count,
   "timestamp": "date_string_or_null",
   "extractionConfidence": confidence_percentage
-}`
+}`,
                 },
                 {
-                  type: "image",
+                  type: 'image',
                   source: {
-                    type: "base64",
-                    media_type: mimeType as "image/jpeg" | "image/png" | "image/webp",
-                    data: base64
-                  }
-                }
-              ]
-            }
-          ]
+                    type: 'base64',
+                    media_type: mimeType as 'image/jpeg' | 'image/png' | 'image/webp',
+                    data: base64,
+                  },
+                },
+              ],
+            },
+          ],
         });
 
-        const claudeResult = parseAIResponse(response.content[0].type === 'text' ? response.content[0].text : '{}', 'Claude');
+        const claudeResult = parseAIResponse(
+          response.content[0].type === 'text' ? response.content[0].text : '{}',
+          'Claude',
+        );
         modelResults.push({
           data: claudeResult,
           confidence: Number(claudeResult.extractionConfidence) || 70,
           model: 'Claude-Sonnet',
-          processingTime: Date.now() - startTime
+          processingTime: Date.now() - startTime,
         });
         processingDetails.push(`Claude Sonnet extraction completed (${Date.now() - startTime}ms)`);
       } catch (error) {
@@ -195,13 +197,13 @@ Output format:
       const startTime = Date.now();
       try {
         const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: 'gpt-4o',
           messages: [
             {
-              role: "user",
+              role: 'user',
               content: [
                 {
-                  type: "text",
+                  type: 'text',
                   text: `CROSS-VALIDATION OCR SPECIALIST
 
 Previous extraction detected these patterns:
@@ -225,25 +227,28 @@ IMPROVEMENT STRATEGY:
 If you find errors in the previous extraction, correct them.
 If the extraction looks accurate, confirm the same values.
 
-Return the corrected/confirmed JSON with your confidence level:`
+Return the corrected/confirmed JSON with your confidence level:`,
                 },
                 {
-                  type: "image_url",
-                  image_url: { url: `data:${mimeType};base64,${base64}` }
-                }
-              ]
-            }
+                  type: 'image_url',
+                  image_url: { url: `data:${mimeType};base64,${base64}` },
+                },
+              ],
+            },
           ],
           max_tokens: 500,
-          temperature: 0
+          temperature: 0,
         });
 
-        const validationResult = parseAIResponse(response.choices[0]?.message?.content || '{}', 'GPT-4o-Validator');
+        const validationResult = parseAIResponse(
+          response.choices[0]?.message?.content || '{}',
+          'GPT-4o-Validator',
+        );
         modelResults.push({
           data: validationResult,
           confidence: Number(validationResult.extractionConfidence) || 70,
           model: 'GPT-4o-Validator',
-          processingTime: Date.now() - startTime
+          processingTime: Date.now() - startTime,
         });
         processingDetails.push(`Cross-validation completed (${Date.now() - startTime}ms)`);
       } catch (error) {
@@ -264,7 +269,7 @@ Return the corrected/confirmed JSON with your confidence level:`
       consensusResult.confidence,
       consensusResult.consensus,
       validationScore,
-      modelResults.length
+      modelResults.length,
     );
 
     processingDetails.push(`Final confidence: ${finalConfidence}%`);
@@ -276,20 +281,22 @@ Return the corrected/confirmed JSON with your confidence level:`
       modelConsensus: consensusResult.consensus,
       validationScore,
       processingDetails,
-      modelResults: modelResults.map(r => ({
+      modelResults: modelResults.map((r) => ({
         model: r.model,
         confidence: r.confidence,
-        processingTime: r.processingTime
-      }))
+        processingTime: r.processingTime,
+      })),
     });
-
   } catch (error) {
     console.error('Ultra-OCR error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Ultra-OCR processing failed',
-      confidence: 0
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Ultra-OCR processing failed',
+        confidence: 0,
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -306,8 +313,16 @@ function parseAIResponse(content: string, model: string): Record<string, unknown
     const parsed = JSON.parse(jsonStr);
 
     // Ensure all numeric fields are properly parsed
-    const numericFields = ['totalValue', 'unrealizedPNL', 'realizedPNL', 'availableBalance', 'totalTransactions', 'wins', 'losses'];
-    numericFields.forEach(field => {
+    const numericFields = [
+      'totalValue',
+      'unrealizedPNL',
+      'realizedPNL',
+      'availableBalance',
+      'totalTransactions',
+      'wins',
+      'losses',
+    ];
+    numericFields.forEach((field) => {
       if (parsed[field] !== undefined && parsed[field] !== null) {
         parsed[field] = parseFloat(String(parsed[field]).replace(/[,$]/g, ''));
       }
@@ -320,19 +335,30 @@ function parseAIResponse(content: string, model: string): Record<string, unknown
   }
 }
 
-function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string, unknown>; confidence: number; consensus: number } {
+function computeEnsembleConsensus(results: ModelResult[]): {
+  data: Record<string, unknown>;
+  confidence: number;
+  consensus: number;
+} {
   if (results.length === 0) {
     return { data: {}, confidence: 0, consensus: 0 };
   }
 
-  const fields = ['totalValue', 'unrealizedPNL', 'realizedPNL', 'availableBalance', 'totalTransactions', 'wins', 'losses', 'timestamp'];
+  const fields = [
+    'totalValue',
+    'unrealizedPNL',
+    'realizedPNL',
+    'availableBalance',
+    'totalTransactions',
+    'wins',
+    'losses',
+    'timestamp',
+  ];
   const consensus: Record<string, unknown> = {};
   let totalAgreement = 0;
 
-  fields.forEach(field => {
-    const values = results
-      .map(r => r.data[field])
-      .filter(v => v !== undefined && v !== null);
+  fields.forEach((field) => {
+    const values = results.map((r) => r.data[field]).filter((v) => v !== undefined && v !== null);
 
     if (values.length === 0) {
       consensus[field] = null;
@@ -346,7 +372,7 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       }, {});
-      consensus[field] = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+      consensus[field] = Object.keys(counts).reduce((a, b) => (counts[a] > counts[b] ? a : b));
     } else {
       // For numeric fields, use weighted average based on confidence
       let weightedSum = 0;
@@ -361,7 +387,7 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string
 
         // Check agreement (within 5% tolerance)
         const tolerance = Math.max(Math.abs(numValue * 0.05), 1);
-        const agreements = values.filter(v => Math.abs(Number(v) - numValue) <= tolerance).length;
+        const agreements = values.filter((v) => Math.abs(Number(v) - numValue) <= tolerance).length;
         if (agreements > agreementCount) {
           agreementCount = agreements;
         }
@@ -378,7 +404,7 @@ function computeEnsembleConsensus(results: ModelResult[]): { data: Record<string
   return {
     data: consensus,
     confidence: avgConfidence,
-    consensus: consensusScore
+    consensus: consensusScore,
   };
 }
 
@@ -438,7 +464,9 @@ function performAdvancedValidation(data: Record<string, unknown>): number {
 
   // Validation 5: Data completeness
   const requiredFields = ['totalValue', 'realizedPNL', 'totalTransactions'];
-  const missingFields = requiredFields.filter(field => data[field] === undefined || data[field] === null);
+  const missingFields = requiredFields.filter(
+    (field) => data[field] === undefined || data[field] === null,
+  );
   score -= missingFields.length * 15;
 
   return Math.max(0, score);
@@ -448,23 +476,23 @@ function calculateFinalConfidence(
   consensusConfidence: number,
   modelAgreement: number,
   validationScore: number,
-  modelCount: number
+  modelCount: number,
 ): number {
   // Weighted confidence calculation
   const weights = {
     consensus: 0.4,
     agreement: 0.3,
     validation: 0.2,
-    modelCount: 0.1
+    modelCount: 0.1,
   };
 
   const modelCountBonus = Math.min(modelCount * 10, 30); // Up to 30% bonus for multiple models
 
   const finalScore =
-    (consensusConfidence * weights.consensus) +
-    (modelAgreement * weights.agreement) +
-    (validationScore * weights.validation) +
-    (modelCountBonus * weights.modelCount);
+    consensusConfidence * weights.consensus +
+    modelAgreement * weights.agreement +
+    validationScore * weights.validation +
+    modelCountBonus * weights.modelCount;
 
   return Math.min(98, Math.max(0, Math.round(finalScore)));
 }
@@ -478,7 +506,7 @@ export async function GET() {
       'Cross-validation',
       'Advanced mathematical validation',
       'Consensus algorithms',
-      'Target: 95-98% confidence'
-    ]
+      'Target: 95-98% confidence',
+    ],
   });
 }

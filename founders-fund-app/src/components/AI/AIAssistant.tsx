@@ -53,7 +53,7 @@ interface SnapshotData {
     winEnd: string;
     [key: string]: unknown;
   };
-  results: any[];
+  results: Array<Record<string, unknown>>;
   summary: {
     totalNetProfit: number;
     totalFees: number;
@@ -355,7 +355,7 @@ export default function AIAssistant() {
       const combinedData = [];
       if (data.founders) {
         combinedData.push(
-          ...data.founders.map((f: any) => ({
+          ...data.founders.map((f: Record<string, unknown>) => ({
             name: f.name || 'Founder',
             date: f.date,
             amount: f.amount,

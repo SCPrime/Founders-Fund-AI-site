@@ -13,6 +13,7 @@
 import type { DrawingTool } from '@/components/Charts/types';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
         userId,
         portfolioId: portfolioId || null,
         agentId: agentId || null,
-        drawingData: drawings as unknown as any, // Prisma Json type accepts any JSON-serializable value
+        drawingData: drawings as unknown as Prisma.InputJsonValue, // Prisma Json type accepts any JSON-serializable value
       },
     });
 

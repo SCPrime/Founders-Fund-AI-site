@@ -83,9 +83,9 @@ export async function GET() {
         isPrimary: account.primary || false,
         nativeBalance: {
           amount: parseFloat(
-            (account as any).native_balance?.amount || account.balance?.amount || '0',
+            ((account as Record<string, unknown>).native_balance as { amount?: string } | undefined)?.amount || account.balance?.amount || '0',
           ),
-          currency: (account as any).native_balance?.currency || account.balance?.currency || 'USD',
+          currency: ((account as Record<string, unknown>).native_balance as { currency?: string } | undefined)?.currency || account.balance?.currency || 'USD',
         },
       }),
     );

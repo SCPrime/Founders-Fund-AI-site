@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 interface AgentSettingsPanelProps {
   agentId: string;
@@ -15,7 +15,7 @@ export default function AgentSettingsPanel({
   currentStrategy,
   onClose,
   onUpdate,
-  onError: _onError
+  onError: _onError,
 }: AgentSettingsPanelProps) {
   const [strategy, setStrategy] = useState(JSON.stringify(currentStrategy, null, 2));
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ export default function AgentSettingsPanel({
       const response = await fetch(`/api/agents/${agentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ strategy: parsedStrategy })
+        body: JSON.stringify({ strategy: parsedStrategy }),
       });
 
       if (!response.ok) {
@@ -69,10 +69,7 @@ export default function AgentSettingsPanel({
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Agent Settings</h3>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-        >
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl font-bold">
           ×
         </button>
       </div>
@@ -110,7 +107,10 @@ export default function AgentSettingsPanel({
           <span className="text-yellow-600 text-xl">⚠️</span>
           <div className="text-sm text-yellow-800">
             <p className="font-semibold mb-1">Warning</p>
-            <p>Modifying the strategy will affect future trades. Existing positions will not be affected. Make sure to validate your JSON before saving.</p>
+            <p>
+              Modifying the strategy will affect future trades. Existing positions will not be
+              affected. Make sure to validate your JSON before saving.
+            </p>
           </div>
         </div>
       </div>

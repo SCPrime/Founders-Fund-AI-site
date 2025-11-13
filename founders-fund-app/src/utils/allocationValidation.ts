@@ -1,10 +1,10 @@
 import {
-  AllocationState,
   AllocationOutputs,
-  ValidationError,
+  AllocationState,
+  CashflowLeg,
   DollarDaysMap,
   SharesMap,
-  CashflowLeg
+  ValidationError,
 } from '@/types/allocation';
 import { sumValues } from './allocationUtils';
 
@@ -13,10 +13,7 @@ const TOLERANCE = 0.01; // Allow ±$0.01 for rounding reconciliation
 /**
  * Validate all business rules and mathematical invariants
  */
-export function validateAll(
-  state: AllocationState,
-  outputs: AllocationOutputs
-): ValidationError[] {
+export function validateAll(state: AllocationState, outputs: AllocationOutputs): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Rule 1: Profit derivation
@@ -54,7 +51,7 @@ export function validateAll(
 
 function validateProfitDerivation(
   state: AllocationState,
-  outputs: AllocationOutputs
+  outputs: AllocationOutputs,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
   const expected = state.walletSizeEndOfWindow - state.constants.INVESTOR_SEED_BASELINE;
@@ -65,7 +62,7 @@ function validateProfitDerivation(
       field: 'profitTotal',
       message: 'Profit total must equal wallet_size_end - 20,000',
       expected,
-      actual: outputs.profitTotal
+      actual: outputs.profitTotal,
     });
   }
 
@@ -93,7 +90,7 @@ function validateRealizedGrossSum(outputs: AllocationOutputs): ValidationError[]
       field: 'realizedGross',
       message: 'Sum of gross realized shares must equal total realized profit',
       expected: outputs.realizedProfit,
-      actual: totalGross
+      actual: totalGross,
     });
   }
 
@@ -110,7 +107,7 @@ function validateManagementFeesSum(outputs: AllocationOutputs): ValidationError[
       field: 'managementFees',
       message: 'Sum of investor management fees must equal founders carry total',
       expected: outputs.managementFees.foundersCarryTotal,
-      actual: mgmtFeesSum
+      actual: mgmtFeesSum,
     });
   }
 
@@ -130,20 +127,20 @@ function validateNoMgmtFeeOnUnrealized(outputs: AllocationOutputs): ValidationEr
         field: 'managementFees',
         message: `Management fee applied to investor ${investorName} with non-positive gross share`,
         expected: 0,
-        actual: mgmtFee
+        actual: mgmtFee,
       });
     }
 
     // Verify fee rate
     if (grossShare > 0) {
-      const expectedFee = grossShare * 0.20; // MGMT_FEE_RATE
+      const expectedFee = grossShare * 0.2; // MGMT_FEE_RATE
       if (Math.abs(mgmtFee - expectedFee) > TOLERANCE) {
         errors.push({
           type: 'error',
           field: 'managementFees',
           message: `Incorrect management fee rate for investor ${investorName}`,
           expected: expectedFee,
-          actual: mgmtFee
+          actual: mgmtFee,
         });
       }
     }
@@ -164,7 +161,7 @@ function validateRealizedNetSum(outputs: AllocationOutputs): ValidationError[] {
       field: 'realizedNet',
       message: 'Sum of net realized shares must equal total realized profit',
       expected: outputs.realizedProfit,
-      actual: totalNet
+      actual: totalNet,
     });
   }
 
@@ -173,7 +170,7 @@ function validateRealizedNetSum(outputs: AllocationOutputs): ValidationError[] {
 
 function validateEntryFeesReconciliation(
   expandedLegs: CashflowLeg[],
-  window: { start: string; end: string }
+  window: { start: string; end: string },
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -197,10 +194,10 @@ function validateEntryFeesReconciliation(
   // If Gross = G, then Net = 0.9*G and EntryFee = 0.1*G
   // Therefore: G = Net + EntryFee, and EntryFee should equal Net / 9
   const calculatedGross = investorContributionsNet + foundersEntryFees;
-  const expectedEntryFees = calculatedGross * 0.10;
+  const expectedEntryFees = calculatedGross * 0.1;
 
   // Alternative check: entry fees should be 1/9 of net (since net is 9 parts, fee is 1 part)
-  const expectedFromNet = investorContributionsNet / 9.0;
+  // const expectedFromNet = investorContributionsNet / 9.0; // Reserved for future validation
 
   if (Math.abs(foundersEntryFees - expectedEntryFees) > TOLERANCE) {
     errors.push({
@@ -208,17 +205,14 @@ function validateEntryFeesReconciliation(
       field: 'entryFees',
       message: 'Founders entry fees must equal 10% of gross investor contributions this window',
       expected: expectedEntryFees,
-      actual: foundersEntryFees
+      actual: foundersEntryFees,
     });
   }
 
   return errors;
 }
 
-function validateMoonbagSum(
-  state: AllocationState,
-  outputs: AllocationOutputs
-): ValidationError[] {
+function validateMoonbagSum(state: AllocationState, outputs: AllocationOutputs): ValidationError[] {
   const errors: ValidationError[] = [];
 
   if (state.unrealizedPnlEndOfWindow > 0) {
@@ -232,7 +226,7 @@ function validateMoonbagSum(
         field: 'moonbag',
         message: 'Total moonbag allocation must equal unrealized PnL',
         expected: state.unrealizedPnlEndOfWindow,
-        actual: totalMoonbag
+        actual: totalMoonbag,
       });
     }
 
@@ -246,7 +240,7 @@ function validateMoonbagSum(
         field: 'moonbag',
         message: 'Founders moonbag must be 75% of unrealized PnL',
         expected: expectedFounders,
-        actual: foundersAmount
+        actual: foundersAmount,
       });
     }
 
@@ -256,7 +250,7 @@ function validateMoonbagSum(
         field: 'moonbag',
         message: 'Investors moonbag must be 25% of unrealized PnL',
         expected: expectedInvestors,
-        actual: investorsSum
+        actual: investorsSum,
       });
     }
   }
@@ -267,7 +261,7 @@ function validateMoonbagSum(
 function validateDollarDaysRules(
   expandedLegs: CashflowLeg[],
   window: { start: string; end: string },
-  dollarDays: DollarDaysMap
+  dollarDays: DollarDaysMap,
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -275,7 +269,7 @@ function validateDollarDaysRules(
   const recalculated = {
     founders: 0,
     investors: {} as Record<string, number>,
-    total: 0
+    total: 0,
   };
 
   for (const leg of expandedLegs) {
@@ -314,7 +308,7 @@ function validateDollarDaysRules(
       field: 'dollarDays',
       message: 'Founders dollar-days calculation mismatch',
       expected: recalculated.founders,
-      actual: dollarDays.founders
+      actual: dollarDays.founders,
     });
   }
 
@@ -335,7 +329,7 @@ function validateSharesSum(shares: SharesMap, dollarDays: DollarDaysMap): Valida
         field: 'shares',
         message: 'Total shares must sum to 1.0',
         expected: 1.0,
-        actual: totalShares
+        actual: totalShares,
       });
     }
   }
@@ -348,7 +342,7 @@ function validateSharesSum(shares: SharesMap, dollarDays: DollarDaysMap): Valida
  */
 export function validateBusinessRules(
   state: AllocationState,
-  outputs: AllocationOutputs
+  outputs: AllocationOutputs,
 ): ValidationError[] {
   const warnings: ValidationError[] = [];
 
@@ -357,7 +351,7 @@ export function validateBusinessRules(
     warnings.push({
       type: 'warning',
       field: 'realizedProfit',
-      message: 'Realized profit is negative - loss allocation is active'
+      message: 'Realized profit is negative - loss allocation is active',
     });
   }
 
@@ -366,7 +360,7 @@ export function validateBusinessRules(
     warnings.push({
       type: 'warning',
       field: 'managementFees',
-      message: 'Management fees should be zero when realized profit is negative'
+      message: 'Management fees should be zero when realized profit is negative',
     });
   }
 
@@ -375,7 +369,7 @@ export function validateBusinessRules(
     warnings.push({
       type: 'warning',
       field: 'dollarDays',
-      message: 'No dollar-days calculated - all allocations will be zero'
+      message: 'No dollar-days calculated - all allocations will be zero',
     });
   }
 

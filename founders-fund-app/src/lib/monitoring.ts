@@ -42,7 +42,7 @@ export function logError(error: Error | string, context?: Record<string, any>): 
       // Commented out to avoid build errors - install @sentry/nextjs to enable
       // import('@sentry/nextjs' as string)
       Promise.reject(new Error('Sentry not installed'))
-        .then((Sentry: any) => {
+        .then((Sentry: { captureException?: (error: Error, options?: Record<string, unknown>) => void }) => {
           if (typeof error === 'object' && error instanceof Error) {
             Sentry.captureException?.(error, {
               contexts: {

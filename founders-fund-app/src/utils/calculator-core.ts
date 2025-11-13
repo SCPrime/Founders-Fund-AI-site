@@ -3,7 +3,7 @@
  * This implements the exact calculation logic from https://scprime.github.io/figment-splits-site/
  */
 
-import { CashflowLeg, AllocationConstants } from '@/types/allocation';
+import { AllocationConstants, CashflowLeg } from '@/types/allocation';
 import { Contribution, FundSettings } from '@/types/fund';
 
 export interface CalculatorInputs {
@@ -118,11 +118,15 @@ function parseNum(value: number | string): number {
   return 0;
 }
 
-function gatherFounders(founders: Array<{ date: string; amount: number }>, start: string, end: string) {
+function gatherFounders(
+  founders: Array<{ date: string; amount: number }>,
+  start: string,
+  end: string,
+) {
   let startCap = 0;
   let contribInWin = 0;
   let dd = 0;
-  const totalDays = daysBetweenInclusive(start, end);
+  // const totalDays = daysBetweenInclusive(start, end); // Reserved for future use
 
   for (const founder of founders) {
     const d = founder.date;
@@ -164,7 +168,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
     applyDraws,
     domLeadPct,
     founders,
-    investors
+    investors,
   } = inputs;
 
   const totalDays = daysBetweenInclusive(start, end);
@@ -190,7 +194,8 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
     const aGross = parseNum(investor.amount);
     if (aGross <= 0 || !d) continue;
 
-    const feeMode = investor.rule === 'default' ? (feeReducesInvestor ? 'yes' : 'no') : investor.rule;
+    const feeMode =
+      investor.rule === 'default' ? (feeReducesInvestor ? 'yes' : 'no') : investor.rule;
     const aNet = feeMode === 'yes' ? aGross * (1 - entryFee) : aGross;
     const entryAmt = aGross * entryFee;
 
@@ -200,7 +205,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
         startCap: 0,
         contribInWin: 0,
         dd: 0,
-        preStart: 0
+        preStart: 0,
       });
     }
     const rec = invMap.get(name);
@@ -245,30 +250,37 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
   const totalContribWin = (f.contribInWin || 0) + invContribSum;
 
   // Wallet identity calculation
-  const minWallet = totalStartCap + totalContribWin - drawTotal + moonbagReal + (includeUnreal ? moonbagUnreal : 0);
+  const minWallet =
+    totalStartCap + totalContribWin - drawTotal + moonbagReal + (includeUnreal ? moonbagUnreal : 0);
   let profitCore = 0;
   if (walletSize > 0) {
-    profitCore = walletSize - totalStartCap - totalContribWin + drawTotal - moonbagReal - (includeUnreal ? moonbagUnreal : 0);
+    profitCore =
+      walletSize -
+      totalStartCap -
+      totalContribWin +
+      drawTotal -
+      moonbagReal -
+      (includeUnreal ? moonbagUnreal : 0);
   } else {
     profitCore = realizedProfit;
   }
 
   // Base profit allocations by time-weight
   const baseF = profitCore * shareF;
-  const baseI_each = invList.map(x => profitCore * (totalDD > 0 ? x.dd / totalDD : 0));
+  const baseI_each = invList.map((x) => profitCore * (totalDD > 0 ? x.dd / totalDD : 0));
 
   // Regular management fee (on investor base profit > 0)
-  const feeFromI_each = baseI_each.map(x => x > 0 ? x * mgmtFee : 0);
+  const feeFromI_each = baseI_each.map((x) => (x > 0 ? x * mgmtFee : 0));
   const feeFromI_total = feeFromI_each.reduce((s, x) => s + x, 0);
 
   // Moonbag realized split
   const moonF = moonbagReal * moonbagFounderPctDecimal;
   const moonI_total = moonbagReal - moonF;
-  const moonI_each = invList.map(x => invDDsum > 0 ? moonI_total * (x.dd / invDDsum) : 0);
+  const moonI_each = invList.map((x) => (invDDsum > 0 ? moonI_total * (x.dd / invDDsum) : 0));
 
   // Net profits
   const netF = baseF + feeFromI_total + moonF - drawTotal;
-  const netI_each = invList.map((x, i) => (baseI_each[i] - feeFromI_each[i]) + moonI_each[i]);
+  const netI_each = invList.map((x, i) => baseI_each[i] - feeFromI_each[i] + moonI_each[i]);
 
   // End capitals
   const endF = f.startCap + (f.contribInWin || 0) + netF;
@@ -283,7 +295,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
   if (endF >= reqF) {
     domState = 'good';
     domMsg = 'Dominance OK';
-  } else if ((f.startCap + (f.contribInWin || 0) + baseF + feeFromI_total + moonF) >= reqF) {
+  } else if (f.startCap + (f.contribInWin || 0) + baseF + feeFromI_total + moonF >= reqF) {
     domState = 'warn';
     domMsg = 'Reduce draw to maintain dominance.';
   } else {
@@ -292,7 +304,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
   }
 
   // PGP (period) values
-  const pgpF = f.dd > 0 ? (netF * totalDays / f.dd) : 0;
+  const pgpF = f.dd > 0 ? (netF * totalDays) / f.dd : 0;
 
   // Investor summary for output
   const investorSummary = invList.map((x, i) => ({
@@ -307,7 +319,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
     end: endI_each[i],
     entryPre: entryPreBy.get(x.name) || entryPreBy.get(x.name.toLowerCase()) || 0,
     entryIn: entryInBy.get(x.name) || entryInBy.get(x.name.toLowerCase()) || 0,
-    pgp: x.dd > 0 ? (netI_each[i] * totalDays / x.dd) : 0
+    pgp: x.dd > 0 ? (netI_each[i] * totalDays) / x.dd : 0,
   }));
 
   const feesToFounders_total = entryFees_thisWin + feeFromI_total;
@@ -325,7 +337,7 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
       base: baseF,
       net: netF,
       end: endF,
-      pgp: pgpF
+      pgp: pgpF,
     },
     investors: investorSummary,
     summary: {
@@ -343,14 +355,14 @@ export function computeAllocation(inputs: CalculatorInputs): CalculatorOutputs {
       domMsg,
       reqF,
       maxInvEnd,
-      minWallet
+      minWallet,
     },
     moonbag: {
       moonbagReal,
       moonbagUnreal,
       moonF,
-      moonI_total
-    }
+      moonI_total,
+    },
   };
 }
 
@@ -382,16 +394,22 @@ export function fromFundStore(store: {
     drawPerFounder: 0,
     applyDraws: false,
     domLeadPct: 0,
-    founders: store.contributions?.filter((c) => c.cls === 'founder').map((c) => ({
-      date: c.date,
-      amount: c.amount
-    })) || [],
-    investors: store.contributions?.filter((c) => c.cls === 'investor').map((c) => ({
-      name: c.name,
-      date: c.date,
-      amount: c.amount,
-      rule: 'default' as 'default' | 'yes' | 'no'
-    })) || []
+    founders:
+      store.contributions
+        ?.filter((c) => c.cls === 'founder')
+        .map((c) => ({
+          date: c.date,
+          amount: c.amount,
+        })) || [],
+    investors:
+      store.contributions
+        ?.filter((c) => c.cls === 'investor')
+        .map((c) => ({
+          name: c.name,
+          date: c.date,
+          amount: c.amount,
+          rule: 'default' as 'default' | 'yes' | 'no',
+        })) || [],
   };
 }
 
@@ -406,24 +424,36 @@ export function fromAllocationStore(store: FundStoreData): CalculatorInputs {
     moonbagReal: 0,
     moonbagUnreal: store.settings?.moonbagUnreal || 0,
     includeUnreal: false,
-    moonbagFounderPct: store.settings?.moonbagFounderPct || (store.constants?.FOUNDERS_MOONBAG_PCT ? store.constants.FOUNDERS_MOONBAG_PCT * 100 : 75),
-    mgmtFeePct: store.settings?.mgmtFeePct || (store.constants?.MGMT_FEE_RATE ? store.constants.MGMT_FEE_RATE * 100 : 20),
-    entryFeePct: store.settings?.entryFeePct || (store.constants?.ENTRY_FEE_RATE ? store.constants.ENTRY_FEE_RATE * 100 : 10),
+    moonbagFounderPct:
+      store.settings?.moonbagFounderPct ||
+      (store.constants?.FOUNDERS_MOONBAG_PCT ? store.constants.FOUNDERS_MOONBAG_PCT * 100 : 75),
+    mgmtFeePct:
+      store.settings?.mgmtFeePct ||
+      (store.constants?.MGMT_FEE_RATE ? store.constants.MGMT_FEE_RATE * 100 : 20),
+    entryFeePct:
+      store.settings?.entryFeePct ||
+      (store.constants?.ENTRY_FEE_RATE ? store.constants.ENTRY_FEE_RATE * 100 : 10),
     feeReducesInvestor: store.constants?.ENTRY_FEE_REDUCES_INVESTOR_CREDIT ?? true,
     founderCount: store.constants?.FOUNDERS_COUNT || 2,
     drawPerFounder: 0,
     applyDraws: false,
     domLeadPct: 0,
-    founders: store.contributions?.filter((c) => c.owner === 'founders').map((c) => ({
-      date: c.ts,
-      amount: c.amount
-    })) || [],
-    investors: store.contributions?.filter((c) => c.owner === 'investor').map((c) => ({
-      name: c.name,
-      date: c.ts,
-      amount: c.amount,
-      rule: 'default' as 'default' | 'yes' | 'no'
-    })) || []
+    founders:
+      store.contributions
+        ?.filter((c) => c.owner === 'founders')
+        .map((c) => ({
+          date: c.ts,
+          amount: c.amount,
+        })) || [],
+    investors:
+      store.contributions
+        ?.filter((c) => c.owner === 'investor')
+        .map((c) => ({
+          name: c.name,
+          date: c.ts,
+          amount: c.amount,
+          rule: 'default' as 'default' | 'yes' | 'no',
+        })) || [],
   };
 }
 

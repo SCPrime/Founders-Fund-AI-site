@@ -1,12 +1,12 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
-import GitHubProvider from 'next-auth/providers/github';
-import DiscordProvider from 'next-auth/providers/discord';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
+import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
 import type { AuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import DiscordProvider from 'next-auth/providers/discord';
+import GitHubProvider from 'next-auth/providers/github';
+import GoogleProvider from 'next-auth/providers/google';
 
 // NOTE: authOptions must not be exported from route files in Next.js App Router
 // This is an internal constant for the NextAuth handler only
@@ -33,10 +33,7 @@ const authOptions: AuthOptions = {
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.passwordHash);
 
         if (!isPasswordValid) {
           return null;
@@ -58,9 +55,9 @@ const authOptions: AuthOptions = {
         params: {
           prompt: 'consent',
           access_type: 'offline',
-          response_type: 'code'
-        }
-      }
+          response_type: 'code',
+        },
+      },
     }),
     // GitHub OAuth
     GitHubProvider({
@@ -89,7 +86,7 @@ const authOptions: AuthOptions = {
       // This is critical for account linking across providers
       if (token.email && (trigger === 'signIn' || trigger === 'signUp')) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: token.email }
+          where: { email: token.email },
         });
 
         if (dbUser) {
@@ -115,7 +112,7 @@ const authOptions: AuthOptions = {
       // OAuth providers can be added in the future
       if (user.email) {
         const existingUser = await prisma.user.findUnique({
-          where: { email: user.email }
+          where: { email: user.email },
         });
 
         if (existingUser) {
@@ -127,7 +124,7 @@ const authOptions: AuthOptions = {
           if (user.name && user.name !== existingUser.name) {
             await prisma.user.update({
               where: { email: user.email },
-              data: { name: user.name }
+              data: { name: user.name },
             });
           }
 
@@ -136,7 +133,8 @@ const authOptions: AuthOptions = {
         } else {
           // New OAuth user - create with default INVESTOR role
           // Special case: if email is scprime@foundersfund.com, assign ADMIN role
-          const role = user.email.toLowerCase() === 'scprime@foundersfund.com' ? 'ADMIN' : 'INVESTOR';
+          const role =
+            user.email.toLowerCase() === 'scprime@foundersfund.com' ? 'ADMIN' : 'INVESTOR';
 
           const newUser = await prisma.user.create({
             data: {
@@ -144,7 +142,7 @@ const authOptions: AuthOptions = {
               name: user.name || user.email.split('@')[0],
               role,
               passwordHash: null, // OAuth users don't have passwords
-            }
+            },
           });
 
           user.id = newUser.id;

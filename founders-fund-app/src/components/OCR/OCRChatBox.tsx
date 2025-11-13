@@ -238,12 +238,12 @@ export default function OCRChatBox() {
     try {
       // Use AI tools for analysis
       if (text.toLowerCase().includes('snapshot') || text.toLowerCase().includes('current state')) {
-        const snapshot = executeAITool('get_snapshot', {}) as any;
+        const snapshot = executeAITool('get_snapshot', {}) as Record<string, unknown>;
         return formatSnapshotResponse(snapshot);
       }
 
       if (text.toLowerCase().includes('validate') || text.toLowerCase().includes('check')) {
-        const validation = executeAITool('validate_fund', {}) as any;
+        const validation = executeAITool('validate_fund', {}) as Record<string, unknown>;
         return formatValidationResponse(validation);
       }
 
