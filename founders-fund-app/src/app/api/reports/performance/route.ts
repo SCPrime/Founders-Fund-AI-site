@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const benchmark = searchParams.get('benchmark') as 'BTC' | 'ETH' | 'SOL' | null;
 
     // Build portfolio filter based on role
-    const portfolioFilter: { id?: string } = {};
+    const portfolioFilter: { id?: string; userId?: string } = {};
     if (portfolioId) {
       portfolioFilter.id = portfolioId;
     }
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
           // For non-crypto benchmarks, use market average
           benchmarkReturns = portfolioReturns.map(() => 0.001);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn('Failed to fetch benchmark prices, using market average:', error);
         // Fallback: use market average returns
         benchmarkReturns = portfolioReturns.map(() => 0.001);
@@ -281,12 +281,12 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     console.error('Performance analytics error:', error);
 
-    if (error.message === 'Unauthorized') {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     return NextResponse.json(
-      { error: 'Failed to calculate performance analytics', details: error.message },
+      { error: 'Failed to calculate performance analytics', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 },
     );
   }

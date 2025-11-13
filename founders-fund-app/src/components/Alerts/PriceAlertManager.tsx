@@ -297,7 +297,7 @@ export default function PriceAlertManager({
         </div>
       ) : alerts.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No alerts created yet. Click "Create Alert" to get started.
+          No alerts created yet. Click &quot;Create Alert&quot; to get started.
         </div>
       ) : (
         <div className="space-y-3">

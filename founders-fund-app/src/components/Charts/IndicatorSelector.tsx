@@ -50,13 +50,13 @@ export default function IndicatorSelector({
     );
   };
 
-  const updateParams = (id: string, params: Record<string, number>) => {
-    setIndicators((prev) =>
-      prev.map((indicator) =>
-        indicator.id === id ? { ...indicator, params } : indicator
-      )
-    );
-  };
+  // const updateParams = (id: string, params: Record<string, number>) => {
+  //   setIndicators((prev) =>
+  //     prev.map((indicator) =>
+  //       indicator.id === id ? { ...indicator, params } : indicator
+  //     )
+  //   );
+  // }; // Reserved for future use
 
   const savePreferences = () => {
     localStorage.setItem('chartIndicators', JSON.stringify(indicators));

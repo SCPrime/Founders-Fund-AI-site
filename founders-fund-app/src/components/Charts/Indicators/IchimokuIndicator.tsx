@@ -66,6 +66,7 @@ export default function IchimokuIndicator({
     );
 
     // Create or update series
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- lightweight-charts type compatibility
     if (!seriesRefs.current.tenkan) {
       seriesRefs.current.tenkan = (chart as any).addLineSeries({
         color: '#0496ff',
@@ -74,6 +75,7 @@ export default function IchimokuIndicator({
       });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- lightweight-charts type compatibility
     if (!seriesRefs.current.kijun) {
       seriesRefs.current.kijun = (chart as any).addLineSeries({
         color: '#991515',
@@ -82,6 +84,7 @@ export default function IchimokuIndicator({
       });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- lightweight-charts type compatibility
     if (!seriesRefs.current.senkouA) {
       seriesRefs.current.senkouA = (chart as any).addLineSeries({
         color: 'rgba(0, 255, 0, 0.3)',
@@ -90,6 +93,7 @@ export default function IchimokuIndicator({
       });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- lightweight-charts type compatibility
     if (!seriesRefs.current.senkouB) {
       seriesRefs.current.senkouB = (chart as any).addLineSeries({
         color: 'rgba(255, 0, 0, 0.3)',
@@ -98,6 +102,7 @@ export default function IchimokuIndicator({
       });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- lightweight-charts type compatibility
     if (!seriesRefs.current.chikou) {
       seriesRefs.current.chikou = (chart as any).addLineSeries({
         color: '#00ff00',

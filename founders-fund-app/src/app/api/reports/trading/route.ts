@@ -288,7 +288,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Trading analytics error:', error);
 
-    if (error.message === 'Unauthorized') {
+    if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

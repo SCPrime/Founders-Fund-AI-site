@@ -83,8 +83,8 @@ export default function MetricsPanel({
     try {
       const calculated = calculateFinancialMetrics(returns, riskFreeRate);
       const totalTrades = returns.length;
-      const wins = returns.filter(r => r > 0).length;
-      const losses = returns.filter(r => r < 0).length;
+      // const wins = returns.filter(r => r > 0).length; // Reserved for future use
+      // const losses = returns.filter(r => r < 0).length; // Reserved for future use
 
       setMetrics({
         ...calculated,

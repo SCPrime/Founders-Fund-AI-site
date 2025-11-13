@@ -11,6 +11,7 @@ import GoogleProvider from 'next-auth/providers/google';
 // NOTE: authOptions must not be exported from route files in Next.js App Router
 // This is an internal constant for the NextAuth handler only
 const authOptions: AuthOptions = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PrismaAdapter type incompatibility with @auth/core
   adapter: PrismaAdapter(prisma) as any, // Type cast to resolve @auth/core vs next-auth adapter incompatibility
   providers: [
     // Email/Password Authentication

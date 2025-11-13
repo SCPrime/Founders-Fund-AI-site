@@ -27,7 +27,7 @@ export function calculateSharpeRatio(
   // Convert to annualized
   const annualizedReturn = avgReturn * periodsPerYear;
   const annualizedStdDev = stdDev * Math.sqrt(periodsPerYear);
-  const riskFreePerPeriod = riskFreeRate / periodsPerYear;
+  // const riskFreePerPeriod = riskFreeRate / periodsPerYear; // Reserved for future use
 
   return (annualizedReturn - riskFreeRate) / annualizedStdDev;
 }

@@ -102,7 +102,7 @@ export class BacktestEngine {
     // Run simulation
     for (let i = 1; i < historicalData.length; i++) {
       const currentPrice = historicalData[i].close;
-      const prevPrice = historicalData[i - 1].close;
+      // const prevPrice = historicalData[i - 1].close; // Reserved for future use
 
       // Determine signal based on strategy
       let signal: 'BUY' | 'SELL' | 'HOLD' = 'HOLD';

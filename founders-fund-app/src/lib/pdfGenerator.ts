@@ -661,7 +661,7 @@ export class PDFGenerator {
       this.doc.setTextColor(BRAND_COLORS.muted);
 
       // Center the text and rotate
-      const textWidth = this.doc.getTextWidth(text);
+      // const textWidth = this.doc.getTextWidth(text); // Reserved for future use
       const x = this.pageWidth / 2;
       const y = this.pageHeight / 2;
 

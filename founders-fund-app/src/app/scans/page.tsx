@@ -41,7 +41,7 @@ export default async function ScansPage() {
       </table>
       {scans.length === 0 && (
         <p style={{ marginTop: 20, fontStyle: 'italic' }}>
-          No scans yet. Use the OCR feature and click "Confirm & Save" to build your scan history.
+          No scans yet. Use the OCR feature and click &quot;Confirm &amp; Save&quot; to build your scan history.
         </p>
       )}
     </div>

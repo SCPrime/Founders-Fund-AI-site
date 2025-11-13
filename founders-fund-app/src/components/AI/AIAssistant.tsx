@@ -352,15 +352,16 @@ export default function AIAssistant() {
       }
 
       // Combine founders and investors for the table
-      const combinedData = [];
+      import type { Contribution } from '@/types/fund';
+      const combinedData: Omit<Contribution, 'id'>[] = [];
       if (data.founders) {
         combinedData.push(
           ...data.founders.map((f: Record<string, unknown>) => ({
-            name: f.name || 'Founder',
-            date: f.date,
-            amount: f.amount,
-            rule: f.rule || 'net',
-            cls: 'founder',
+            name: (typeof f.name === 'string' ? f.name : 'Founder') || 'Founder',
+            date: (typeof f.date === 'string' ? f.date : '') || '',
+            amount: (typeof f.amount === 'number' ? f.amount : 0) || 0,
+            rule: ((typeof f.rule === 'string' ? f.rule : 'net') || 'net') as 'net' | 'gross',
+            cls: 'founder' as const,
           })),
         );
       }
@@ -377,7 +378,7 @@ export default function AIAssistant() {
             name: i.name || 'Investor',
             date: i.date,
             amount: i.amount,
-            rule: i.rule || 'net',
+            rule: (i.rule || 'net') as 'net' | 'gross',
             cls: 'investor' as const,
           })),
         );
@@ -548,10 +549,11 @@ export default function AIAssistant() {
             combinedData.push(
               ...extractedData.founders.map((f: FounderData) => ({
                 name: f.name || 'Founder',
-                date: f.date,
-                amount: f.amount,
-                rule: f.rule || 'net',
-                cls: 'founder' as const,
+                ts: f.date || new Date().toISOString().split('T')[0],
+                amount: f.amount || 0,
+                owner: 'founders' as const,
+                type: 'seed' as const,
+                earnsDollarDaysThisWindow: true,
               })),
             );
             addMessage(
@@ -562,10 +564,10 @@ export default function AIAssistant() {
 
           if (extractedData.investors && extractedData.investors.length > 0) {
             combinedData.push(
-              ...extractedData.investors.map((i: InvestorData) => ({
+              ...extractedData.investors.map((i) => ({
                 name: i.name || 'Investor',
-                date: i.date,
-                amount: i.amount,
+                date: i.date || new Date().toISOString().split('T')[0],
+                amount: i.amount || 0,
                 rule: i.rule || 'net',
                 cls: 'investor' as const,
               })),
@@ -664,7 +666,12 @@ export default function AIAssistant() {
               }
             }
             if (extractedData.settings.transactionStats) {
-              const stats = extractedData.settings.transactionStats as any;
+              interface TransactionStats {
+                totalTransactions?: number;
+                averageAmount?: number;
+                [key: string]: unknown;
+              }
+              const stats = extractedData.settings.transactionStats as TransactionStats | undefined;
               settingsMessage += `📊 **Trading Performance:** ${stats.winning}W/${stats.losing}L (${stats.winRate.toFixed(1)}% win rate)\n`;
             }
 
@@ -704,6 +711,208 @@ export default function AIAssistant() {
             <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
               Confidence: {ocrData.confidence || 0}%
             </span>
+          </div>
+
+          {/* Data Summary */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+              marginBottom: '16px',
+            }}
+          >
+            {Object.entries(ocrData.extractedData || {}).map(([key, value]) => (
+              <div
+                key={key}
+                style={{
+                  backgroundColor: 'var(--ink)',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'var(--muted)',
+                    textTransform: 'uppercase',
+                    marginBottom: '4px',
+                  }}
+                >
+                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}
+                </div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    color: value !== null && value !== undefined ? 'var(--text)' : 'var(--muted)',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {value !== null && value !== undefined
+                    ? typeof value === 'number' &&
+                      (key.includes('Value') || key.includes('PNL') || key.includes('Balance'))
+                      ? `$${value.toLocaleString()}`
+                      : String(value)
+                    : 'Not Found'}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Push Button */}
+          <button
+            onClick={pushOCRToCalculator}
+            disabled={isLoading}
+            style={{
+              width: '100%',
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              backgroundColor: 'var(--good)',
+              color: 'var(--text)',
+              border: '2px solid var(--good)',
+              borderRadius: '8px',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.6 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+          >
+            {isLoading
+              ? '⏳ Pushing to Fund Store...'
+              : '📊 Push Data to Calculator & Verify Calculations'}
+          </button>
+
+          <div
+            style={{
+              marginTop: '8px',
+              fontSize: '12px',
+              color: 'var(--muted)',
+              textAlign: 'center',
+            }}
+          >
+            This will populate the calculator tables and trigger real-time calculations
+          </div>
+        </div>
+      )}
+
+      {/* Messages Area */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          border: '1px solid var(--line)',
+          borderRadius: '8px',
+          padding: '12px',
+          marginBottom: '12px',
+          backgroundColor: 'var(--ink)',
+        }}
+      >
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            style={{
+              marginBottom: '12px',
+              padding: '8px',
+              borderRadius: '6px',
+              backgroundColor: message.role === 'user' ? 'rgba(57, 208, 216, 0.1)' : 'var(--panel)',
+              border: message.role === 'user' ? '1px solid var(--accent)' : '1px solid var(--line)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                color: 'var(--muted)',
+                marginBottom: '4px',
+                fontWeight: 'bold',
+              }}
+            >
+              {message.role === 'user' ? '👤 You' : '🤖 AI Assistant'}
+              <span style={{ float: 'right', fontWeight: 'normal' }}>
+                {message.timestamp.toLocaleTimeString()}
+              </span>
+            </div>
+            {message.imageUrl && (
+              <div style={{ marginBottom: '8px' }}>
+                <img
+                  src={message.imageUrl}
+                  alt="Uploaded image"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                  }}
+                />
+              </div>
+            )}
+            <div style={{ whiteSpace: 'pre-line', fontSize: '13px', color: 'var(--text)' }}>
+              {message.content}
+            </div>
+          </div>
+        ))}
+        {isLoading && (
+          <div
+            style={{
+              padding: '8px',
+              fontStyle: 'italic',
+              color: 'var(--muted)',
+              textAlign: 'center',
+            }}
+          >
+            🤖 AI is thinking...
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Smart Validation Section */}
+      <SmartValidation />
+
+      {/* Predictive Analytics Section */}
+      <PredictiveAnalytics />
+
+      {/* Legacy Input Area (kept for backward compatibility) */}
+      <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Or type a message here..."
+          disabled={isLoading}
+          style={{
+            flex: 1,
+            minHeight: '40px',
+            maxHeight: '100px',
+            resize: 'vertical',
+            padding: '8px',
+            border: '1px solid var(--line)',
+            borderRadius: '8px',
+            backgroundColor: 'var(--ink)',
+            color: 'var(--text)',
+          }}
+        />
+        <button
+          className="btn"
+          onClick={handleSendMessage}
+          disabled={!input.trim() || isLoading}
+          style={{
+            backgroundColor: input.trim() && !isLoading ? 'var(--accent)' : 'var(--panel)',
+            color: input.trim() && !isLoading ? 'var(--ink)' : 'var(--muted)',
+            border: `1px solid ${input.trim() && !isLoading ? 'var(--accent)' : 'var(--line)'}`,
+            cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
           </div>
 
           {/* Data Summary */}

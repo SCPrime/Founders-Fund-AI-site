@@ -27,7 +27,7 @@ export default function LiveTradingChart({
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('1d');
   const [indicators, setIndicators] = useState<IndicatorConfig[]>([]);
   const [drawings, setDrawings] = useState<DrawingTool[]>([]);
-  const [selectedTool, setSelectedTool] = useState<DrawingTool['type'] | null>(null);
+  const [_selectedTool, setSelectedTool] = useState<DrawingTool['type'] | null>(null);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
