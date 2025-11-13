@@ -33,33 +33,41 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
-    // Protected routes that require authentication
-    const protectedPaths = ['/admin', '/api/admin'];
+    // Public routes that don't require authentication
+    const publicPaths = [
+      '/auth/signin',
+      '/api/auth',
+      '/api/healthz',
+    ];
 
-    // Check if this is a protected route
-    const isProtectedRoute = protectedPaths.some((p) => path.startsWith(p));
+    // Check if this is a public route
+    const isPublicRoute = publicPaths.some((p) => path.startsWith(p));
 
-    // If accessing admin routes, require ADMIN role
-    if (isProtectedRoute) {
-      if (!token) {
-        const response = NextResponse.redirect(new URL('/auth/signin', req.url));
-        return applySecurityHeaders(response);
-      }
-
-      // Admin routes require ADMIN role
-      if ((path.startsWith('/admin') || path.startsWith('/api/admin')) && token.role !== 'ADMIN') {
-        const response = NextResponse.redirect(new URL('/', req.url));
-        return applySecurityHeaders(response);
-      }
+    // Allow public routes without authentication
+    if (isPublicRoute) {
+      return applySecurityHeaders(NextResponse.next());
     }
 
-    // All other routes are publicly accessible
+    // All other routes require authentication
+    if (!token) {
+      const signInUrl = new URL('/auth/signin', req.url);
+      signInUrl.searchParams.set('callbackUrl', path);
+      const response = NextResponse.redirect(signInUrl);
+      return applySecurityHeaders(response);
+    }
+
+    // Admin routes require ADMIN role
+    if ((path.startsWith('/admin') || path.startsWith('/api/admin')) && token.role !== 'ADMIN') {
+      const response = NextResponse.redirect(new URL('/', req.url));
+      return applySecurityHeaders(response);
+    }
+
     return applySecurityHeaders(NextResponse.next());
   },
   {
     callbacks: {
-      // Allow all routes by default, handle protection in middleware function
-      authorized: () => true,
+      // Require authentication for all routes except public paths
+      authorized: ({ token }) => !!token,
     },
   },
 );
