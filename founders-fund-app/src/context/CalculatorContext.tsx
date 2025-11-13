@@ -44,10 +44,12 @@ const CalculatorContext = createContext<CalculatorContextValue | undefined>(unde
 
 export function CalculatorProvider({ children }: { children: ReactNode }) {
   const [view, setView] = useState<ViewMode>('week');
-  const [winStart, setWinStart] = useState<string>('2025-07-22');
-  const [winEnd, setWinEnd] = useState<string>('2025-09-06');
-  const [walletSize, setWalletSize] = useState<number>(25000);
-  const [realizedProfit, setRealizedProfit] = useState<number>(20000);
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const [winStart, setWinStart] = useState<string>(weekAgo.toISOString().split('T')[0]);
+  const [winEnd, setWinEnd] = useState<string>(now.toISOString().split('T')[0]);
+  const [walletSize, setWalletSize] = useState<number>(0);
+  const [realizedProfit, setRealizedProfit] = useState<number>(0);
   const [moonbagReal, setMoonbagReal] = useState<number>(0);
   const [moonbagUnreal, setMoonbagUnreal] = useState<number>(0);
   const [includeUnreal, setIncludeUnreal] = useState<'yes' | 'no'>('no');

@@ -106,3 +106,34 @@ export async function measurePerformance<T>(name: string, fn: () => Promise<T>):
     throw error;
   }
 }
+
+/**
+ * Monitoring service object (for admin API)
+ */
+export const monitoring = {
+  // Error tracking
+  getRecentErrors: getErrorLogs,
+  getErrorStats: () => ({
+    total: errorLogs.length,
+    last24h: errorLogs.filter(e => {
+      const errorTime = new Date(e.timestamp).getTime();
+      const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
+      return errorTime > dayAgo;
+    }).length,
+  }),
+
+  // Performance metrics
+  getRecentMetrics: getPerformanceMetrics,
+  getPerformanceStats: () => {
+    if (performanceMetrics.length === 0) {
+      return { avgDuration: 0, maxDuration: 0, minDuration: 0, total: 0 };
+    }
+    const durations = performanceMetrics.map(m => m.duration);
+    return {
+      avgDuration: durations.reduce((a, b) => a + b, 0) / durations.length,
+      maxDuration: Math.max(...durations),
+      minDuration: Math.min(...durations),
+      total: performanceMetrics.length,
+    };
+  },
+};

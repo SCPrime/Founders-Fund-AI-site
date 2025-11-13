@@ -95,7 +95,7 @@ export const getDefaultSeed = (): DefaultSeed => {
       end: '2025-09-06'
     },
     constants: {
-      INVESTOR_SEED_BASELINE: 20000,
+      INVESTOR_SEED_BASELINE: 0,  // Start from $0 - user inputs data via OCR scans
       ENTRY_FEE_RATE: 0.10,
       MGMT_FEE_RATE: 0.20,
       FOUNDERS_MOONBAG_PCT: 0.75,
