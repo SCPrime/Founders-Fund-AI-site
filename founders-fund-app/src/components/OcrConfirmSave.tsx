@@ -63,11 +63,17 @@ export default function OcrConfirmSave({
   }
 
   return (
-    <div style={{ marginTop: 12 }}>
-      <button onClick={handleSave} disabled={saving} aria-busy={saving}>
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving}
+        {...(saving ? { 'aria-busy': true } : {})}
+        aria-label={saving ? 'Saving to history' : 'Confirm and save to history'}
+      >
         {saving ? 'Saving…' : 'Confirm & Save to History'}
       </button>
-      {msg && <div style={{ marginTop: 8, fontSize: 12 }}>{msg}</div>}
+      {msg && <div className="mt-2 text-xs">{msg}</div>}
     </div>
   );
 }

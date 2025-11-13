@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface User {
   id: string;
@@ -62,24 +62,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
 
-  // Check if user is admin
-  useEffect(() => {
-    if (status === 'loading') return;
-
-    if (!session) {
-      router.push('/auth/signin');
-      return;
-    }
-
-    if (session.user.role !== 'ADMIN') {
-      router.push('/');
-      return;
-    }
-
-    loadData();
-  }, [session, status, router, page, searchTerm, roleFilter]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -107,12 +90,29 @@ export default function AdminDashboard() {
       setUsers(usersData.users);
       setTotalPages(usersData.pagination.totalPages);
       setStats(statsData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm, roleFilter]);
+
+  // Check if user is admin
+  useEffect(() => {
+    if (status === 'loading') return;
+
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (session.user.role !== 'ADMIN') {
+      router.push('/');
+      return;
+    }
+
+    loadData();
+  }, [session, status, router, loadData]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
 
       // Reload data
       loadData();
-    } catch (err) {
+    } catch {
       alert('Failed to update role');
     }
   };
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
 
       // Reload data
       loadData();
-    } catch (err) {
+    } catch {
       alert('Failed to delete user');
     }
   };

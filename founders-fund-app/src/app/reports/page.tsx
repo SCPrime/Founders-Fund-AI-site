@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import AgentLeaderboard from '@/components/Reports/AgentLeaderboard';
+import CustomReportBuilder from '@/components/Reports/CustomReportBuilder';
 import PerformanceOverview from '@/components/Reports/PerformanceOverview';
 import RiskMatrix from '@/components/Reports/RiskMatrix';
 import TradingHeatmap from '@/components/Reports/TradingHeatmap';
-import AgentLeaderboard from '@/components/Reports/AgentLeaderboard';
-import CustomReportBuilder from '@/components/Reports/CustomReportBuilder';
+import { useState } from 'react';
 
 type TabType = 'overview' | 'performance' | 'risk' | 'trading' | 'custom';
 type DateRangeType = '7d' | '30d' | '90d' | '1y' | 'all' | 'custom';
@@ -154,12 +154,18 @@ export default function ReportsPage() {
           <div className="mt-6 flex flex-wrap gap-4">
             {/* Date Range Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="date-range-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Date Range
               </label>
               <select
+                id="date-range-select"
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value as DateRangeType)}
+                title="Select date range for reports"
+                aria-label="Select date range for reports"
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {dateRangeOptions.map((option) => (
@@ -174,28 +180,42 @@ export default function ReportsPage() {
             {dateRange === 'custom' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="start-date-input"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Start Date
                   </label>
                   <input
+                    id="start-date-input"
                     type="date"
                     value={customDateRange.startDate}
                     onChange={(e) =>
                       setCustomDateRange({ ...customDateRange, startDate: e.target.value })
                     }
+                    title="Select start date for custom date range"
+                    aria-label="Select start date for custom date range"
+                    placeholder="Start date"
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="end-date-input"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     End Date
                   </label>
                   <input
+                    id="end-date-input"
                     type="date"
                     value={customDateRange.endDate}
                     onChange={(e) =>
                       setCustomDateRange({ ...customDateRange, endDate: e.target.value })
                     }
+                    title="Select end date for custom date range"
+                    aria-label="Select end date for custom date range"
+                    placeholder="End date"
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -204,12 +224,18 @@ export default function ReportsPage() {
 
             {/* Benchmark Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="benchmark-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Benchmark
               </label>
               <select
+                id="benchmark-select"
                 value={benchmark || ''}
                 onChange={(e) => setBenchmark(e.target.value as any)}
+                title="Select benchmark for performance comparison"
+                aria-label="Select benchmark for performance comparison"
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {benchmarkOptions.map((option) => (

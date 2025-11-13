@@ -30,7 +30,7 @@ export default function AIChatPage() {
             <div className="flex items-start gap-2">
               <span className="text-green-500">✓</span>
               <div>
-                <strong>Full Screen Mode:</strong> Click "Expand" to maximize the chat
+                <strong>Full Screen Mode:</strong> Click &ldquo;Expand&rdquo; to maximize the chat
               </div>
             </div>
             <div className="flex items-start gap-2">
@@ -84,7 +84,7 @@ export default function AIChatPage() {
               extracted from your image
             </li>
             <li>
-              <strong>Apply to calculator:</strong> Click the "Apply to Calculator" button to
+              <strong>Apply to calculator:</strong> Click the &ldquo;Apply to Calculator&rdquo; button to
               auto-populate all fields
             </li>
             <li>
